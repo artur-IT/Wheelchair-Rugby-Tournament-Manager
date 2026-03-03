@@ -225,7 +225,7 @@ Utwórz szkielet nowoczesnej i responsywnej strony mojego projektu. Powinien zaw
   - lista wolontariuszy,
   - plan sędziowania.
 
-Stack to: na razie tylko i wyłącznie HTML5 z jego walidacją formularzy, CSS3.
+Stack to: na razie tylko i wyłącznie HTML5 z jego walidacją formularzy, CSS3 i podział na komponenty React, Typescript.
 
 </div>
 </details>
