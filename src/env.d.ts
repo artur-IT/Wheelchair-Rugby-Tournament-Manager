@@ -1,6 +1,6 @@
 interface ImportMetaEnv {
   readonly OPENROUTER_API_KEY: string;
-  // more env variables...
+  readonly DATABASE_URL: string;
 }
 
 interface ImportMeta {

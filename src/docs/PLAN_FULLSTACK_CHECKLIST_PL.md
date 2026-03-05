@@ -220,7 +220,7 @@ Deliverables:
 ## 🟥 Etap 6 — Zbuduj MVP end-to-end (pierwszy działający pion)
 
 - [ x ] UI dla 1 flow (nawet brzydki, byle działał)
-- [ x] API dla tego flow
+- [ x ] API dla tego flow
 - [ ] DB zapis/odczyt
 - [ x ] Obsługa błędów (minimum: komunikat + log)
 

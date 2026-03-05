@@ -11,12 +11,16 @@ Zostaje szablon struktury stron wygenerowany przez Google AI Studio. Teraz trzeb
 
 ---
 
-## Co robiłem i w jakiej kolejności (Mój Plan):
+## Co robiłem i w jakiej kolejności dobrze jest to robić (Mój Plan):
 
 T: Teoria
 P: Praca
 
 1. stworzyłem plik PROJECT.md z ogólnym opisem projektu
+2. Cursor AI - zasady:
+
+- stworzyłem plik AGENTS.md z opisem jak AI ma pracować w repo (stack, foldery, zasady, styl).
+- dostosowanie rules, commands, skills do projektu:
 
 - opisałem MVP :T
 - spisałem stack technologiczny :T
@@ -28,3 +32,5 @@ P: Praca
 - utworzyłem GitHub Project: :P
   - dodawałem pierwsze zadania teoretyczne (plany wdrożenia) :T
 - konfiguracja rules i AGENTS.md :T
+- realizacja MVP:
+  - sprawdzenie nawigacji (wszędzie, buttony, powroty) :P

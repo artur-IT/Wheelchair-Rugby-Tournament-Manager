@@ -44,10 +44,10 @@ function ProfileContent() {
       <form>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Imię" defaultValue="Admin" />
+            <TextField fullWidth label="Imię" defaultValue="Admin" required />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Nazwisko" defaultValue="Systemu" />
+            <TextField fullWidth label="Nazwisko" defaultValue="Systemu" required />
           </Grid>
         </Grid>
         <Button variant="contained" fullWidth sx={{ mt: 3 }}>
