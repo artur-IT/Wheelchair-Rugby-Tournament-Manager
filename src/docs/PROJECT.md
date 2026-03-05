@@ -232,19 +232,19 @@ Stack to: na razie tylko i wyłącznie HTML5 z jego walidacją formularzy, CSS3 
 
 ## Stack technologiczny
 
-- Frontend: HTML5, CSS3, JavaScript, TypeScript, React, Astro
-- Routing: Astro
-- Fetching API: Tanstack Query
-- Forms: React Hook Form + Zod (na backendzie do walidacji requestów)
-- Authentication: OAuth 2.0 + OpenID Connect (OIDC)
+- **Frontend**: HTML5, CSS3, JavaScript, TypeScript, React, Astro
+- **Routing**: Astro
+- **Fetching API**: Tanstack Query
+- **Forms**: React Hook Form + Zod (na backendzie do walidacji requestów)
+- **Authentication**: OAuth 2.0 + OpenID Connect (OIDC)
   - Hashing passwords: Argon2
-- Styles: Material UI + global.css
-- ESLint + Prettier
-- Builder: Vite
-- Backend: Node.js, Express, TypeScript
-- Database: PostgreSQL + Prisma (ORM)
-- Test: Vitest + Playwright
-- Hosting: 1Free.eu (VPS)
+- **Styles**: Material UI + global.css
+- **ESLint + Prettier**
+- **Builder**: Vite
+- **Backend**: Node.js, Express, TypeScript
+- **Database**: PostgreSQL + Prisma (ORM)
+- **Test**: Vitest + Playwright
+- **Hosting**: 1Free.eu (VPS)
 
 ## Epic - duża część systemu (Epiki mają być funkcjonalne)
 

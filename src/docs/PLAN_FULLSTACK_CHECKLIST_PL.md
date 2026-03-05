@@ -219,10 +219,10 @@ Deliverables:
 
 ## 🟥 Etap 6 — Zbuduj MVP end-to-end (pierwszy działający pion)
 
-- [ ] UI dla 1 flow (nawet brzydki, byle działał)
-- [ ] API dla tego flow
+- [ x ] UI dla 1 flow (nawet brzydki, byle działał)
+- [ x] API dla tego flow
 - [ ] DB zapis/odczyt
-- [ ] Obsługa błędów (minimum: komunikat + log)
+- [ x ] Obsługa błędów (minimum: komunikat + log)
 
 **Done when**: da się przejść flow od początku do końca bez ręcznego “grzebania w bazie”.
 **Nie rób jeszcze**: “final” UI, dopóki nie masz działającej logiki i danych.
@@ -233,15 +233,15 @@ Deliverables:
 
 Teraz dopinasz rzeczy, które naprawdę zaczną oszczędzać czas:
 
-- [ ] `AGENTS.md` / `agent.md`: jak AI ma pracować w repo (stack, foldery, zasady, styl).
-- [ ] Rules / Skills / Commands:
-  - [ ] rules: standardy i decyzje (krótko)
-  - [ ] skills: automatyzacje powtarzalnych rzeczy
-  - [ ] commands: gotowe polecenia/szablony pracy
-- [ ] Dokumentacja, która realnie pomaga:
-  - [ ] `PROJECT.md`: scope, MVP, roadmap
-  - [ ] `ARCHITECTURE.md`: warstwy + przepływy
-  - [ ] `DECISIONS.md`: krótkie decyzje “co i dlaczego”
+- [ x ] `AGENTS.md` / `agent.md`: jak AI ma pracować w repo (stack, foldery, zasady, styl).
+- [ x ] Rules / Skills / Commands:
+  - [ x ] rules: standardy i decyzje (krótko)
+  - [ x ] skills: automatyzacje powtarzalnych rzeczy
+  - [ x ] commands: gotowe polecenia/szablony pracy
+- [ x ] Dokumentacja, która realnie pomaga:
+  - [ x ] `PROJECT.md`: scope, MVP, roadmap
+  - [ - ] `ARCHITECTURE.md`: warstwy + przepływy
+  - [ - ] `DECISIONS.md`: krótkie decyzje “co i dlaczego”
 
 **Done when**: widzisz powtarzalne problemy i te pliki realnie oszczędzają czas.
 **Dlaczego nie wcześniej**: na starcie nie wiesz jeszcze, co będzie powtarzalne — łatwo zrobić “martwe” zasady.
