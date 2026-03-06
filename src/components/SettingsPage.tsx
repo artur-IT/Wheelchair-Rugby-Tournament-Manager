@@ -57,7 +57,6 @@ function SettingsContent() {
           <StyledTab label="Drużyny" value="teams" icon={<Users size={18} />} />
           <StyledTab label="Sędziowie" value="referees" icon={<UserCircle size={18} />} />
           <StyledTab label="Klasyfikatorzy" value="classifiers" icon={<UserCircle size={18} />} />
-          <StyledTab label="Wolontariusze" value="volunteers" icon={<UserCircle size={18} />} />
         </Tabs>
 
         <CardContent sx={{ minHeight: 400 }}>

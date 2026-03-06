@@ -66,3 +66,14 @@ export interface SeasonSettings {
   volunteers: Person[];
   teams: Team[];
 }
+
+// DTO for creating a new team via POST /api/teams
+export interface CreateTeamDto {
+  name: string;
+  address: string;
+  contactFirstName: string;
+  contactLastName: string;
+  contactEmail: string;
+  contactPhone: string;
+  seasonId: string;
+}
