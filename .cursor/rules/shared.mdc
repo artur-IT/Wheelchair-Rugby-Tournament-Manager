@@ -57,6 +57,7 @@ When modifying the directory structure, always update this section.
 - Always use async/await.
 - Always generate only minimal length code.
 - Always generate code implementation solutions according to this order: HTML5, JavaScript, React.
+- Always add short comment to new code sections
 
 ### Coding conventions
 
