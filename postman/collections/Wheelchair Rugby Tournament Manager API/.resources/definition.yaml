@@ -1,0 +1,6 @@
+$kind: collection
+name: Wheelchair Rugby Tournament Manager API
+description: API collection for testing the Wheelchair Rugby Tournament Manager endpoints
+variables:
+  baseUrl: http://localhost:3000
+  seasonId: ""
