@@ -205,7 +205,7 @@ Utwórz szkielet nowoczesnej i responsywnej strony mojego projektu. Powinien zaw
       - email,
     - edycja klasyfikatora,
     - usuwanie klasyfikatora,
-  - wolontariusze (imię, nazwisko, telefon, email),
+  - wolontariusze (imię, nazwisko, telefon),
     - lista wolontariuszy,
     - nowy wolontariusz,
       - imię,
