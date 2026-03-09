@@ -90,6 +90,8 @@ model Player {
   team                Team                 @relation(fields: [teamId], references: [id], onDelete: Cascade)
   classificationExams ClassificationExam[]
   tournaments         TournamentPlayer[]
+
+  @@unique([teamId, number])
 }
 
 model Tournament {
@@ -165,6 +167,7 @@ model SportsHall {
   name         String
   address      String?
   notes        String?
+  mapUrl       String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   tournamentId String
@@ -176,6 +179,7 @@ model Accommodation {
   name         String
   address      String?
   notes        String?
+  mapUrl       String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   tournamentId String
@@ -249,6 +253,12 @@ model TournamentStaff {
 
 // ─── Phase 2: Matches & scheduling ───────────────────────────────────────────
 
+enum MatchStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
 model Match {
   id                 String              @id @default(cuid())
   scheduledAt        DateTime
@@ -256,6 +266,7 @@ model Match {
   jerseyInfo         String?
   scoreA             Int?
   scoreB             Int?
+  status             MatchStatus         @default(SCHEDULED)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   tournamentId       String
@@ -289,6 +300,9 @@ model RefereeAssignment {
 // Classifier examines a player during a tournament
 model ClassificationExam {
   id           String     @id @default(cuid())
+  scheduledAt  DateTime?
+  location     String?
+  result       Float?
   notes        String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
