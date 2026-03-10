@@ -8,7 +8,14 @@ import AppShell from "@/components/AppShell/AppShell";
 
 const seasonSchema = z.object({
   name: z.string().min(1, "Nazwa sezonu jest wymagana"),
-  year: z.coerce.number().int().min(2000, "Podaj rok w przedziale 2000-2100").max(2100).optional(),
+  year: z
+    .preprocess(
+      (value) => (value === "" ? undefined : Number(value)),
+      z.number({ message: "Rok sezonu jest wymagany" })
+    )
+    .int()
+    .min(2000, "Podaj rok w przedziale 2000-2100")
+    .max(2100),
   description: z.string().optional(),
 });
 
@@ -107,6 +114,7 @@ function SeasonFormContent({ id }: Props) {
             fullWidth
             label="Rok"
             type="number"
+            required
             {...register("year")}
             error={!!errors.year}
             helperText={errors.year?.message}

@@ -76,7 +76,7 @@ function SeasonsManager() {
       })
       .catch(() => setError("Nie udało się pobrać sezonów"))
       .finally(() => setLoaded(true));
-  }, []);
+  }, [defaultSeasonId]);
 
   const handleDeleteConfirmed = async () => {
     setConfirmOpen(false);

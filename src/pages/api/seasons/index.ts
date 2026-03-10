@@ -5,7 +5,7 @@ import { json } from "@/lib/api";
 
 const CreateSeasonSchema = z.object({
   name: z.string().min(1),
-  year: z.number().int().optional(),
+  year: z.number().int(),
   description: z.string().optional(),
 });
 
