@@ -8,14 +8,10 @@ import AppShell from "@/components/AppShell/AppShell";
 
 const seasonSchema = z.object({
   name: z.string().min(1, "Nazwa sezonu jest wymagana"),
-  year: z
-    .preprocess(
-      (value) => (value === "" ? undefined : Number(value)),
-      z.number({ message: "Rok sezonu jest wymagany" })
-    )
-    .int()
-    .min(2000, "Podaj rok w przedziale 2000-2100")
-    .max(2100),
+  year: z.preprocess(
+    (value) => (value === "" ? undefined : Number(value)),
+    z.number({ message: "Rok sezonu jest wymagany" }).int().min(2000, "Podaj rok w przedziale 2000-2100").max(2100)
+  ),
   description: z.string().optional(),
 });
 
