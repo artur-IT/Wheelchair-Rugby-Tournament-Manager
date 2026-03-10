@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { Trophy, Users, UserCircle, Calendar, ChevronRight, Plus } from "lucide-react";
-import { Box, Button, Grid, Card, CardContent, Typography } from "@mui/material";
-import ThemeRegistry from "@/components/ThemeRegistry";
-import AppShell from "@/components/AppShell";
+import { Box, Button, Grid, Card, CardContent, Typography, Chip } from "@mui/material";
+import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
+import AppShell from "@/components/AppShell/AppShell";
+import { useDefaultSeason } from "@/components/hooks/useDefaultSeason";
+import type { Season } from "@/types";
 import { MOCK_TEAMS, MOCK_TOURNAMENTS, MOCK_REFEREES, MOCK_VOLUNTEERS } from "@/mockData";
 
 const STATS = [
@@ -42,13 +45,47 @@ export default function Dashboard() {
 }
 
 function DashboardContent() {
+  const { defaultSeasonId } = useDefaultSeason();
+  const [defaultSeason, setDefaultSeason] = useState<Season | null>(null);
+
+  // Load default season name when defaultSeasonId is set
+  useEffect(() => {
+    if (!defaultSeasonId) return;
+    fetch(`/api/seasons/${defaultSeasonId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: Season | null) => setDefaultSeason(data))
+      .catch(() => setDefaultSeason(null));
+  }, [defaultSeasonId]);
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <Box>
         <Typography variant="h4" sx={{ fontWeight: "bold" }}>
           Witaj, Organizatorze!
         </Typography>
-        <Typography color="textSecondary">Oto podsumowanie Twojego sezonu.</Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+          <Typography color="textSecondary">Oto podsumowanie sezonu:</Typography>
+          {defaultSeason ? (
+            <Chip
+              label={`${defaultSeason.name}${defaultSeason.year ? ` (${defaultSeason.year})` : ""}`}
+              size="small"
+              color="warning"
+              component="a"
+              href="/settings"
+              clickable
+            />
+          ) : (
+            <Typography
+              component="a"
+              href="/settings"
+              variant="caption"
+              color="textSecondary"
+              sx={{ textDecoration: "underline", cursor: "pointer" }}
+            >
+              Brak domyślnego sezonu — ustaw w Ustawieniach
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       <Grid container spacing={3}>
