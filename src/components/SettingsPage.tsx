@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { ReactElement } from "react";
-import { Users, UserCircle, ChevronRight, Pencil } from "lucide-react";
+import { Users, UserCircle, ChevronRight, Pencil, Star } from "lucide-react";
 import {
   Box,
   Button,
@@ -34,6 +34,7 @@ import {
 import type { SelectChangeEvent } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import type { Season } from "@/types";
+import { useDefaultSeason } from "@/components/hooks/useDefaultSeason";
 import ThemeRegistry from "@/components/ThemeRegistry";
 import AppShell from "@/components/AppShell";
 import { MOCK_TEAMS, MOCK_REFEREES, MOCK_CLASSIFIERS, MOCK_VOLUNTEERS } from "@/mockData";
@@ -61,14 +62,17 @@ function SeasonsManager() {
   const [deleting, setDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { defaultSeasonId, saveDefault } = useDefaultSeason();
 
-  // Fetch all seasons on mount
+  // Fetch seasons; pre-select the saved default or first season
   useEffect(() => {
     fetch("/api/seasons")
       .then((r) => r.json())
       .then((data: Season[]) => {
         setSeasons(data);
-        if (data.length > 0) setSelectedId(data[0].id);
+        if (data.length === 0) return;
+        const savedExists = data.some((s) => s.id === defaultSeasonId);
+        setSelectedId(savedExists ? (defaultSeasonId as string) : data[0].id);
       })
       .catch(() => setError("Nie udało się pobrać sezonów"))
       .finally(() => setLoaded(true));
@@ -126,6 +130,16 @@ function SeasonsManager() {
             ))}
           </Select>
         </FormControl>
+
+        {/* Set as default season */}
+        <IconButton
+          onClick={() => saveDefault(selectedId)}
+          disabled={!selectedId}
+          title="Ustaw jako domyślny sezon"
+          color={selectedId === defaultSeasonId ? "warning" : "default"}
+        >
+          <Star size={18} fill={selectedId === defaultSeasonId ? "currentColor" : "none"} />
+        </IconButton>
 
         {/* Edit selected season */}
         <IconButton

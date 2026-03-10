@@ -8,7 +8,7 @@ import AppShell from "@/components/AppShell";
 
 const seasonSchema = z.object({
   name: z.string().min(1, "Nazwa sezonu jest wymagana"),
-  year: z.coerce.number().int().min(2000, "Podaj rok").max(2100).optional(),
+  year: z.coerce.number().int().min(2000, "Podaj rok w przedziale 2000-2100").max(2100).optional(),
   description: z.string().optional(),
 });
 
@@ -109,7 +109,7 @@ function SeasonFormContent({ id }: Props) {
             type="number"
             {...register("year")}
             error={!!errors.year}
-            helperText={errors.year?.message ?? "Opcjonalnie"}
+            helperText={errors.year?.message}
           />
           <TextField
             fullWidth
