@@ -17,7 +17,10 @@ import {
   Select,
   MenuItem,
   FormHelperText,
+  IconButton,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { SelectChangeEvent } from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
@@ -31,9 +34,44 @@ const teamSchema = z.object({
   contactLastName: z.string().min(1, "Nazwisko jest wymagane"),
   contactEmail: z.string().email("Nieprawidłowy adres email"),
   contactPhone: z.string().min(1, "Telefon jest wymagany"),
+  coachId: z.string().optional(),
+  refereeId: z.string().optional(),
+  coachFirstName: z.string().optional(),
+  coachLastName: z.string().optional(),
+  coachEmail: z.union([z.string().email("Nieprawidłowy email"), z.literal("")]).optional(),
+  coachPhone: z.string().optional(),
+  refereeFirstName: z.string().optional(),
+  refereeLastName: z.string().optional(),
+  refereeEmail: z.union([z.string().email("Nieprawidłowy email"), z.literal("")]).optional(),
+  refereePhone: z.string().optional(),
+  staffFirstName: z.string().optional(),
+  staffLastName: z.string().optional(),
 });
 
 type TeamFormValues = z.infer<typeof teamSchema>;
+
+// Subtle orange outline for required fields so user sees what is needed to save
+const requiredFieldSx = {
+  "& .MuiOutlinedInput-notchedOutline": {
+    borderColor: "rgba(237, 108, 2, 0.45)",
+  },
+  "&:hover .MuiOutlinedInput-notchedOutline": {
+    borderColor: "rgba(237, 108, 2, 0.65)",
+  },
+  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+    borderColor: "primary.main",
+    borderWidth: "1px",
+  },
+};
+
+// One row in the players list (inputs as strings)
+interface PlayerRow {
+  id: string;
+  firstName: string;
+  lastName: string;
+  classification: string;
+  number: string;
+}
 
 export default function TeamForm() {
   return (
@@ -50,6 +88,16 @@ function TeamFormContent() {
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [seasonId, setSeasonId] = useState<string>("");
   const [loadingSeasons, setLoadingSeasons] = useState(true);
+  const [players, setPlayers] = useState<PlayerRow[]>([]);
+
+  const addPlayer = () =>
+    setPlayers((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), firstName: "", lastName: "", classification: "", number: "" },
+    ]);
+  const removePlayer = (id: string) => setPlayers((prev) => prev.filter((p) => p.id !== id));
+  const updatePlayer = (id: string, field: keyof PlayerRow, value: string) =>
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
 
   const {
     register,
@@ -88,7 +136,33 @@ function TeamFormContent() {
       const res = await fetch("/api/teams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, seasonId }),
+        body: JSON.stringify({
+          name: data.name,
+          address: data.address,
+          logoUrl: data.logoUrl?.trim() || undefined,
+          contactFirstName: data.contactFirstName,
+          contactLastName: data.contactLastName,
+          contactEmail: data.contactEmail,
+          contactPhone: data.contactPhone,
+          seasonId,
+          coachId,
+          refereeId,
+          staff:
+            data.staffFirstName?.trim() && data.staffLastName?.trim()
+              ? [{ firstName: data.staffFirstName.trim(), lastName: data.staffLastName.trim() }]
+              : undefined,
+          players: players
+            .filter((p) => p.firstName.trim() && p.lastName.trim())
+            .map((p) => ({
+              firstName: p.firstName.trim(),
+              lastName: p.lastName.trim(),
+              classification:
+                p.classification.trim() !== "" && !Number.isNaN(Number(p.classification))
+                  ? Number(p.classification)
+                  : undefined,
+              number: p.number.trim() !== "" && !Number.isNaN(Number(p.number)) ? Number(p.number) : undefined,
+            })),
+        }),
       });
 
       if (!res.ok) {
@@ -124,7 +198,7 @@ function TeamFormContent() {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         {/* Season selector */}
-        <FormControl fullWidth sx={{ mb: 3 }} error={seasons.length === 0}>
+        <FormControl fullWidth sx={{ mb: 3, ...requiredFieldSx }} error={seasons.length === 0}>
           <InputLabel>Sezon</InputLabel>
           <Select label="Sezon" value={seasonId} onChange={(e: SelectChangeEvent) => setSeasonId(e.target.value)}>
             {seasons.map((s) => (
@@ -149,6 +223,7 @@ function TeamFormContent() {
               {...register("name")}
               error={!!errors.name}
               helperText={errors.name?.message}
+              sx={requiredFieldSx}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -160,9 +235,19 @@ function TeamFormContent() {
               helperText={errors.address?.message}
             />
           </Grid>
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              fullWidth
+              label="URL logo (opcjonalnie)"
+              placeholder="https://..."
+              {...register("logoUrl")}
+              error={!!errors.logoUrl}
+              helperText={errors.logoUrl?.message}
+            />
+          </Grid>
         </Grid>
 
-        <Divider sx={{ my: 2 }} />
+        {/* Contact person */}
         <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
           Osoba do kontaktu
         </Typography>
@@ -174,6 +259,7 @@ function TeamFormContent() {
               {...register("contactFirstName")}
               error={!!errors.contactFirstName}
               helperText={errors.contactFirstName?.message}
+              sx={requiredFieldSx}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -183,6 +269,7 @@ function TeamFormContent() {
               {...register("contactLastName")}
               error={!!errors.contactLastName}
               helperText={errors.contactLastName?.message}
+              sx={requiredFieldSx}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -193,6 +280,7 @@ function TeamFormContent() {
               {...register("contactEmail")}
               error={!!errors.contactEmail}
               helperText={errors.contactEmail?.message}
+              sx={requiredFieldSx}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -203,9 +291,179 @@ function TeamFormContent() {
               {...register("contactPhone")}
               error={!!errors.contactPhone}
               helperText={errors.contactPhone?.message}
+              sx={requiredFieldSx}
             />
           </Grid>
         </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Coach: select existing or add new */}
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
+          Trener
+        </Typography>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              required
+              label="Imię"
+              {...register("coachFirstName")}
+              error={!!errors.coachFirstName}
+              helperText={errors.coachFirstName?.message}
+              sx={requiredFieldSx}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Nazwisko"
+              required
+              {...register("coachLastName")}
+              error={!!errors.coachLastName}
+              helperText={errors.coachLastName?.message}
+              sx={requiredFieldSx}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              type="email"
+              label="Email"
+              {...register("coachEmail")}
+              error={!!errors.coachEmail}
+              helperText={errors.coachEmail?.message}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth required type="tel" label="Telefon" {...register("coachPhone")} />
+          </Grid>
+        </Grid>
+
+        {/* Referee: select existing or add new */}
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
+          Sędzia
+        </Typography>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Imię"
+              {...register("refereeFirstName")}
+              error={!!errors.refereeFirstName}
+              helperText={errors.refereeFirstName?.message}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Nazwisko"
+              {...register("refereeLastName")}
+              error={!!errors.refereeLastName}
+              helperText={errors.refereeLastName?.message}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              type="email"
+              label="Email (opcjonalnie)"
+              {...register("refereeEmail")}
+              error={!!errors.refereeEmail}
+              helperText={errors.refereeEmail?.message}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField fullWidth type="tel" label="Telefon (opcjonalnie)" {...register("refereePhone")} />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Staff */}
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
+          Staff
+        </Typography>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Imię"
+              {...register("staffFirstName")}
+              error={!!errors.staffFirstName}
+              helperText={errors.staffFirstName?.message}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              fullWidth
+              label="Nazwisko"
+              {...register("staffLastName")}
+              error={!!errors.staffLastName}
+              helperText={errors.staffLastName?.message}
+            />
+          </Grid>
+        </Grid>
+
+        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
+          Zawodnicy
+        </Typography>
+        {players.map((p) => (
+          <Grid container spacing={2} key={p.id} alignItems="center" sx={{ mb: 1 }}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Imię"
+                value={p.firstName}
+                onChange={(e) => updatePlayer(p.id, "firstName", e.target.value)}
+                sx={requiredFieldSx}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Nazwisko"
+                value={p.lastName}
+                onChange={(e) => updatePlayer(p.id, "lastName", e.target.value)}
+                sx={requiredFieldSx}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                inputProps={{ min: 0, step: 0.5 }}
+                label="Klasyfikacja"
+                value={p.classification}
+                onChange={(e) => updatePlayer(p.id, "classification", e.target.value)}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                inputProps={{ min: 1 }}
+                label="Numer"
+                value={p.number}
+                onChange={(e) => updatePlayer(p.id, "number", e.target.value)}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 2 }}>
+              <IconButton aria-label="Usuń zawodnika" onClick={() => removePlayer(p.id)} color="error" size="small">
+                <DeleteOutlineIcon />
+              </IconButton>
+            </Grid>
+          </Grid>
+        ))}
+        <Button type="button" variant="outlined" startIcon={<AddIcon />} onClick={addPlayer} sx={{ mb: 3 }}>
+          Dodaj zawodnika
+        </Button>
+
+        <Divider sx={{ my: 2 }} />
 
         <Box sx={{ display: "flex", gap: 2, pt: 2 }}>
           <Button variant="outlined" fullWidth component="a" href="/settings">
