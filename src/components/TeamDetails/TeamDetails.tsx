@@ -183,8 +183,8 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
 
   const updateTeamPlayers = async (
     playersPayload: { firstName: string; lastName: string; classification?: number; number?: number }[]
-  ) => {
-    if (!team) return;
+  ): Promise<boolean> => {
+    if (!team) return false;
     setPlayerActionLoading(true);
     setPlayerActionError(null);
     try {
@@ -204,10 +204,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       }
       const updated: Team = await res.json();
       setTeam(updated);
-      setEditingPlayer(null);
-      setDeleteConfirmPlayer(null);
+      return true;
     } catch (e) {
       setPlayerActionError(e instanceof Error ? e.message : "Wystąpił błąd");
+      return false;
     } finally {
       setPlayerActionLoading(false);
     }
@@ -238,7 +238,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
             number: p.number ?? undefined,
           }
     );
-    await updateTeamPlayers(playersPayload);
+    const success = await updateTeamPlayers(playersPayload);
+    if (success) {
+      handleEditPlayerClose();
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -251,7 +254,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
         classification: p.classification ?? undefined,
         number: p.number ?? undefined,
       }));
-    await updateTeamPlayers(playersPayload);
+    const success = await updateTeamPlayers(playersPayload);
+    if (success) {
+      handleDeleteConfirmClose();
+    }
   };
 
   const handleAddNewPlayerClick = () => {
@@ -296,8 +302,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       })),
       { firstName, lastName, classification, number },
     ];
-    await updateTeamPlayers(playersPayload);
-    handleAddPlayerClose();
+    const success = await updateTeamPlayers(playersPayload);
+    if (success) {
+      handleAddPlayerClose();
+    }
   };
 
   return (
