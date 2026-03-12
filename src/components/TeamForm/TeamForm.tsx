@@ -34,6 +34,7 @@ const teamSchema = z.object({
   contactLastName: z.string().min(1, "Nazwisko jest wymagane"),
   contactEmail: z.string().email("Nieprawidłowy adres email"),
   contactPhone: z.string().min(1, "Telefon jest wymagany"),
+  logoUrl: z.string().optional(),
   coachId: z.string().optional(),
   refereeId: z.string().optional(),
   coachFirstName: z.string().optional(),
@@ -145,8 +146,8 @@ function TeamFormContent() {
           contactEmail: data.contactEmail,
           contactPhone: data.contactPhone,
           seasonId,
-          coachId,
-          refereeId,
+          coachId: data.coachId?.trim() || undefined,
+          refereeId: data.refereeId?.trim() || undefined,
           staff:
             data.staffFirstName?.trim() && data.staffLastName?.trim()
               ? [{ firstName: data.staffFirstName.trim(), lastName: data.staffLastName.trim() }]
