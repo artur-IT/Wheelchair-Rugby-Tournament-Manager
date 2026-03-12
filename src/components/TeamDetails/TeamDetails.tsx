@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Grid,
 } from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
@@ -60,6 +61,14 @@ export default function TeamDetails({ id }: TeamDetailsProps) {
   );
 }
 
+interface PlayerRow {
+  id: string;
+  firstName: string;
+  lastName: string;
+  classification: string;
+  number: string;
+}
+
 function TeamDetailsContent({ id }: TeamDetailsProps) {
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +84,8 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
     classification: string;
     number: string;
   } | null>(null);
+  const [addingNewPlayer, setAddingNewPlayer] = useState(false);
+  const [newPlayerForm, setNewPlayerForm] = useState<PlayerRow | null>(null);
 
   // Fetch current team from DB (single team by id)
   useEffect(() => {
@@ -172,8 +183,8 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
 
   const updateTeamPlayers = async (
     playersPayload: { firstName: string; lastName: string; classification?: number; number?: number }[]
-  ) => {
-    if (!team) return;
+  ): Promise<boolean> => {
+    if (!team) return false;
     setPlayerActionLoading(true);
     setPlayerActionError(null);
     try {
@@ -193,10 +204,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       }
       const updated: Team = await res.json();
       setTeam(updated);
-      setEditingPlayer(null);
-      setDeleteConfirmPlayer(null);
+      return true;
     } catch (e) {
       setPlayerActionError(e instanceof Error ? e.message : "Wystąpił błąd");
+      return false;
     } finally {
       setPlayerActionLoading(false);
     }
@@ -227,7 +238,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
             number: p.number ?? undefined,
           }
     );
-    await updateTeamPlayers(playersPayload);
+    const success = await updateTeamPlayers(playersPayload);
+    if (success) {
+      handleEditPlayerClose();
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -240,7 +254,58 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
         classification: p.classification ?? undefined,
         number: p.number ?? undefined,
       }));
-    await updateTeamPlayers(playersPayload);
+    const success = await updateTeamPlayers(playersPayload);
+    if (success) {
+      handleDeleteConfirmClose();
+    }
+  };
+
+  const handleAddNewPlayerClick = () => {
+    setNewPlayerForm({
+      id: crypto.randomUUID(),
+      firstName: "",
+      lastName: "",
+      classification: "",
+      number: "",
+    });
+    setAddingNewPlayer(true);
+  };
+
+  const handleAddPlayerClose = () => {
+    setAddingNewPlayer(false);
+    setNewPlayerForm(null);
+    setPlayerActionError(null);
+  };
+
+  const handleAddPlayerSave = async () => {
+    if (!team || !newPlayerForm) return;
+    const firstName = newPlayerForm.firstName.trim();
+    const lastName = newPlayerForm.lastName.trim();
+    if (!firstName || !lastName) {
+      setPlayerActionError("Imię i nazwisko są wymagane");
+      return;
+    }
+    const classification =
+      newPlayerForm.classification.trim() !== "" && !Number.isNaN(Number(newPlayerForm.classification))
+        ? Number(newPlayerForm.classification)
+        : undefined;
+    const number =
+      newPlayerForm.number.trim() !== "" && !Number.isNaN(Number(newPlayerForm.number))
+        ? Number(newPlayerForm.number)
+        : undefined;
+    const playersPayload = [
+      ...(team.players ?? []).map((p) => ({
+        firstName: p.firstName,
+        lastName: p.lastName,
+        classification: p.classification ?? undefined,
+        number: p.number ?? undefined,
+      })),
+      { firstName, lastName, classification, number },
+    ];
+    const success = await updateTeamPlayers(playersPayload);
+    if (success) {
+      handleAddPlayerClose();
+    }
   };
 
   return (
@@ -287,6 +352,71 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
         <DialogContent sx={{ overflow: "auto", maxHeight: "90vh", p: 0 }}>
           <TeamFormContent mode="edit" initialTeam={team} onSuccess={handleEditSaved} onCancel={handleEditClose} />
         </DialogContent>
+      </Dialog>
+
+      <Dialog open={addingNewPlayer} onClose={handleAddPlayerClose} maxWidth="xs" fullWidth>
+        <DialogTitle>Dodaj zawodnika</DialogTitle>
+        <DialogContent>
+          {playerActionError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 1 }}>
+              {playerActionError}
+            </Alert>
+          )}
+          {newPlayerForm && (
+            <Grid container spacing={2} sx={{ pt: 1 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Imię"
+                  value={newPlayerForm.firstName}
+                  onChange={(e) => setNewPlayerForm((f) => (f ? { ...f, firstName: e.target.value } : f))}
+                  required
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Nazwisko"
+                  value={newPlayerForm.lastName}
+                  onChange={(e) => setNewPlayerForm((f) => (f ? { ...f, lastName: e.target.value } : f))}
+                  required
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Klasyfikacja"
+                  type="number"
+                  inputProps={{ step: 0.5, min: 0.5, max: 4.0, inputMode: "decimal" }}
+                  value={newPlayerForm.classification}
+                  onChange={(e) => setNewPlayerForm((f) => (f ? { ...f, classification: e.target.value } : f))}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  label="Numer"
+                  type="number"
+                  inputProps={{ min: 1, max: 99, inputMode: "numeric" }}
+                  value={newPlayerForm.number}
+                  onChange={(e) => setNewPlayerForm((f) => (f ? { ...f, number: e.target.value } : f))}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAddPlayerClose} disabled={playerActionLoading}>
+            Anuluj
+          </Button>
+          <Button variant="contained" onClick={handleAddPlayerSave} disabled={playerActionLoading || !newPlayerForm}>
+            {playerActionLoading ? <CircularProgress size={24} /> : "Dodaj zawodnika"}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Dialog open={!!editingPlayer} onClose={handleEditPlayerClose} maxWidth="xs" fullWidth>
@@ -389,7 +519,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
               <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                 Zawodnicy
               </Typography>
-              <Button size="small" color="primary">
+              <Button size="small" color="primary" onClick={handleAddNewPlayerClick}>
                 + Dodaj Zawodnika
               </Button>
             </Box>
