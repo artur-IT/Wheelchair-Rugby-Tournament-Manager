@@ -26,6 +26,9 @@ const UpdateTeamSchema = z
           .optional(),
         number: z
           .union([z.number().int().positive(), z.string().transform((s) => (s === "" ? undefined : Number(s)))])
+          .refine((val) => val === undefined || (Number.isInteger(val) && val > 0), {
+            message: "Numer musi być dodatnią liczbą całkowitą",
+          })
           .optional(),
       })
     ),
@@ -58,6 +61,9 @@ export const GET: APIRoute = async ({ params }) => {
 export const PUT: APIRoute = async ({ params, request }) => {
   const id = params?.id;
   if (!id) return json({ error: "Missing team id" }, 400);
+
+  const existingTeam = await getTeamById(id);
+  if (!existingTeam) return json({ error: "Team not found" }, 404);
 
   const body = await request.json().catch(() => null);
   const parsed = UpdateTeamSchema.safeParse(body);

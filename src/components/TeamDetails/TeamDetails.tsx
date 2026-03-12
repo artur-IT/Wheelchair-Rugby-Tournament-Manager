@@ -148,7 +148,17 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
     setEditOpen(false);
   };
 
-  const handleEditPlayer = (player: Player) => setEditingPlayer(player);
+  // const handleEditPlayer = (player: Player) => setEditingPlayer(player); good old code (before Code Rabbit)
+  const handleEditPlayer = (player: Player) => {
+    setEditingPlayer(player);
+    setEditForm({
+      firstName: player.firstName,
+      lastName: player.lastName,
+      classification: player.classification != null ? String(player.classification) : "",
+      number: player.number != null ? String(player.number) : "",
+    });
+  };
+
   const handleEditPlayerClose = () => {
     setEditingPlayer(null);
     setPlayerActionError(null);
@@ -510,7 +520,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                   Sędzia
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                  {team.referee?.firstName} {team.referee?.lastName ?? "Nie podano"}
+                  {team.referee ? `${team.referee.firstName} ${team.referee.lastName}` : "Nie przypisano"}
                 </Typography>
               </Box>
             </Box>

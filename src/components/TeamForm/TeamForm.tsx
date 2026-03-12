@@ -37,8 +37,8 @@ const teamSchema = z.object({
   logoUrl: z.string().optional(),
   coachId: z.string().optional(),
   refereeId: z.string().optional(),
-  coachFirstName: z.string().optional(),
-  coachLastName: z.string().optional(),
+  coachFirstName: z.string(),
+  coachLastName: z.string(),
   coachEmail: z.union([z.string().email("Nieprawidłowy email"), z.literal("")]).optional(),
   coachPhone: z.string().optional(),
   refereeFirstName: z.string().optional(),
@@ -151,6 +151,8 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
         contactLastName: "",
         contactEmail: "",
         contactPhone: "",
+        coachFirstName: "",
+        coachLastName: "",
       };
 
   const {
@@ -218,7 +220,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
       }
     }
     fetchSeasons();
-  }, [isEdit]); // eslint-disable-line react-hooks/exhaustive-deps -- initialTeam only for edit, run once
+  }, [isEdit, reset]); // eslint-disable-line react-hooks/exhaustive-deps -- initialTeam only for edit, run once
 
   const onSubmit = async (data: TeamFormValues) => {
     setSubmitError(null);
@@ -238,10 +240,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
       if (data.coachFirstName?.trim() && data.coachLastName?.trim()) {
         const fn = (data.coachFirstName ?? "").trim();
         const ln = (data.coachLastName ?? "").trim();
-        if (!fn || !ln) {
-          setSubmitError("Imię i nazwisko trenera są wymagane przy dodawaniu nowego trenera.");
-          return;
-        }
         const coachRes = await fetch("/api/coaches", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -265,10 +263,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
       if (data.refereeFirstName?.trim() && data.refereeLastName?.trim()) {
         const fn = (data.refereeFirstName ?? "").trim();
         const ln = (data.refereeLastName ?? "").trim();
-        if (!fn || !ln) {
-          setSubmitError("Imię i nazwisko sędziego są wymagane przy dodawaniu nowego sędziego.");
-          return;
-        }
         const refereeRes = await fetch("/api/referees", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -514,7 +508,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth required type="tel" label="Telefon" {...register("coachPhone")} />
+            <TextField fullWidth type="tel" label="Telefon" {...register("coachPhone")} />
           </Grid>
         </Grid>
 
