@@ -76,3 +76,11 @@ Klasyfikatorzy badają wybranych zawodników w turnieju.
 ### GitHub Gists (odkrycie projektu!)
 
 Daily Notes robić modelem: Sonnet 4.6 lub Auto
+
+---
+
+```bash
+"concurrently": "^9.2.1" - npm package do uruchamiania wielu komend naraz
+
+"dev:full": "concurrently \"npm run dev\" \"npx prisma studio\" \"npm run test:watch\"", - uruchamia wszystko 1 komendą (dev serwer, prisma studio, testy)
+```

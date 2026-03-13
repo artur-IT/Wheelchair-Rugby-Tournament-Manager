@@ -1,8 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import TeamForm from "./TeamForm";
+import { TeamFormContent } from "./TeamForm";
 
 describe("TeamForm", () => {
   beforeEach(() => {
@@ -14,7 +14,7 @@ describe("TeamForm", () => {
   });
 
   it("shows helper text when no seasons are returned", async () => {
-    render(<TeamForm />);
+    render(<TeamFormContent />);
 
     expect(await screen.findByText(/Brak sezonów/i)).toBeInTheDocument();
   });
@@ -23,7 +23,7 @@ describe("TeamForm", () => {
     const user = userEvent.setup();
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [{ id: "s1", name: "Sezon 1" }] }));
 
-    render(<TeamForm />);
+    render(<TeamFormContent />);
     await screen.findByRole("button", { name: "Zapisz Drużynę" });
     await user.click(screen.getByRole("button", { name: "Zapisz Drużynę" }));
 
@@ -32,35 +32,48 @@ describe("TeamForm", () => {
 
   it("sends team payload with selected season id after valid submit", async () => {
     const user = userEvent.setup();
+    const onSuccess = vi.fn();
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "s1", name: "Sezon 1" }] })
-      .mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ error: { formErrors: ["Błąd testowy"] } }),
-      });
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: "s1", name: "Sezon 1" }] }) // GET /api/seasons
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "coach1", firstName: "Anna", lastName: "Nowak" }) }) // POST /api/coaches
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "t1", name: "Test Team" }) }); // POST /api/teams
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<TeamForm />);
+    render(<TeamFormContent onSuccess={onSuccess} />);
     await screen.findByRole("button", { name: "Zapisz Drużynę" });
 
     await user.type(screen.getByLabelText("Nazwa Drużyny"), "Test Team");
     await user.type(screen.getByLabelText("Adres"), "Test Address");
-    await user.type(screen.getByLabelText("Imię"), "Jan");
-    await user.type(screen.getByLabelText("Nazwisko"), "Kowalski");
-    await user.type(screen.getByLabelText("Email"), "jan@example.com");
-    await user.type(screen.getByLabelText("Telefon"), "123456789");
+    await user.type(screen.getAllByLabelText(/^Imię/)[0], "Jan");
+    await user.type(screen.getAllByLabelText(/^Nazwisko/)[0], "Kowalski");
+    await user.type(screen.getAllByLabelText(/^Email/)[0], "jan@example.com");
+    await user.type(screen.getAllByLabelText(/^Telefon/)[0], "123456789");
+    // Fill required coach fields (index 1: contact is [0], coach is [1], referee is [2])
+    await user.type(screen.getAllByLabelText(/^Imię/)[1], "Anna");
+    await user.type(screen.getAllByLabelText(/^Nazwisko/)[1], "Nowak");
     await user.click(screen.getByRole("button", { name: "Zapisz Drużynę" }));
 
-    const [, submitOptions] = fetchMock.mock.calls[1] as [string, RequestInit];
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+      3,
       "/api/teams",
       expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },
       })
     );
+
+    const [, coachOptions] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(JSON.parse(String(coachOptions.body))).toEqual({
+      firstName: "Anna",
+      lastName: "Nowak",
+      seasonId: "s1",
+    });
+
+    const [, submitOptions] = fetchMock.mock.calls[2] as [string, RequestInit];
     expect(JSON.parse(String(submitOptions.body))).toEqual({
       name: "Test Team",
       address: "Test Address",
@@ -69,6 +82,8 @@ describe("TeamForm", () => {
       contactEmail: "jan@example.com",
       contactPhone: "123456789",
       seasonId: "s1",
+      coachId: "coach1",
+      players: [],
     });
   });
 });
