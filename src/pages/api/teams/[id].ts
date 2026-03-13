@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 import { json } from "@/lib/api";
 import { getTeamById, updateTeam } from "@/lib/teams";
+import { prisma } from "@/lib/prisma";
 
 const UpdateTeamSchema = z
   .object({
@@ -74,5 +75,20 @@ export const PUT: APIRoute = async ({ params, request }) => {
     return json(team);
   } catch {
     return json({ error: "Nie udało się zaktualizować drużyny" }, 500);
+  }
+};
+
+export const DELETE: APIRoute = async ({ params }) => {
+  const id = params?.id;
+  if (!id) return json({ error: "Missing team id" }, 400);
+
+  const existingTeam = await getTeamById(id);
+  if (!existingTeam) return json({ error: "Team not found" }, 404);
+
+  try {
+    await prisma.team.delete({ where: { id } });
+    return json({ success: true });
+  } catch {
+    return json({ error: "Nie udało się usunąć drużyny" }, 500);
   }
 };

@@ -86,6 +86,9 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
   } | null>(null);
   const [addingNewPlayer, setAddingNewPlayer] = useState(false);
   const [newPlayerForm, setNewPlayerForm] = useState<PlayerRow | null>(null);
+  const [deleteTeamDialogOpen, setDeleteTeamDialogOpen] = useState(false);
+  const [deleteTeamLoading, setDeleteTeamLoading] = useState(false);
+  const [deleteTeamError, setDeleteTeamError] = useState<string | null>(null);
 
   // Fetch current team from DB (single team by id)
   useEffect(() => {
@@ -157,6 +160,35 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
   const handleEditSaved = (updated: Team) => {
     setTeam(updated);
     setEditOpen(false);
+  };
+
+  const handleDeleteTeamClick = () => {
+    setDeleteTeamError(null);
+    setDeleteTeamDialogOpen(true);
+  };
+
+  const handleDeleteTeamClose = () => {
+    setDeleteTeamDialogOpen(false);
+    setDeleteTeamError(null);
+  };
+
+  // Delete team record and redirect back to settings on success.
+  const handleDeleteTeamConfirm = async () => {
+    if (!team) return;
+    setDeleteTeamLoading(true);
+    setDeleteTeamError(null);
+    try {
+      const res = await fetch(`/api/teams/${team.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error ?? "Nie udało się usunąć drużyny");
+      }
+      window.location.href = "/settings";
+    } catch (err) {
+      setDeleteTeamError(err instanceof Error ? err.message : "Wystąpił błąd podczas usuwania drużyny");
+    } finally {
+      setDeleteTeamLoading(false);
+    }
   };
 
   // const handleEditPlayer = (player: Player) => setEditingPlayer(player); good old code (before Code Rabbit)
@@ -343,7 +375,12 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
           <Typography color="textSecondary">{team.address ?? "Brak adresu"}</Typography>
         </Box>
         <Box sx={{ display: "flex", gap: 1.5 }}>
-          <Button variant="outlined" color="error" sx={{ borderRadius: 4, fontWeight: "bold" }}>
+          <Button
+            variant="outlined"
+            color="error"
+            sx={{ borderRadius: 4, fontWeight: "bold" }}
+            onClick={handleDeleteTeamClick}
+          >
             Usuń Drużynę
           </Button>
           <Button variant="contained" sx={{ borderRadius: 4, fontWeight: "bold" }} onClick={handleEditClick}>
@@ -358,6 +395,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Add new player dialog */}
       <TeamNewPlayer
         open={addingNewPlayer}
         onClose={handleAddPlayerClose}
@@ -368,6 +406,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
         setNewPlayerForm={setNewPlayerForm}
       />
 
+      {/* Edit player dialog */}
       <Dialog open={!!editingPlayer} onClose={handleEditPlayerClose} maxWidth="xs" fullWidth>
         <DialogTitle>Edytuj zawodnika</DialogTitle>
         <DialogContent>
@@ -425,6 +464,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
         </DialogActions>
       </Dialog>
 
+      {/* Delete player dialog */}
       <Dialog open={!!deleteConfirmPlayer} onClose={handleDeleteConfirmClose}>
         <DialogTitle>Usuń zawodnika</DialogTitle>
         <DialogContent>
@@ -444,6 +484,28 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
           </Button>
           <Button color="error" variant="contained" onClick={handleDeleteConfirm} disabled={playerActionLoading}>
             {playerActionLoading ? <CircularProgress size={24} /> : "Usuń"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deleteTeamDialogOpen} onClose={handleDeleteTeamClose}>
+        <DialogTitle>Usuń drużynę</DialogTitle>
+        <DialogContent>
+          {deleteTeamError && (
+            <Alert severity="error" sx={{ mt: 1, mb: 1 }}>
+              {deleteTeamError}
+            </Alert>
+          )}
+          <Typography>
+            Operacja usunie drużynę <strong>{team.name}</strong> z bazy danych. Czy na pewno chcesz kontynuować?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteTeamClose} disabled={deleteTeamLoading}>
+            Anuluj
+          </Button>
+          <Button color="error" variant="contained" onClick={handleDeleteTeamConfirm} disabled={deleteTeamLoading}>
+            {deleteTeamLoading ? <CircularProgress size={24} /> : "Usuń drużynę"}
           </Button>
         </DialogActions>
       </Dialog>
