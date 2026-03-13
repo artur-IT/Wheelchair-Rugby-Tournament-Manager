@@ -26,7 +26,7 @@ export interface Season {
 export interface Team {
   id: string;
   name: string;
-  logoUrl?: string;
+  websiteUrl?: string;
   address?: string;
   contactFirstName?: string;
   contactLastName?: string;
@@ -146,7 +146,7 @@ export interface CreateSeasonDto {
 export interface CreateTeamDto {
   name: string;
   address?: string;
-  logoUrl?: string;
+  websiteUrl?: string;
   contactFirstName?: string;
   contactLastName?: string;
   contactEmail?: string;

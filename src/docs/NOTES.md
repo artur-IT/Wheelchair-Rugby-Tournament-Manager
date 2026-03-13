@@ -84,3 +84,9 @@ Daily Notes robić modelem: Sonnet 4.6 lub Auto
 
 "dev:full": "concurrently \"npm run dev\" \"npx prisma studio\" \"npm run test:watch\"", - uruchamia wszystko 1 komendą (dev serwer, prisma studio, testy)
 ```
+
+---
+
+### Prisma i PostgreSQL:
+
+**\*Uwaga dla przyszłości: po zmianach w prisma/schema**. prisma trzeba zawsze ponownie uruchomić pnpm prisma generate --generator client oraz zrestartować serwer, żeby kod Astro/Node używał zaktualizowanego klienta.\*

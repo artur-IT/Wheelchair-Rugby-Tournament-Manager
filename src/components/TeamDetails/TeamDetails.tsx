@@ -43,7 +43,7 @@ function buildTeamUpdateBody(
   return {
     name: team.name,
     address: team.address,
-    logoUrl: team.logoUrl ?? undefined,
+    websiteUrl: team.websiteUrl ?? undefined,
     contactFirstName: team.contactFirstName,
     contactLastName: team.contactLastName,
     contactEmail: team.contactEmail,
