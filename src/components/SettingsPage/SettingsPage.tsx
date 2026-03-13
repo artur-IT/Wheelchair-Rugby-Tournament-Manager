@@ -33,13 +33,13 @@ import {
 } from "@mui/material";
 import type { SelectChangeEvent } from "@mui/material";
 import { Trash2 } from "lucide-react";
-import type { Season, Team } from "@/types";
+import type { Season, Team, Person } from "@/types";
 import { useDefaultSeason } from "@/components/hooks/useDefaultSeason";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
-import { MOCK_REFEREES, MOCK_CLASSIFIERS, MOCK_VOLUNTEERS } from "@/mockData";
+import { MOCK_REFEREES, MOCK_CLASSIFIERS } from "@/mockData";
 
-type TabValue = "teams" | "referees" | "classifiers" | "volunteers";
+type TabValue = "teams" | "referees" | "classifiers";
 
 export default function SettingsPage() {
   return (
@@ -51,8 +51,18 @@ export default function SettingsPage() {
   );
 }
 
-function StyledTab({ label, value, icon }: { label: string; value: string; icon: ReactElement }) {
-  return <Tab label={label} value={value} icon={icon} iconPosition="start" />;
+function StyledTab({
+  label,
+  value,
+  icon,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  icon: ReactElement;
+  onClick?: () => void;
+}) {
+  return <Tab label={label} value={value} icon={icon} iconPosition="start" onClick={onClick} />;
 }
 
 function SeasonsManager({ onSeasonChange }: { onSeasonChange: (seasonId: string) => void }) {
@@ -212,20 +222,32 @@ function SettingsContent() {
 
       <Paper sx={{ borderRadius: 3 }}>
         <Tabs value={activeTab} onChange={(_, v: TabValue) => setActiveTab(v)} variant="fullWidth">
-          <StyledTab label="Drużyny" value="teams" icon={<Users size={18} />} />
-          <StyledTab label="Sędziowie" value="referees" icon={<UserCircle size={18} />} />
-          <StyledTab label="Klasyfikatorzy" value="classifiers" icon={<UserCircle size={18} />} />
+          <StyledTab label="Drużyny" value="teams" icon={<Users size={18} />} onClick={() => setActiveTab("teams")} />
+          <StyledTab
+            label="Sędziowie"
+            value="referees"
+            icon={<UserCircle size={18} />}
+            onClick={() => setActiveTab("referees")}
+          />
+          <StyledTab
+            label="Klasyfikatorzy"
+            value="classifiers"
+            icon={<UserCircle size={18} />}
+            onClick={() => setActiveTab("classifiers")}
+          />
         </Tabs>
 
         <CardContent sx={{ minHeight: 400 }}>
           {activeTab === "teams" && <TeamsTab seasonId={selectedSeasonId} />}
-          {activeTab !== "teams" && <PersonnelTab activeTab={activeTab} />}
+          {activeTab === "referees" && <RefereesTab />}
+          {activeTab === "classifiers" && <ClassifiersTab />}
         </CardContent>
       </Paper>
     </Box>
   );
 }
 
+/*  TEAMS TAB */
 function TeamsTab({ seasonId }: { seasonId: string }) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(true);
@@ -346,13 +368,17 @@ function TeamsTab({ seasonId }: { seasonId: string }) {
   );
 }
 
-function PersonnelTab({ activeTab }: { activeTab: TabValue }) {
-  const data =
-    activeTab === "referees" ? MOCK_REFEREES : activeTab === "classifiers" ? MOCK_CLASSIFIERS : MOCK_VOLUNTEERS;
+/*  PERSONEL TAB - Referees, Classifiers */
+function RefereesTab() {
+  return <PersonnelTable title="Sędziowie" data={MOCK_REFEREES} />;
+}
 
-  const title =
-    activeTab === "referees" ? "Sędziowie" : activeTab === "classifiers" ? "Klasyfikatorzy" : "Wolontariusze";
+function ClassifiersTab() {
+  return <PersonnelTable title="Klasyfikatorzy" data={MOCK_CLASSIFIERS} />;
+}
 
+// Table layout shared between referees and classifiers.
+function PersonnelTable({ title, data }: { title: string; data: Person[] }) {
   return (
     <Box>
       <Box
