@@ -36,8 +36,27 @@ import type { SelectChangeEvent } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import type { Season, Team, Person, CreateRefereeDto, CreateClassifierDto } from "@/types";
 import { useDefaultSeason } from "@/components/hooks/useDefaultSeason";
+import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
+
+interface ApiErrorBody {
+  error?: {
+    formErrors?: string[];
+    fieldErrors?: Record<string, string[]>;
+  };
+}
+
+// Parses validation responses so we can show meaningful messages in dialogs.
+async function extractErrorMessage(response: Response, fallback: string) {
+  const errorBody = (await response.json().catch(() => null)) as ApiErrorBody | null;
+  const fieldErrors = (errorBody?.error?.fieldErrors ?? {}) as Record<string, string[] | undefined>;
+  const fieldMessages = Object.values(fieldErrors).reduce<string[]>((acc, errors) => {
+    if (errors) acc.push(...errors);
+    return acc;
+  }, []);
+  return errorBody?.error?.formErrors?.[0] ?? fieldMessages[0] ?? fallback;
+}
 
 type TabValue = "teams" | "referees" | "classifiers";
 
@@ -188,20 +207,18 @@ function SeasonsManager({ onSeasonChange }: { onSeasonChange: (seasonId: string)
       </Box>
 
       {/* Delete confirmation dialog */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Usuń sezon</DialogTitle>
-        <DialogContent>
+      <ConfirmationDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleDeleteConfirmed}
+        loading={deleting}
+        title="Usuń sezon"
+        description={
           <DialogContentText>
             Czy na pewno chcesz usunąć sezon <strong>{selectedSeason?.name}</strong>? Tej operacji nie można cofnąć.
           </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>Anuluj</Button>
-          <Button color="error" variant="contained" onClick={handleDeleteConfirmed}>
-            Usuń
-          </Button>
-        </DialogActions>
-      </Dialog>
+        }
+      />
     </>
   );
 }
@@ -380,6 +397,9 @@ interface PersonnelTableProps {
   title: string;
   data: Person[];
   onAddClick: () => void;
+  onEdit?: (person: Person) => void;
+  onDelete?: (person: Person) => void;
+  deletingId?: string | null;
 }
 
 function RefereesTab({ seasonId }: { seasonId: string }) {
@@ -389,6 +409,9 @@ function RefereesTab({ seasonId }: { seasonId: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Person | null>(null);
 
   // Refresh referees whenever the selected season changes.
   useEffect(() => {
@@ -425,6 +448,7 @@ function RefereesTab({ seasonId }: { seasonId: string }) {
   }, [seasonId]);
 
   const handleAddClick = () => {
+    setEditingPerson(null);
     setDialogError(null);
     setDialogOpen(true);
   };
@@ -432,6 +456,7 @@ function RefereesTab({ seasonId }: { seasonId: string }) {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setDialogError(null);
+    setEditingPerson(null);
   };
 
   const handleCreateReferee = async (payload: PersonFormPayload) => {
@@ -453,26 +478,87 @@ function RefereesTab({ seasonId }: { seasonId: string }) {
         body: JSON.stringify(requestBody),
       });
       if (!response.ok) {
-        const errorBody = (await response.json().catch(() => null)) as {
-          error?: { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
-        } | null;
-        const fieldErrors = (errorBody?.error?.fieldErrors ?? {}) as Record<string, string[] | undefined>;
-        const fieldMessages = Object.values(fieldErrors).reduce<string[]>((acc, errors) => {
-          if (errors) acc.push(...errors);
-          return acc;
-        }, []);
-        const message = errorBody?.error?.formErrors?.[0] ?? fieldMessages[0] ?? "Nie udało się dodać sędziego";
+        const message = await extractErrorMessage(response, "Nie udało się dodać sędziego");
         throw new Error(message);
       }
       const created: Person = await response.json();
       setReferees((current) => [created, ...current]);
       setDialogOpen(false);
+      setEditingPerson(null);
     } catch (submissionError) {
       setDialogError(
         submissionError instanceof Error ? submissionError.message : "Wystąpił błąd podczas zapisu sędziego"
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdateReferee = async (id: string, payload: PersonFormPayload) => {
+    setSubmitting(true);
+    setDialogError(null);
+
+    try {
+      const response = await fetch(`/api/referees/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          email: payload.email,
+          phone: payload.phone,
+        }),
+      });
+      if (!response.ok) {
+        const message = await extractErrorMessage(response, "Nie udało się zaktualizować sędziego");
+        throw new Error(message);
+      }
+      const updated: Person = await response.json();
+      setReferees((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      setDialogOpen(false);
+      setEditingPerson(null);
+    } catch (submissionError) {
+      setDialogError(
+        submissionError instanceof Error ? submissionError.message : "Wystąpił błąd podczas zapisu sędziego"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDialogSubmit = (payload: PersonFormPayload) => {
+    if (editingPerson) {
+      void handleUpdateReferee(editingPerson.id, payload);
+      return;
+    }
+    void handleCreateReferee(payload);
+  };
+
+  const handleEditClick = (person: Person) => {
+    setEditingPerson(person);
+    setDialogError(null);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteReferee = (person: Person) => {
+    setDeleteTarget(person);
+  };
+
+  const handleDeleteRefereeConfirmed = async () => {
+    if (!deleteTarget) return;
+    setDeletingId(deleteTarget.id);
+    try {
+      const response = await fetch(`/api/referees/${deleteTarget.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const message = await extractErrorMessage(response, "Nie udało się usunąć sędziego");
+        throw new Error(message);
+      }
+      setReferees((current) => current.filter((item) => item.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Wystąpił błąd podczas usuwania");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -511,14 +597,48 @@ function RefereesTab({ seasonId }: { seasonId: string }) {
           Brak zapisanych sędziów. Dodaj pierwszego sędziego, aby rozdzielać mecze.
         </Alert>
       )}
-      <PersonnelTable title="Sędziowie" data={referees} onAddClick={handleAddClick} />
+      <PersonnelTable
+        title="Sędziowie"
+        data={referees}
+        onAddClick={handleAddClick}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteReferee}
+        deletingId={deletingId}
+      />
       <AddPersonDialog
         open={dialogOpen}
         loading={submitting}
         error={dialogError}
-        title="Sędziego"
+        dialogTitle={editingPerson ? "Edytuj Sędziego" : "Dodaj Sędziego"}
+        submitLabel={editingPerson ? "Aktualizuj" : "Zapisz"}
+        initialValues={
+          editingPerson
+            ? {
+                firstName: editingPerson.firstName,
+                lastName: editingPerson.lastName,
+                email: editingPerson.email ?? "",
+                phone: editingPerson.phone ? String(editingPerson.phone) : "",
+              }
+            : undefined
+        }
         onClose={handleDialogClose}
-        onSubmit={handleCreateReferee}
+        onSubmit={handleDialogSubmit}
+      />
+      <ConfirmationDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteRefereeConfirmed}
+        loading={deletingId === deleteTarget?.id}
+        title="Usuń sędziego"
+        description={
+          <DialogContentText>
+            Czy na pewno chcesz usunąć{" "}
+            <strong>
+              {deleteTarget?.firstName} {deleteTarget?.lastName}
+            </strong>
+            ? Operacja jest nieodwracalna.
+          </DialogContentText>
+        }
       />
     </>
   );
@@ -531,6 +651,9 @@ function ClassifiersTab({ seasonId }: { seasonId: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Person | null>(null);
 
   // Refresh classifiers whenever the selected season changes.
   useEffect(() => {
@@ -567,6 +690,7 @@ function ClassifiersTab({ seasonId }: { seasonId: string }) {
   }, [seasonId]);
 
   const handleAddClick = () => {
+    setEditingPerson(null);
     setDialogError(null);
     setDialogOpen(true);
   };
@@ -574,6 +698,7 @@ function ClassifiersTab({ seasonId }: { seasonId: string }) {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setDialogError(null);
+    setEditingPerson(null);
   };
 
   const handleCreateClassifier = async (payload: PersonFormPayload) => {
@@ -595,26 +720,87 @@ function ClassifiersTab({ seasonId }: { seasonId: string }) {
         body: JSON.stringify(requestBody),
       });
       if (!response.ok) {
-        const errorBody = (await response.json().catch(() => null)) as {
-          error?: { formErrors?: string[]; fieldErrors?: Record<string, string[]> };
-        } | null;
-        const fieldErrors = (errorBody?.error?.fieldErrors ?? {}) as Record<string, string[] | undefined>;
-        const fieldMessages = Object.values(fieldErrors).reduce<string[]>((acc, errors) => {
-          if (errors) acc.push(...errors);
-          return acc;
-        }, []);
-        const message = errorBody?.error?.formErrors?.[0] ?? fieldMessages[0] ?? "Nie udało się dodać klasyfikatora";
+        const message = await extractErrorMessage(response, "Nie udało się dodać klasyfikatora");
         throw new Error(message);
       }
       const created: Person = await response.json();
       setClassifiers((current) => [created, ...current]);
       setDialogOpen(false);
+      setEditingPerson(null);
     } catch (submissionError) {
       setDialogError(
         submissionError instanceof Error ? submissionError.message : "Wystąpił błąd podczas zapisu klasyfikatora"
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpdateClassifier = async (id: string, payload: PersonFormPayload) => {
+    setSubmitting(true);
+    setDialogError(null);
+
+    try {
+      const response = await fetch(`/api/classifiers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          email: payload.email,
+          phone: payload.phone,
+        }),
+      });
+      if (!response.ok) {
+        const message = await extractErrorMessage(response, "Nie udało się zaktualizować klasyfikatora");
+        throw new Error(message);
+      }
+      const updated: Person = await response.json();
+      setClassifiers((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      setDialogOpen(false);
+      setEditingPerson(null);
+    } catch (submissionError) {
+      setDialogError(
+        submissionError instanceof Error ? submissionError.message : "Wystąpił błąd podczas zapisu klasyfikatora"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDialogSubmit = (payload: PersonFormPayload) => {
+    if (editingPerson) {
+      void handleUpdateClassifier(editingPerson.id, payload);
+      return;
+    }
+    void handleCreateClassifier(payload);
+  };
+
+  const handleEditClick = (person: Person) => {
+    setEditingPerson(person);
+    setDialogError(null);
+    setDialogOpen(true);
+  };
+
+  const handleDeleteClassifier = (person: Person) => {
+    setDeleteTarget(person);
+  };
+
+  const handleDeleteClassifierConfirmed = async () => {
+    if (!deleteTarget) return;
+    setDeletingId(deleteTarget.id);
+    try {
+      const response = await fetch(`/api/classifiers/${deleteTarget.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const message = await extractErrorMessage(response, "Nie udało się usunąć klasyfikatora");
+        throw new Error(message);
+      }
+      setClassifiers((current) => current.filter((item) => item.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Wystąpił błąd podczas usuwania");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -653,20 +839,54 @@ function ClassifiersTab({ seasonId }: { seasonId: string }) {
           Brak zapisanych klasyfikatorów. Dodaj pierwszą osobę, aby uruchomić egzaminy.
         </Alert>
       )}
-      <PersonnelTable title="Klasyfikatorzy" data={classifiers} onAddClick={handleAddClick} />
+      <PersonnelTable
+        title="Klasyfikatorzy"
+        data={classifiers}
+        onAddClick={handleAddClick}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteClassifier}
+        deletingId={deletingId}
+      />
       <AddPersonDialog
         open={dialogOpen}
         loading={submitting}
         error={dialogError}
-        title="Klasyfikatora"
+        dialogTitle={editingPerson ? "Edytuj Klasyfikatora" : "Dodaj Klasyfikatora"}
+        submitLabel={editingPerson ? "Aktualizuj" : "Zapisz"}
+        initialValues={
+          editingPerson
+            ? {
+                firstName: editingPerson.firstName,
+                lastName: editingPerson.lastName,
+                email: editingPerson.email ?? "",
+                phone: editingPerson.phone ? String(editingPerson.phone) : "",
+              }
+            : undefined
+        }
         onClose={handleDialogClose}
-        onSubmit={handleCreateClassifier}
+        onSubmit={handleDialogSubmit}
+      />
+      <ConfirmationDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteClassifierConfirmed}
+        loading={deletingId === deleteTarget?.id}
+        title="Usuń klasyfikatora"
+        description={
+          <DialogContentText>
+            Czy na pewno chcesz usunąć{" "}
+            <strong>
+              {deleteTarget?.firstName} {deleteTarget?.lastName}
+            </strong>
+            ? Operacja jest nieodwracalna.
+          </DialogContentText>
+        }
       />
     </>
   );
 }
 
-function PersonnelTable({ title, data, onAddClick }: PersonnelTableProps) {
+function PersonnelTable({ title, data, onAddClick, onEdit, onDelete, deletingId }: PersonnelTableProps) {
   return (
     <Box>
       <Box
@@ -705,11 +925,16 @@ function PersonnelTable({ title, data, onAddClick }: PersonnelTableProps) {
                 <TableCell>{p.email ?? "-"}</TableCell>
                 <TableCell>{p.phone ?? "-"}</TableCell>
                 <TableCell align="right">
-                  <Button size="small" color="primary">
+                  <Button size="small" color="primary" onClick={() => onEdit?.(p)} disabled={!onEdit}>
                     Edytuj
                   </Button>
-                  <Button size="small" color="error">
-                    Usuń
+                  <Button
+                    size="small"
+                    color="error"
+                    onClick={() => onDelete?.(p)}
+                    disabled={!onDelete || deletingId === p.id}
+                  >
+                    {deletingId === p.id ? "Usuwanie..." : "Usuń"}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -739,21 +964,32 @@ interface AddPersonDialogProps {
   open: boolean;
   loading: boolean;
   error: string | null;
-  title: string;
+  dialogTitle: string;
+  submitLabel?: string;
+  initialValues?: PersonFormFields;
   onClose: () => void;
   onSubmit: (payload: PersonFormPayload) => void;
 }
 
 // Dialog that collects name and contact details before hitting the API.
-function AddPersonDialog({ open, loading, error, title, onClose, onSubmit }: AddPersonDialogProps) {
+function AddPersonDialog({
+  open,
+  loading,
+  error,
+  dialogTitle,
+  submitLabel,
+  initialValues,
+  onClose,
+  onSubmit,
+}: AddPersonDialogProps) {
   const [form, setForm] = useState<PersonFormFields>(personDialogInitialState);
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setForm(personDialogInitialState);
+    setForm(initialValues ?? personDialogInitialState);
     setLocalError(null);
-  }, [open]);
+  }, [open, initialValues]);
 
   const sanitizePhone = (value: string) => value.replace(/\D/g, "").slice(0, 9);
 
@@ -781,7 +1017,7 @@ function AddPersonDialog({ open, loading, error, title, onClose, onSubmit }: Add
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Dodaj {title}</DialogTitle>
+      <DialogTitle>{dialogTitle}</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 1, display: "flex", flexDirection: "column", gap: 2 }}>
           {localError && <Alert severity="error">{localError}</Alert>}
@@ -808,7 +1044,7 @@ function AddPersonDialog({ open, loading, error, title, onClose, onSubmit }: Add
           Anuluj
         </Button>
         <Button variant="contained" onClick={handleSave} disabled={loading}>
-          {loading ? <CircularProgress size={18} /> : "Zapisz"}
+          {loading ? <CircularProgress size={18} /> : (submitLabel ?? "Zapisz")}
         </Button>
       </DialogActions>
     </Dialog>
