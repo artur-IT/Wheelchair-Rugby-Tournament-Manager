@@ -73,6 +73,31 @@ describe("TeamNewPlayer", () => {
     expect(screen.getByRole("progressbar")).toBeInTheDocument();
   });
 
+  it("blocks save and shows errors when form data is invalid", async () => {
+    const onSave = vi.fn();
+    const invalidPlayer: PlayerRow = { id: "x", firstName: "", lastName: "", classification: 0, number: 0 };
+
+    render(
+      <TeamNewPlayer
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        playerActionError={null}
+        playerActionLoading={false}
+        newPlayerForm={invalidPlayer}
+        setNewPlayerForm={vi.fn()}
+      />
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Dodaj zawodnika" }));
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText("Imię jest wymagane")).toBeInTheDocument();
+    expect(screen.getByText("Nazwisko jest wymagane")).toBeInTheDocument();
+    expect(screen.getByText("Klasyfikacja: 0.5–3.5")).toBeInTheDocument();
+    expect(screen.getByText("Numer: 1–99")).toBeInTheDocument();
+  });
+
   it("invokes callbacks for actions", async () => {
     const onClose = vi.fn();
     const onSave = vi.fn();

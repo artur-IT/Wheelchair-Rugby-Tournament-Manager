@@ -77,6 +77,24 @@ export const requiredSeasonNameSchema = z
   .min(1, "Nazwa sezonu jest wymagana")
   .max(MAX_LONG_TEXT, `Nazwa sezonu nie może przekraczać ${MAX_LONG_TEXT} znaków`);
 
+// ─── Player fields (classification, number) ───────────────────────────────────
+
+/** Player classification: 0.5–4.0 in steps of 0.5. */
+export const playerClassificationSchema = z
+  .number()
+  .min(0.5, "Klasyfikacja: 0.5–3.5")
+  .max(3.5, "Klasyfikacja: 0.5–3.5")
+  .refine((v) => v % 0.5 === 0, "Klasyfikacja: 0.5–3.5");
+
+/** Player jersey number: integer 1–99. */
+export const playerNumberSchema = z
+  .number()
+  .int("Numer musi być liczbą całkowitą")
+  .min(1, "Numer: 1–99")
+  .max(99, "Numer: 1–99");
+
+// ─── Long text fields (team name, address, website URL, season name) — max 150 chars ──
+
 /** Optional website URL: accepts empty string or a valid URL up to 150 characters. */
 export const optionalWebsiteUrlSchema = z
   .string()

@@ -1,4 +1,5 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
+import { z } from "zod/v4";
 import {
   Alert,
   Button,
@@ -10,6 +11,21 @@ import {
   Grid,
   TextField,
 } from "@mui/material";
+import {
+  requiredFirstNameSchema,
+  requiredLastNameSchema,
+  playerClassificationSchema,
+  playerNumberSchema,
+} from "@/lib/validateInputs";
+
+const playerSchema = z.object({
+  firstName: requiredFirstNameSchema,
+  lastName: requiredLastNameSchema,
+  classification: playerClassificationSchema,
+  number: playerNumberSchema,
+});
+
+type PlayerErrors = Partial<Record<"firstName" | "lastName" | "classification" | "number", string>>;
 
 export interface PlayerRow {
   id: string;
@@ -38,8 +54,31 @@ export default function TeamNewPlayer({
   newPlayerForm,
   setNewPlayerForm,
 }: TeamNewPlayerProps) {
+  const [formErrors, setFormErrors] = useState<PlayerErrors>({});
+
+  const handleSave = () => {
+    if (!newPlayerForm) return;
+    const result = playerSchema.safeParse(newPlayerForm);
+    if (!result.success) {
+      const errors: PlayerErrors = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof PlayerErrors;
+        if (!errors[field]) errors[field] = issue.message;
+      }
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors({});
+    onSave();
+  };
+
+  const handleClose = () => {
+    setFormErrors({});
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={playerActionLoading ? undefined : onClose} maxWidth="xs" fullWidth>
+    <Dialog open={open} onClose={playerActionLoading ? undefined : handleClose} maxWidth="xs" fullWidth>
       <DialogTitle>Dodaj zawodnika</DialogTitle>
       <DialogContent>
         {playerActionError && (
@@ -59,6 +98,8 @@ export default function TeamNewPlayer({
                   required
                   fullWidth
                   size="small"
+                  error={!!formErrors.firstName}
+                  helperText={formErrors.firstName}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -69,19 +110,23 @@ export default function TeamNewPlayer({
                   required
                   fullWidth
                   size="small"
+                  error={!!formErrors.lastName}
+                  helperText={formErrors.lastName}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Klasyfikacja"
                   type="number"
-                  inputProps={{ step: 0.5, min: 0.5, max: 4.0, inputMode: "decimal" }}
+                  inputProps={{ step: 0.5, min: 0.5, max: 3.5, inputMode: "decimal" }}
                   value={newPlayerForm.classification}
                   onChange={(e) =>
                     setNewPlayerForm((form) => (form ? { ...form, classification: parseFloat(e.target.value) } : form))
                   }
                   fullWidth
                   size="small"
+                  error={!!formErrors.classification}
+                  helperText={formErrors.classification}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -95,6 +140,8 @@ export default function TeamNewPlayer({
                   }
                   fullWidth
                   size="small"
+                  error={!!formErrors.number}
+                  helperText={formErrors.number}
                 />
               </Grid>
             </Grid>
@@ -102,10 +149,10 @@ export default function TeamNewPlayer({
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={playerActionLoading}>
+        <Button onClick={handleClose} disabled={playerActionLoading}>
           Anuluj
         </Button>
-        <Button variant="contained" onClick={onSave} disabled={playerActionLoading || !newPlayerForm}>
+        <Button variant="contained" onClick={handleSave} disabled={playerActionLoading || !newPlayerForm}>
           {playerActionLoading ? <CircularProgress size={24} /> : "Dodaj zawodnika"}
         </Button>
       </DialogActions>

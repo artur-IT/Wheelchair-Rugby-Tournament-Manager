@@ -16,7 +16,7 @@ describe("AppShell", () => {
       </AppShell>
     );
 
-    expect(screen.getByText("Wheelchair Rugby")).toBeInTheDocument();
+    expect(screen.getAllByText("Wheelchair Rugby Manager").length).toBeGreaterThan(0);
     expect(screen.getByText("Test child content")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Turnieje" })).toHaveAttribute("href", "/tournaments");
   });

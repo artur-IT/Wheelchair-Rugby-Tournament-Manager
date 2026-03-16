@@ -52,8 +52,8 @@ export default function AppShell({ children, currentPath }: AppShellProps) {
         <Avatar sx={{ bgcolor: "primary.main", width: 40, height: 40 }}>
           <Trophy size={24} />
         </Avatar>
-        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-          Wheelchair Rugby
+        <Typography variant="h6" sx={{ fontWeight: "bold", lineHeight: 1.2 }}>
+          Wheelchair Rugby Manager
         </Typography>
       </Box>
 
