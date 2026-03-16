@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { json } from "@/lib/api";
 import { createTeam } from "@/lib/teams";
+import { toTitleCase } from "@/lib/validateInputs";
 
 const CreateTeamSchema = z
   .object({
@@ -34,12 +35,20 @@ const CreateTeamSchema = z
   })
   .transform((o) => ({
     ...o,
+    name: toTitleCase(o.name),
+    address: toTitleCase(o.address),
+    contactFirstName: toTitleCase(o.contactFirstName),
+    contactLastName: toTitleCase(o.contactLastName),
     websiteUrl: (o.websiteUrl?.trim() || undefined) as string | undefined,
     coachId: o.coachId?.trim() || undefined,
     refereeId: o.refereeId?.trim() || undefined,
+    staff: o.staff?.map((s) => ({
+      firstName: toTitleCase(s.firstName),
+      lastName: toTitleCase(s.lastName),
+    })),
     players: o.players?.map((p) => ({
-      firstName: p.firstName.trim(),
-      lastName: p.lastName.trim(),
+      firstName: toTitleCase(p.firstName),
+      lastName: toTitleCase(p.lastName),
       classification:
         typeof p.classification === "number" && !Number.isNaN(p.classification) ? p.classification : undefined,
       number: typeof p.number === "number" && !Number.isNaN(p.number) ? Math.floor(p.number) : undefined,

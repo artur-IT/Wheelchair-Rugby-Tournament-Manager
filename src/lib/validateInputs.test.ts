@@ -1,6 +1,28 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizePhone } from "./validateInputs";
+import { sanitizePhone, toTitleCase } from "./validateInputs";
+
+describe("toTitleCase", () => {
+  it("capitalises first letter of each word", () => {
+    expect(toTitleCase("artur mati")).toBe("Artur Mati");
+  });
+
+  it("lowercases ALL-CAPS input", () => {
+    expect(toTitleCase("ARTUR MATI")).toBe("Artur Mati");
+  });
+
+  it("handles single word", () => {
+    expect(toTitleCase("kowalski")).toBe("Kowalski");
+  });
+
+  it("trims leading and trailing spaces", () => {
+    expect(toTitleCase("  jan  ")).toBe("Jan");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(toTitleCase("")).toBe("");
+  });
+});
 
 describe("sanitizePhone", () => {
   it("strips non-digit characters", () => {

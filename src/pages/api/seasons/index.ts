@@ -2,12 +2,15 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { json } from "@/lib/api";
+import { toTitleCase } from "@/lib/validateInputs";
 
-const CreateSeasonSchema = z.object({
-  name: z.string().min(1),
-  year: z.number().int(),
-  description: z.string().optional(),
-});
+const CreateSeasonSchema = z
+  .object({
+    name: z.string().min(1),
+    year: z.number().int(),
+    description: z.string().optional(),
+  })
+  .transform((o) => ({ ...o, name: toTitleCase(o.name) }));
 
 export const GET: APIRoute = async () => {
   const seasons = await prisma.season.findMany({

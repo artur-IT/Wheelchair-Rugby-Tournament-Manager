@@ -2,16 +2,19 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { json } from "@/lib/api";
+import { toTitleCase } from "@/lib/validateInputs";
 
 function isNotFound(e: unknown) {
   return typeof e === "object" && e !== null && "code" in e && (e as { code: string }).code === "P2025";
 }
 
-const UpdateSeasonSchema = z.object({
-  name: z.string().min(1).optional(),
-  year: z.number().int().optional(),
-  description: z.string().optional(),
-});
+const UpdateSeasonSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    year: z.number().int().optional(),
+    description: z.string().optional(),
+  })
+  .transform((o) => ({ ...o, name: o.name ? toTitleCase(o.name) : undefined }));
 
 export const GET: APIRoute = async ({ params }) => {
   const season = await prisma.season.findUnique({

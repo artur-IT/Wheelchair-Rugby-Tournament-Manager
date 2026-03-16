@@ -1,5 +1,15 @@
 import { z } from "zod/v4";
 
+// ─── Text normalisation ────────────────────────────────────────────────────────
+
+/** Capitalises the first letter of every word; lowercases the rest. */
+export function toTitleCase(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 // ─── Phone fields ──────────────────────────────────────────────────────────────
 
 /** Strips non-digits and limits to 9 characters as the user types. */

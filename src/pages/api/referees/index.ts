@@ -3,6 +3,7 @@ import { z } from "zod";
 import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { createReferee } from "@/lib/referees";
+import { toTitleCase } from "@/lib/validateInputs";
 
 const CreateRefereeSchema = z
   .object({
@@ -13,8 +14,8 @@ const CreateRefereeSchema = z
     seasonId: z.string().min(1, "SeasonId jest wymagany"),
   })
   .transform((o) => ({
-    firstName: o.firstName.trim(),
-    lastName: o.lastName.trim(),
+    firstName: toTitleCase(o.firstName),
+    lastName: toTitleCase(o.lastName),
     email: (o.email?.trim() || undefined) as string | undefined,
     phone: (o.phone?.trim() || undefined) as string | undefined,
     seasonId: o.seasonId,
