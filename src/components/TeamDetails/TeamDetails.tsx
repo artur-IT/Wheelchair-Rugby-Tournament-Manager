@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Link,
 } from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
@@ -303,7 +304,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       id: crypto.randomUUID(),
       firstName: "",
       lastName: "",
-      classification: 0,
+      classification: undefined,
       number: 0,
     });
     setAddingNewPlayer(true);
@@ -373,7 +374,26 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
           <Typography variant="h3" sx={{ fontWeight: 900 }}>
             {team.name}
           </Typography>
-          <Typography color="textSecondary">{team.address ?? "Brak adresu"}</Typography>
+          {team.websiteUrl ? (
+            <Link
+              href={
+                team.websiteUrl.startsWith("http://") || team.websiteUrl.startsWith("https://")
+                  ? team.websiteUrl
+                  : `https://${team.websiteUrl}`
+              }
+              target="_blank"
+              rel="noreferrer"
+              underline="hover"
+            >
+              <Typography color="textSecondary">{team.websiteUrl}</Typography>
+            </Link>
+          ) : (
+            <Typography color="textSecondary">Nie podano strony internetowej</Typography>
+          )}
+          <Typography color="textSecondary">
+            {team.city && team.postalCode ? `${team.postalCode} ${team.city} ` : "Nie podano miasta"}
+          </Typography>
+          <Typography color="textSecondary">{team.address ?? "Nie podano adresu"}</Typography>
         </Box>
         <Box sx={{ display: "flex", gap: 1.5 }}>
           <Button
@@ -648,6 +668,12 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
                   {team.referee ? `${team.referee.firstName} ${team.referee.lastName}` : "Nie przypisano"}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" display="block">
+                  {`Email: ${team.referee?.email ?? "-"}`}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" display="block">
+                  {`Tel.: ${team.referee?.phone ?? "-"}`}
                 </Typography>
               </Box>
             </Box>

@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "zod";
 import { json } from "@/lib/api";
 import { createCoach } from "@/lib/coaches";
+import { toTitleCase } from "@/lib/validateInputs";
 
 const CreateCoachSchema = z
   .object({
@@ -12,8 +13,8 @@ const CreateCoachSchema = z
     seasonId: z.string().min(1, "SeasonId jest wymagany"),
   })
   .transform((o) => ({
-    firstName: o.firstName.trim(),
-    lastName: o.lastName.trim(),
+    firstName: toTitleCase(o.firstName),
+    lastName: toTitleCase(o.lastName),
     email: (o.email?.trim() || undefined) as string | undefined,
     phone: (o.phone?.trim() || undefined) as string | undefined,
     seasonId: o.seasonId,
