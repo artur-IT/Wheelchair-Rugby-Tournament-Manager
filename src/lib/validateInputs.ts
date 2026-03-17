@@ -102,6 +102,11 @@ export const requiredSeasonNameSchema = z
   .min(1, "Nazwa sezonu jest wymagana")
   .max(MAX_LONG_TEXT, `Nazwa sezonu nie może przekraczać ${MAX_LONG_TEXT} znaków`);
 
+export const optionalParkingSchema = z
+  .string()
+  .max(MAX_LONG_TEXT, `Parking nie może przekraczać ${MAX_LONG_TEXT} znaków`)
+  .optional();
+
 // ─── Player fields (classification, number) ───────────────────────────────────
 
 /** Player classification: 0.5–3.5 in steps of 0.5. */
@@ -160,14 +165,14 @@ export const requiredHallNameSchema = z
   .min(3, "Nazwa hali musi mieć co najmniej 3 znaki")
   .max(MAX_LONG_TEXT, `Nazwa hali nie może przekraczać ${MAX_LONG_TEXT} znaków`);
 
-/** Optional map link: accepts empty string or a valid URL up to 150 characters. */
+/** Optional map link: accepts empty string or a loose domain/URL up to 150 characters. */
 export const optionalMapLinkSchema = z
   .union([
     z.literal(""),
     z
       .string()
-      .url("Link do mapy musi być prawidłowym URL-em")
-      .max(MAX_LONG_TEXT, `Link do mapy nie może przekraczać ${MAX_LONG_TEXT} znaków`),
+      .max(MAX_LONG_TEXT, `Link do mapy nie może przekraczać ${MAX_LONG_TEXT} znaków`)
+      .refine((v) => LOOSE_URL_REGEX.test(v), "Link do mapy musi być prawidłowym URL-em"),
   ])
   .optional();
 
@@ -187,6 +192,7 @@ export const tournamentFormSchema = z
     street: requiredAddressSchema,
     mapLink: optionalMapLinkSchema,
     catering: requiredCateringSchema,
+    parking: optionalParkingSchema,
     hallName: requiredHallNameSchema,
     hallMapLink: optionalMapLinkSchema,
   })

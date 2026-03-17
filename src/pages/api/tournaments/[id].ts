@@ -1,0 +1,94 @@
+import type { APIRoute } from "astro";
+import { z } from "zod";
+import { json } from "@/lib/api";
+import {
+  requiredCateringSchema,
+  requiredCitySchema,
+  requiredHallNameSchema,
+  requiredHotelNameSchema,
+  requiredPostalCodeSchema,
+  requiredTournamentNameSchema,
+  requiredAddressSchema,
+  optionalMapLinkSchema,
+  optionalParkingSchema,
+} from "@/lib/validateInputs";
+import { listTournamentsWithDetails, updateTournamentWithDetails } from "@/lib/tournaments";
+
+const TournamentPayloadSchema = z
+  .object({
+    name: requiredTournamentNameSchema,
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime().optional().nullable(),
+    hotel: requiredHotelNameSchema,
+    city: requiredCitySchema,
+    zipCode: requiredPostalCodeSchema,
+    street: requiredAddressSchema,
+    mapLink: optionalMapLinkSchema,
+    catering: requiredCateringSchema,
+    parking: optionalParkingSchema,
+    hallName: requiredHallNameSchema,
+    hallMapLink: optionalMapLinkSchema,
+  })
+  .refine(
+    (data) => {
+      if (!data.endDate) return true;
+      return new Date(data.endDate) > new Date(data.startDate);
+    },
+    {
+      message: "Data zakończenia musi być później niż data rozpoczęcia",
+      path: ["endDate"],
+    }
+  );
+
+export const GET: APIRoute = async ({ params }) => {
+  const { id } = params;
+  if (!id) return json({ error: "Brak id turnieju" }, 400);
+
+  const tournaments = await listTournamentsWithDetails();
+  const tournament = tournaments.find((t) => t.id === id) ?? null;
+
+  if (!tournament) {
+    return json({ error: "Nie znaleziono turnieju" }, 404);
+  }
+
+  return json(tournament);
+};
+
+export const PUT: APIRoute = async ({ params, request }) => {
+  const { id } = params;
+  if (!id) return json({ error: "Brak id turnieju" }, 400);
+
+  const body = await request.json().catch(() => null);
+  const parsed = TournamentPayloadSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return json({ error: parsed.error.flatten() }, 400);
+  }
+
+  const payload = parsed.data;
+
+  try {
+    await updateTournamentWithDetails(id, {
+      name: payload.name,
+      startDate: new Date(payload.startDate),
+      endDate: payload.endDate ? new Date(payload.endDate) : undefined,
+      hotel: payload.hotel,
+      city: payload.city,
+      zipCode: payload.zipCode,
+      street: payload.street,
+      mapLink: payload.mapLink ?? "",
+      catering: payload.catering,
+      parking: payload.parking ?? "",
+      hallName: payload.hallName,
+      hallMapLink: payload.hallMapLink ?? "",
+    });
+
+    return json({ ok: true }, 200);
+  } catch (error) {
+    if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {
+      return json({ error: "Nie znaleziono turnieju" }, 404);
+    }
+
+    return json({ error: "Nie udało się zapisać turnieju" }, 500);
+  }
+};
