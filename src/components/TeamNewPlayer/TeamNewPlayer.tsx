@@ -95,7 +95,6 @@ export default function TeamNewPlayer({
                   label="Imię"
                   value={newPlayerForm.firstName}
                   onChange={(e) => setNewPlayerForm((form) => (form ? { ...form, firstName: e.target.value } : form))}
-                  required
                   fullWidth
                   size="small"
                   error={!!formErrors.firstName}
@@ -107,7 +106,6 @@ export default function TeamNewPlayer({
                   label="Nazwisko"
                   value={newPlayerForm.lastName}
                   onChange={(e) => setNewPlayerForm((form) => (form ? { ...form, lastName: e.target.value } : form))}
-                  required
                   fullWidth
                   size="small"
                   error={!!formErrors.lastName}
@@ -118,7 +116,7 @@ export default function TeamNewPlayer({
                 <TextField
                   label="Klasyfikacja"
                   type="number"
-                  inputProps={{ step: 0.5, min: 0.5, max: 3.5, inputMode: "decimal" }}
+                  inputProps={{ inputMode: "decimal" }}
                   value={newPlayerForm.classification ?? ""}
                   onChange={(e) => {
                     const val = e.target.value === "" ? undefined : parseFloat(e.target.value);
@@ -134,7 +132,7 @@ export default function TeamNewPlayer({
                 <TextField
                   label="Numer"
                   type="number"
-                  inputProps={{ min: 1, max: 99, inputMode: "numeric" }}
+                  inputProps={{ inputMode: "numeric" }}
                   value={newPlayerForm.number}
                   onChange={(e) =>
                     setNewPlayerForm((form) => (form ? { ...form, number: Number(e.target.value) } : form))

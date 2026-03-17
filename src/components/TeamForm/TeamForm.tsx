@@ -518,7 +518,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              type="email"
               label="Email"
               {...register("contactEmail")}
               error={!!errors.contactEmail}
@@ -529,7 +528,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              type="tel"
               label="Telefon"
               {...contactPhoneField}
               placeholder="9 cyfr"
@@ -551,7 +549,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              required
               label="Imię"
               {...register("coachFirstName")}
               error={!!errors.coachFirstName}
@@ -563,7 +560,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
             <TextField
               fullWidth
               label="Nazwisko"
-              required
               {...register("coachLastName")}
               error={!!errors.coachLastName}
               helperText={errors.coachLastName?.message}
@@ -573,7 +569,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              type="email"
               label="Email"
               {...register("coachEmail")}
               error={!!errors.coachEmail}
@@ -583,7 +578,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              type="tel"
               label="Telefon"
               {...coachPhoneField}
               placeholder="9 cyfr"
@@ -620,7 +614,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              type="email"
               label="Email (opcjonalnie)"
               {...register("refereeEmail")}
               error={!!errors.refereeEmail}
@@ -630,7 +623,6 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              type="tel"
               label="Telefon (opcjonalnie)"
               {...refereePhoneField}
               placeholder="9 cyfr"
@@ -708,7 +700,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
                 fullWidth
                 size="small"
                 type="number"
-                inputProps={{ min: 0.5, max: 4.0, step: 0.5, inputMode: "decimal" }}
+                inputProps={{ inputMode: "decimal" }}
                 label="Klasyfikacja"
                 value={p.classification}
                 onChange={(e) => updatePlayer(p.id, "classification", e.target.value)}
@@ -719,7 +711,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
                 fullWidth
                 size="small"
                 type="number"
-                inputProps={{ min: 1, max: 99, inputMode: "numeric" }}
+                inputProps={{ inputMode: "numeric" }}
                 label="Numer"
                 value={p.number}
                 onChange={(e) => updatePlayer(p.id, "number", e.target.value)}

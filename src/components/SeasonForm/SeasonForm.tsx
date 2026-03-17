@@ -110,8 +110,6 @@ function SeasonFormContent({ id }: Props) {
           <TextField
             fullWidth
             label="Rok"
-            type="number"
-            required
             {...register("year")}
             error={!!errors.year}
             helperText={errors.year?.message}

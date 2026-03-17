@@ -26,25 +26,21 @@ function TournamentFormContent() {
       >
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField required fullWidth label="Nazwa Turnieju" placeholder="np. Turniej Jesienny" />
+            <TextField fullWidth label="Nazwa Turnieju" placeholder="np. Turniej Jesienny" />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField fullWidth label="Wyżywienie" placeholder="np. Catering na hali" />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              required
               fullWidth
-              type="date"
               label="Data Rozpoczęcia"
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              required
               fullWidth
-              type="date"
               label="Data Zakończenia"
               slotProps={{ inputLabel: { shrink: true } }}
             />
@@ -57,13 +53,13 @@ function TournamentFormContent() {
         </Typography>
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField required fullWidth label="Nazwa Hali" />
+            <TextField fullWidth label="Nazwa Hali" />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField required fullWidth label="Adres Hali" />
+            <TextField fullWidth label="Adres Hali" />
           </Grid>
           <Grid size={12}>
-            <TextField fullWidth type="url" label="Link do Mapy (Hala)" />
+            <TextField fullWidth label="Link do Mapy (Hala)" />
           </Grid>
         </Grid>
 

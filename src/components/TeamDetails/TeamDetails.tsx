@@ -442,7 +442,6 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                 label="Imię"
                 value={editForm.firstName}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, firstName: e.target.value } : f))}
-                required
                 fullWidth
                 size="small"
               />
@@ -450,14 +449,13 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                 label="Nazwisko"
                 value={editForm.lastName}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, lastName: e.target.value } : f))}
-                required
                 fullWidth
                 size="small"
               />
               <TextField
                 label="Klasyfikacja"
                 type="number"
-                inputProps={{ step: 0.5, min: 0.5, max: 4.0, inputMode: "decimal" }}
+                inputProps={{ inputMode: "decimal" }}
                 value={editForm.classification}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, classification: e.target.value } : f))}
                 fullWidth
@@ -466,7 +464,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
               <TextField
                 label="Numer"
                 type="number"
-                inputProps={{ min: 1, max: 99, inputMode: "numeric" }}
+                inputProps={{ inputMode: "numeric" }}
                 value={editForm.number}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, number: e.target.value } : f))}
                 fullWidth
