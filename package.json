@@ -13,7 +13,10 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "dev:full": "concurrently \"npm run dev\" \"npx prisma studio\" \"npm run test:watch\"",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:clear": "node scripts/clearDb.mjs",
+    "db:seed": "node scripts/seedDb.mjs",
+    "db:reset-data": "pnpm run db:clear && pnpm run db:seed"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.1",

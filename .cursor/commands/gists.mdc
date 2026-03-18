@@ -2,8 +2,23 @@
 alwaysApply: false
 ---
 
-Połącz się z moim GitHub Gist, wejdź w Daily Notes i na wzór już istniejących plików i na podstawie wszystkich commitów z danego dnia w repozytorium dodaj kolejne bardzo krótkie podsumowanie dnia. Jeśli dzisiaj jest piątek lub sobota, to stwórz krótkie podsumowanie tygodnia dodając krótką sekcję: co warto zapamiętać w kontekście nauki frontendu?
+## Instrukcja dla agenta AI: dopisanie podsumowania dnia do Daily Notes w GitHub Gist
 
-**Konfiguracja:** W .env ustaw token: `GITHUB_GIST_TOKEN` lub `GIST_TOKEN`. Aby skrypt znalazł Daily Notes bez przeglądania listy gistów, ustaw też `GIST_ID` (ID z URL gista, np. `https://gist.github.com/artur-IT` ).
+Wykonaj poniższe kroki.
 
-**Skrypt:** `node src/lib/updateDailyNotesGist.mjs "treść podsumowania"` — dopisuje wpis z datą i etykietą (dzień/tydzień) do pliku Daily Notes w gistcie.
+- **Połącz się z GitHub Gists użytkownika** — użyj GitHub API (https://api.github.com/gists). Token: zmienna środowiskowa `GITHUB_GIST_TOKEN` z pliku `.env`. Opcjonalnie `GITHUB_DAILY_NOTES_GIST_URL` (URL gista) pozwala od razu otworzyć konkretny gist bez listowania wszystkich.
+
+- **Znajdź wszystkie gisty w sekcji „Daily Notes”** — pobierz listę gistów (`GET /gists`)
+
+- **W tym gistcie znajdź plik dotyczący prac w bieżącym tygodniu** — plik zawierający nazwę week-N.md i numer tygodnia (np. `week-3.md`).
+
+- **Na podstawie commitów w tym repozytorium z dnia który ci podałem w prompcie** przygotuj **podsumowanie prac dnia** wzorując się na podsumowaniach z pliku week-2.md
+
+- **Dopisz do wybranego pliku tygodnia na wzór wcześniejszych wpisów w tym pliku**:
+  - nowy wpis z odpowiednią datą,
+  - krótkie podsumowanie dnia (na wzór już istniejących wpisów w tym pliku),
+  - na końcu **bardzo krótką sekcję**: co warto zapamiętać w kontekście nauki frontendu (1–2 zdania) i wyróżnij je kolorem.
+
+- **Zaktualizuj gist** — wyślij `PATCH /gists/:gist_id` z zaktualizowaną treścią pliku (obecna zawartość + nowy wpis).
+
+**Konfiguracja w `.env`:** `GITHUB_GIST_TOKEN` lub `GIST_TOKEN`; opcjonalnie `GIST_ID` (ID z URL gista, np. z `https://gist.github.com/username/abc123` → `abc123`).

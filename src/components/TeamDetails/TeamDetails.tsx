@@ -545,6 +545,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                     <TableCell sx={{ fontWeight: "bold" }}>Imię i Nazwisko</TableCell>
                     <TableCell sx={{ fontWeight: "bold" }}>Klasyfikacja</TableCell>
                     <TableCell sx={{ fontWeight: "bold" }}>Numer</TableCell>
+                    <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Operacje</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -560,11 +561,11 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                         <TableCell>
                           {p.firstName} {p.lastName}
                         </TableCell>
-                        <TableCell>
+                        <TableCell align="center">
                           <Chip label={p.classification?.toFixed(1) ?? "-"} size="small" variant="outlined" />
                         </TableCell>
-                        <TableCell>{p.number ?? "Nie podano"}</TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">{p.number ?? "Nie podano"}</TableCell>
+                        <TableCell align="center">
                           <Button size="small" color="primary" onClick={() => handleEditPlayer(p)}>
                             Edytuj
                           </Button>
