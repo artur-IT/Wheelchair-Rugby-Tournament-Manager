@@ -174,3 +174,17 @@ export async function updateTournamentWithDetails(tournamentId: string, form: To
     return tournamentId;
   });
 }
+
+export async function deleteTournament(tournamentId: string) {
+  const existing = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    throw new Error("TOURNAMENT_NOT_FOUND");
+  }
+
+  await prisma.tournament.delete({ where: { id: tournamentId } });
+  return tournamentId;
+}

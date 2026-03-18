@@ -538,7 +538,7 @@ To jest profesjonalizm. **Max. 2 taski w Progress**.
   - [ ] Integracja z API (np. `GET/POST/PATCH/DELETE /tournaments`).
   - [ ] Obsługa stanów: loading / empty / error / success.
 - Backend / API
-  - [ ] Model/encja `Tournament` + podstawowe pola (np. nazwa, daty, miejsce — do ustalenia).
+  - [ x ] Model/encja `Tournament` + podstawowe pola (np. nazwa, daty, miejsce — do ustalenia).
   - [ ] Endpointy CRUD dla turniejów.
 - Testy
   - [ ] Scenariusze CRUD turnieju + walidacja + błędy API.

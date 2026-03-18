@@ -12,7 +12,7 @@ import {
   optionalMapLinkSchema,
   optionalParkingSchema,
 } from "@/lib/validateInputs";
-import { listTournamentsWithDetails, updateTournamentWithDetails } from "@/lib/tournaments";
+import { deleteTournament, listTournamentsWithDetails, updateTournamentWithDetails } from "@/lib/tournaments";
 
 const TournamentPayloadSchema = z
   .object({
@@ -95,5 +95,22 @@ export const PUT: APIRoute = async ({ params, request }) => {
     }
 
     return json({ error: "Nie udało się zapisać turnieju" }, 500);
+  }
+};
+
+export const DELETE: APIRoute = async ({ params }) => {
+  const { id } = params;
+  if (!id) return json({ error: "Brak id turnieju" }, 400);
+
+  try {
+    await deleteTournament(id);
+    return json({ ok: true }, 200);
+  } catch (error) {
+    if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {
+      return json({ error: "Nie znaleziono turnieju" }, 404);
+    }
+
+    console.error("Failed to delete tournament:", error);
+    return json({ error: "Nie udało się usunąć turnieju" }, 500);
   }
 };
