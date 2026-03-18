@@ -867,7 +867,7 @@ export function AddPersonDialog({
           {error && <Alert severity="error">{error}</Alert>}
           <TextField label="Imię" value={form.firstName} onChange={handleChange("firstName")} />
           <TextField label="Nazwisko" value={form.lastName} onChange={handleChange("lastName")} />
-          <TextField label="Email" value={form.email} onChange={handleChange("email")} />
+          <TextField label="Email" type="email" value={form.email} onChange={handleChange("email")} />
           <TextField
             label="Telefon"
             placeholder="9 cyfr"

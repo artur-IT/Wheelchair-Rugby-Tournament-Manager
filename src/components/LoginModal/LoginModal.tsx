@@ -61,7 +61,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
             label="PIN"
             type="password"
             autoComplete="current-password"
-            required={true}
+            required
             fullWidth
             sx={{ mb: 2 }}
           />

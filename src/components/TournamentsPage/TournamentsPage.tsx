@@ -50,6 +50,7 @@ function TournamentsContent() {
         }
 
         const data: Tournament[] = await res.json();
+        if (controller.signal.aborted) return;
         setTournaments(data);
       } catch (err) {
         if (controller.signal.aborted) return;
@@ -64,6 +65,19 @@ function TournamentsContent() {
     loadTournaments();
     return () => controller.abort();
   }, []);
+
+  function getTournamentStatus(
+    startDate: string,
+    endDate?: string
+  ): { label: string; color: "primary" | "success" | "default" } {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : start;
+
+    if (now < start) return { label: "Nadchodzący", color: "primary" };
+    if (now > end) return { label: "Zakończony", color: "default" };
+    return { label: "W trakcie", color: "success" };
+  }
 
   return (
     <Box>
@@ -123,7 +137,12 @@ function TournamentsContent() {
                   }}
                 >
                   <CardContent sx={{ flex: 1 }}>
-                    <Chip label="Nadchodzący" color="primary" size="small" sx={{ mb: 2 }} />
+                    <Chip
+                      label={getTournamentStatus(t.startDate, t.endDate).label}
+                      color={getTournamentStatus(t.startDate, t.endDate).color}
+                      size="small"
+                      sx={{ mb: 2 }}
+                    />
                     <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                       {t.name}
                     </Typography>

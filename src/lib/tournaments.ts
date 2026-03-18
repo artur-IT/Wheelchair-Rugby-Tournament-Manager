@@ -61,9 +61,9 @@ export async function listTournamentsWithDetails(): Promise<Tournament[]> {
   const tournaments = await prisma.tournament.findMany({
     orderBy: { startDate: "asc" },
     include: {
-      venues: true,
-      accommodations: true,
-      mealPlans: true,
+      venues: { orderBy: { id: "asc" } },
+      accommodations: { orderBy: { id: "asc" } },
+      mealPlans: { orderBy: { id: "asc" } },
       volunteers: true,
     },
   });

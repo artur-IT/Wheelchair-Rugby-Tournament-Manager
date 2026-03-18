@@ -68,8 +68,8 @@ async function run() {
 
   const oldContent = files[weekKey]?.content || "";
 
-  const hasMon = oldContent.includes("2026-03-16") || oldContent.includes("## 2026-03-16");
-  const hasTue = oldContent.includes("2026-03-17") || oldContent.includes("## 2026-03-17");
+  const hasMon = oldContent.includes("2026-03-16");
+  const hasTue = oldContent.includes("2026-03-17");
 
   let newContent = oldContent;
   if (!hasMon) newContent += entryMon;

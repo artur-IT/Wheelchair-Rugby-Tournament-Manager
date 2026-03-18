@@ -44,7 +44,11 @@ describe("tournamentFormMapping", () => {
 
     expect(defaults.startDate).toBeInstanceOf(Date);
     expect(defaults.endDate).toBeInstanceOf(Date);
-    expect(defaults.startDate.toISOString().slice(0, 10)).toBe("2024-05-10");
-    expect(defaults.endDate.toISOString().slice(0, 10)).toBe("2024-05-12");
+    expect(defaults.startDate.getFullYear()).toBe(2024);
+    expect(defaults.startDate.getMonth()).toBe(4); // 0-indexed
+    expect(defaults.startDate.getDate()).toBe(10);
+    expect(defaults.endDate.getFullYear()).toBe(2024);
+    expect(defaults.endDate.getMonth()).toBe(4);
+    expect(defaults.endDate.getDate()).toBe(12);
   });
 });

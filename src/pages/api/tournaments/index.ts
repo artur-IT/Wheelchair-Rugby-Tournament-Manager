@@ -40,8 +40,13 @@ const TournamentPayloadSchema = z
   );
 
 export const GET: APIRoute = async () => {
-  const tournaments = await listTournamentsWithDetails();
-  return json(tournaments);
+  try {
+    const tournaments = await listTournamentsWithDetails();
+    return json(tournaments);
+  } catch (error) {
+    console.error("Failed to get tournaments:", error);
+    return json({ error: "Nie udało się pobrać turniejów." }, 500);
+  }
 };
 
 export const POST: APIRoute = async ({ request }) => {

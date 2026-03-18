@@ -33,6 +33,7 @@ const playerNumberLimitError = `Numer zawodnika nie może być większy niż ${M
 
 function getPlayerNumberError(number?: number) {
   if (number === undefined || number === null) return null;
+  if (number < 0) return "Numer zawodnika nie może być ujemny";
   return number > MAX_PLAYER_NUMBER ? playerNumberLimitError : null;
 }
 
