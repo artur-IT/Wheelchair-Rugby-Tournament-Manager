@@ -738,11 +738,9 @@ function PersonnelTable({ title, data, onAddClick, onEdit, onDelete, deletingId 
           <TableHead>
             <TableRow sx={{ bgcolor: "grey.100" }}>
               <TableCell sx={{ fontWeight: "bold" }}>Imię i Nazwisko</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Telefon</TableCell>
-              <TableCell align="right" sx={{ fontWeight: "bold" }}>
-                Akcje
-              </TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Telefon</TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Operacje</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -751,9 +749,9 @@ function PersonnelTable({ title, data, onAddClick, onEdit, onDelete, deletingId 
                 <TableCell>
                   {p.firstName} {p.lastName}
                 </TableCell>
-                <TableCell>{p.email ?? "-"}</TableCell>
-                <TableCell>{p.phone ?? "-"}</TableCell>
-                <TableCell align="right">
+                <TableCell align="center">{p.email ?? "-"}</TableCell>
+                <TableCell align="center">{p.phone ?? "-"}</TableCell>
+                <TableCell align="center">
                   <Button size="small" color="primary" onClick={() => onEdit?.(p)} disabled={!onEdit}>
                     Edytuj
                   </Button>
@@ -872,7 +870,6 @@ export function AddPersonDialog({
           <TextField label="Email" type="email" value={form.email} onChange={handleChange("email")} />
           <TextField
             label="Telefon"
-            type="tel"
             placeholder="9 cyfr"
             inputMode="numeric"
             value={form.phone}

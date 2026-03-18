@@ -89,6 +89,8 @@ export interface Tournament {
   name: string;
   venue?: SportsHall;
   accommodation?: Accommodation;
+  catering?: string;
+  parking?: string;
   teams: Team[];
   referees: Person[];
   classifiers: Person[];

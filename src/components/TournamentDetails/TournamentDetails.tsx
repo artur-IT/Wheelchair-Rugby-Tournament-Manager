@@ -3,8 +3,7 @@ import { MapPin } from "lucide-react";
 import { Box, Typography, Button, Paper, Link as MuiLink, CircularProgress, Alert } from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
-import { MOCK_TOURNAMENTS, MOCK_REFEREES, MOCK_CLASSIFIERS } from "@/mockData";
-import type { Team } from "@/types";
+import type { Tournament } from "@/types";
 
 interface TournamentDetailsProps {
   id: string;
@@ -21,44 +20,74 @@ export default function TournamentDetails({ id }: TournamentDetailsProps) {
 }
 
 function TournamentDetailsContent({ id }: TournamentDetailsProps) {
-  const tournament = MOCK_TOURNAMENTS.find((t) => t.id === id);
-  const [teamsFromApi, setTeamsFromApi] = useState<Team[]>([]);
-  const [teamsLoading, setTeamsLoading] = useState(true);
-  const [teamsError, setTeamsError] = useState<string | null>(null);
+  const [tournament, setTournament] = useState<Tournament | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch all teams so we can resolve team IDs to names (when tournament.teams are IDs)
   useEffect(() => {
-    if (!tournament) return;
     const controller = new AbortController();
-    async function fetchTeams() {
-      setTeamsLoading(true);
-      setTeamsError(null);
+
+    async function loadTournament() {
+      setLoading(true);
+      setError(null);
       try {
-        const res = await fetch("/api/teams", { signal: controller.signal });
-        if (!res.ok) throw new Error("Nie udało się pobrać drużyn");
-        const data: Team[] = await res.json();
-        setTeamsFromApi(data);
+        const res = await fetch("/api/tournaments", { signal: controller.signal });
+        if (!res.ok) {
+          throw new Error("Nie udało się pobrać turnieju");
+        }
+
+        const data: Tournament[] = await res.json();
+        const found = data.find((t) => t.id === id) ?? null;
+        setTournament(found);
       } catch (err) {
         if (controller.signal.aborted) return;
-        setTeamsError(err instanceof Error ? err.message : "Błąd pobierania drużyn");
+        setError(err instanceof Error ? err.message : "Wystąpił błąd podczas pobierania turnieju");
       } finally {
-        if (!controller.signal.aborted) setTeamsLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
-    fetchTeams();
+
+    loadTournament();
     return () => controller.abort();
-  }, [tournament]);
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mb: 3 }}>
+        {error}
+      </Alert>
+    );
+  }
 
   if (!tournament) {
     return <Typography>Nie znaleziono turnieju.</Typography>;
   }
 
-  // Support both team IDs (string[]) and full Team[] from API
-  const teamIdsOrObjects = (tournament.teams ?? []) as (string | Team)[];
-  const resolvedTeams: (Team | null)[] = teamIdsOrObjects.map((t) =>
-    typeof t === "string" ? (teamsFromApi.find((x) => x.id === t) ?? null) : (t as Team)
-  );
-  const teamsToShow = resolvedTeams.filter((t): t is Team => t != null);
+  const formatDateRange = (start: string, end?: string) => {
+    const startDate = new Date(start);
+    const endDate = end ? new Date(end) : null;
+
+    if (Number.isNaN(startDate.getTime())) {
+      return end && !Number.isNaN(endDate?.getTime() ?? NaN) ? (endDate?.toLocaleDateString("pl-PL") ?? "") : "";
+    }
+
+    if (!endDate || Number.isNaN(endDate.getTime())) {
+      return startDate.toLocaleDateString("pl-PL");
+    }
+
+    return `${startDate.toLocaleDateString("pl-PL")} - ${endDate.toLocaleDateString("pl-PL")}`;
+  };
+
+  const venue = tournament.venue;
+  const accommodation = tournament.accommodation;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -88,9 +117,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
           <Typography variant="h3" sx={{ fontWeight: 900 }}>
             {tournament.name}
           </Typography>
-          <Typography color="textSecondary">
-            {tournament.startDate} - {tournament.endDate}
-          </Typography>
+          <Typography color="textSecondary">{formatDateRange(tournament.startDate, tournament.endDate)}</Typography>
         </Box>
         <Box sx={{ display: "flex", gap: 1.5 }}>
           <Button variant="outlined" sx={{ borderRadius: 4, fontWeight: "bold" }}>
@@ -122,43 +149,94 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
               gap: 3,
             }}
           >
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mb: 2,
-                }}
-              >
+            {venue ? (
+              <Paper sx={{ p: 3, borderRadius: 3 }}>
                 <Box
                   sx={{
-                    bgcolor: "#dbeafe",
-                    p: 1,
-                    borderRadius: 2,
-                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    mb: 2,
                   }}
                 >
-                  <MapPin size={20} />
+                  <Box
+                    sx={{
+                      bgcolor: "#dbeafe",
+                      p: 1,
+                      borderRadius: 2,
+                      color: "#2563eb",
+                    }}
+                  >
+                    <MapPin size={20} />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                    Hala Sportowa
+                  </Typography>
                 </Box>
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  Hala Sportowa
+                <Typography sx={{ fontWeight: 600 }}>{venue.name}</Typography>
+                <Typography color="textSecondary" sx={{ mb: 2 }}>
+                  {venue.address}
                 </Typography>
-              </Box>
-              <Typography sx={{ fontWeight: 600 }}>{tournament.venue.name}</Typography>
-              <Typography color="textSecondary" sx={{ mb: 2 }}>
-                {tournament.venue.address}
-              </Typography>
-              <MuiLink
-                href={tournament.venue.mapUrl}
-                target="_blank"
-                rel="noreferrer"
-                underline="hover"
-                sx={{ fontWeight: "bold", fontSize: "0.875rem" }}
-              >
-                Otwórz w Mapach &rarr;
-              </MuiLink>
-            </Paper>
+                {venue.mapUrl ? (
+                  <MuiLink
+                    href={venue.mapUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    underline="hover"
+                    sx={{ fontWeight: "bold", fontSize: "0.875rem" }}
+                  >
+                    Otwórz w Mapach &rarr;
+                  </MuiLink>
+                ) : null}
+              </Paper>
+            ) : null}
+
+            {accommodation ? (
+              <Paper sx={{ p: 3, borderRadius: 3 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    mb: 2,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      bgcolor: "#d1fae5",
+                      p: 1,
+                      borderRadius: 2,
+                      color: "#059669",
+                    }}
+                  >
+                    <MapPin size={20} />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                    Zakwaterowanie
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontWeight: 600 }}>{accommodation.name}</Typography>
+                <Typography color="textSecondary" sx={{ mb: 2 }}>
+                  {accommodation.address}
+                </Typography>
+                {tournament.parking ? (
+                  <Typography sx={{ mb: 2 }}>
+                    <strong>Parking:</strong> {tournament.parking}
+                  </Typography>
+                ) : null}
+                {accommodation.mapUrl ? (
+                  <MuiLink
+                    href={accommodation.mapUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    underline="hover"
+                    sx={{ fontWeight: "bold", fontSize: "0.875rem" }}
+                  >
+                    Otwórz w Mapach &rarr;
+                  </MuiLink>
+                ) : null}
+              </Paper>
+            ) : null}
 
             <Paper sx={{ p: 3, borderRadius: 3 }}>
               <Box
@@ -171,31 +249,23 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
               >
                 <Box
                   sx={{
-                    bgcolor: "#d1fae5",
+                    bgcolor: "#fff7ed",
                     p: 1,
                     borderRadius: 2,
-                    color: "#059669",
+                    color: "#d97706",
                   }}
                 >
                   <MapPin size={20} />
                 </Box>
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  Zakwaterowanie
+                  Wyżywienie
                 </Typography>
               </Box>
-              <Typography sx={{ fontWeight: 600 }}>{tournament.accommodation.name}</Typography>
-              <Typography color="textSecondary" sx={{ mb: 2 }}>
-                {tournament.accommodation.address}
-              </Typography>
-              <MuiLink
-                href={tournament.accommodation.mapUrl}
-                target="_blank"
-                rel="noreferrer"
-                underline="hover"
-                sx={{ fontWeight: "bold", fontSize: "0.875rem" }}
-              >
-                Otwórz w Mapach &rarr;
-              </MuiLink>
+              {tournament.catering ? (
+                <Typography sx={{ fontWeight: 600, whiteSpace: "pre-wrap" }}>{tournament.catering}</Typography>
+              ) : (
+                <Typography color="textSecondary">Brak danych.</Typography>
+              )}
             </Paper>
           </Box>
 
@@ -224,21 +294,13 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>
               Drużyny
             </Typography>
-            {teamsError ? (
-              <Alert severity="error" sx={{ py: 0 }}>
-                {teamsError}
-              </Alert>
-            ) : teamsLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
-                <CircularProgress size={24} />
-              </Box>
-            ) : teamsToShow.length === 0 ? (
+            {tournament.teams.length === 0 ? (
               <Typography variant="body2" color="textSecondary">
                 Brak przypisanych drużyn.
               </Typography>
             ) : (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {teamsToShow.map((team) => (
+                {tournament.teams.map((team) => (
                   <Box
                     key={team.id}
                     sx={{
@@ -292,14 +354,17 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
                 >
                   Sędziowie
                 </Typography>
-                {tournament.referees.map((refOrId) => {
-                  const r = typeof refOrId === "string" ? MOCK_REFEREES.find((x) => x.id === refOrId) : refOrId;
-                  return r ? (
+                {tournament.referees.length === 0 ? (
+                  <Typography variant="body2" color="textSecondary">
+                    Brak przypisanych sędziów.
+                  </Typography>
+                ) : (
+                  tournament.referees.map((r) => (
                     <Typography key={r.id} variant="body2" sx={{ fontWeight: 500 }}>
                       {r.firstName} {r.lastName}
                     </Typography>
-                  ) : null;
-                })}
+                  ))
+                )}
               </Box>
               <Box>
                 <Typography
@@ -314,14 +379,17 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
                 >
                   Klasyfikatorzy
                 </Typography>
-                {tournament.classifiers.map((clsOrId) => {
-                  const c = typeof clsOrId === "string" ? MOCK_CLASSIFIERS.find((x) => x.id === clsOrId) : clsOrId;
-                  return c ? (
+                {tournament.classifiers.length === 0 ? (
+                  <Typography variant="body2" color="textSecondary">
+                    Brak przypisanych klasyfikatorów.
+                  </Typography>
+                ) : (
+                  tournament.classifiers.map((c) => (
                     <Typography key={c.id} variant="body2" sx={{ fontWeight: 500 }}>
                       {c.firstName} {c.lastName}
                     </Typography>
-                  ) : null;
-                })}
+                  ))
+                )}
               </Box>
             </Box>
           </Paper>

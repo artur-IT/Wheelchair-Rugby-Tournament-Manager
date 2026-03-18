@@ -102,6 +102,11 @@ export const requiredSeasonNameSchema = z
   .min(1, "Nazwa sezonu jest wymagana")
   .max(MAX_LONG_TEXT, `Nazwa sezonu nie może przekraczać ${MAX_LONG_TEXT} znaków`);
 
+export const optionalParkingSchema = z
+  .string()
+  .max(MAX_LONG_TEXT, `Parking nie może przekraczać ${MAX_LONG_TEXT} znaków`)
+  .optional();
+
 // ─── Player fields (classification, number) ───────────────────────────────────
 
 /** Player classification: 0.5–3.5 in steps of 0.5. */
@@ -133,3 +138,67 @@ export const optionalWebsiteUrlSchema = z
       .refine((v) => LOOSE_URL_REGEX.test(v), "Nieprawidłowy adres URL"),
   ])
   .optional();
+
+// ─── Tournament fields ──────────────────────────────────────────────────────
+
+export const requiredTournamentNameSchema = z
+  .string()
+  .min(1, "Nazwa turnieju jest wymagana")
+  .min(3, "Nazwa musi mieć co najmniej 3 znaki")
+  .max(MAX_LONG_TEXT, `Nazwa turnieju nie może przekraczać ${MAX_LONG_TEXT} znaków`);
+
+export const requiredHotelNameSchema = z
+  .string()
+  .min(1, "Nazwa hotelu jest wymagana")
+  .min(3, "Nazwa hotelu musi mieć co najmniej 3 znaki")
+  .max(MAX_LONG_TEXT, `Nazwa hotelu nie może przekraczać ${MAX_LONG_TEXT} znaków`);
+
+export const requiredCateringSchema = z
+  .string()
+  .min(1, "Wyżywienie jest wymagane")
+  .min(3, "Opis wyżywienia musi mieć co najmniej 3 znaki")
+  .max(MAX_LONG_TEXT, `Wyżywienie nie może przekraczać ${MAX_LONG_TEXT} znaków`);
+
+export const requiredHallNameSchema = z
+  .string()
+  .min(1, "Nazwa hali jest wymagana")
+  .min(3, "Nazwa hali musi mieć co najmniej 3 znaki")
+  .max(MAX_LONG_TEXT, `Nazwa hali nie może przekraczać ${MAX_LONG_TEXT} znaków`);
+
+/** Optional map link: accepts empty string or a loose domain/URL up to 150 characters. */
+export const optionalMapLinkSchema = z
+  .union([
+    z.literal(""),
+    z
+      .string()
+      .max(MAX_LONG_TEXT, `Link do mapy nie może przekraczać ${MAX_LONG_TEXT} znaków`)
+      .refine((v) => LOOSE_URL_REGEX.test(v), "Link do mapy musi być prawidłowym URL-em"),
+  ])
+  .optional();
+
+/** Tournament start and end dates validation schema. */
+export const tournamentFormSchema = z
+  .object({
+    name: requiredTournamentNameSchema,
+    startDate: z
+      .date()
+      .refine((date) => date instanceof Date && !isNaN(date.getTime()), { message: "Data rozpoczęcia jest wymagana" }),
+    endDate: z
+      .date()
+      .refine((date) => date instanceof Date && !isNaN(date.getTime()), { message: "Data zakończenia jest wymagana" }),
+    hotel: requiredHotelNameSchema,
+    city: requiredCitySchema,
+    zipCode: requiredPostalCodeSchema,
+    street: requiredAddressSchema,
+    mapLink: optionalMapLinkSchema,
+    catering: requiredCateringSchema,
+    parking: optionalParkingSchema,
+    hallName: requiredHallNameSchema,
+    hallMapLink: optionalMapLinkSchema,
+  })
+  .refine((data) => data.endDate > data.startDate, {
+    message: "Data zakończenia musi być później niż data rozpoczęcia",
+    path: ["endDate"],
+  });
+
+export type TournamentFormData = z.infer<typeof tournamentFormSchema>;

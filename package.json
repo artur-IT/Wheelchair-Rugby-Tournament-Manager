@@ -13,7 +13,10 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "dev:full": "concurrently \"npm run dev\" \"npx prisma studio\" \"npm run test:watch\"",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:clear": "node scripts/clearDb.mjs",
+    "db:seed": "node scripts/seedDb.mjs",
+    "db:reset-data": "pnpm run db:clear && pnpm run db:seed"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.1",
@@ -24,9 +27,11 @@
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.8",
+    "@mui/x-date-pickers": "^8.27.2",
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.5.0",
     "astro": "^6.0.4",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.481.0",
     "motion": "^11.14.0",
     "pg": "^8.20.0",

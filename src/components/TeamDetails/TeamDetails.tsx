@@ -33,6 +33,7 @@ const playerNumberLimitError = `Numer zawodnika nie może być większy niż ${M
 
 function getPlayerNumberError(number?: number) {
   if (number === undefined || number === null) return null;
+  if (number < 0) return "Numer zawodnika nie może być ujemny";
   return number > MAX_PLAYER_NUMBER ? playerNumberLimitError : null;
 }
 
@@ -442,7 +443,6 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                 label="Imię"
                 value={editForm.firstName}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, firstName: e.target.value } : f))}
-                required
                 fullWidth
                 size="small"
               />
@@ -450,14 +450,13 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                 label="Nazwisko"
                 value={editForm.lastName}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, lastName: e.target.value } : f))}
-                required
                 fullWidth
                 size="small"
               />
               <TextField
                 label="Klasyfikacja"
                 type="number"
-                inputProps={{ step: 0.5, min: 0.5, max: 4.0, inputMode: "decimal" }}
+                inputProps={{ inputMode: "decimal" }}
                 value={editForm.classification}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, classification: e.target.value } : f))}
                 fullWidth
@@ -466,7 +465,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
               <TextField
                 label="Numer"
                 type="number"
-                inputProps={{ min: 1, max: 99, inputMode: "numeric" }}
+                inputProps={{ inputMode: "numeric" }}
                 value={editForm.number}
                 onChange={(e) => setEditForm((f) => (f ? { ...f, number: e.target.value } : f))}
                 fullWidth
@@ -547,6 +546,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                     <TableCell sx={{ fontWeight: "bold" }}>Imię i Nazwisko</TableCell>
                     <TableCell sx={{ fontWeight: "bold" }}>Klasyfikacja</TableCell>
                     <TableCell sx={{ fontWeight: "bold" }}>Numer</TableCell>
+                    <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Operacje</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -562,11 +562,11 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                         <TableCell>
                           {p.firstName} {p.lastName}
                         </TableCell>
-                        <TableCell>
+                        <TableCell align="center">
                           <Chip label={p.classification?.toFixed(1) ?? "-"} size="small" variant="outlined" />
                         </TableCell>
-                        <TableCell>{p.number ?? "Nie podano"}</TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">{p.number ?? "Nie podano"}</TableCell>
+                        <TableCell align="center">
                           <Button size="small" color="primary" onClick={() => handleEditPlayer(p)}>
                             Edytuj
                           </Button>
