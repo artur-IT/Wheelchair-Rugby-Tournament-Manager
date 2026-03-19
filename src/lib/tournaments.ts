@@ -70,6 +70,8 @@ export async function listTournamentsWithDetails(): Promise<Tournament[]> {
       mealPlans: { orderBy: { id: "asc" } },
       volunteers: true,
       teams: { include: { team: true } },
+      referees: { include: { referee: true } },
+      classifiers: { include: { classifier: true } },
     },
   });
 
@@ -124,8 +126,20 @@ export async function listTournamentsWithDetails(): Promise<Tournament[]> {
         coachId: tt.team.coachId ?? undefined,
         refereeId: tt.team.refereeId ?? undefined,
       })),
-      referees: [],
-      classifiers: [],
+      referees: t.referees.map((tr) => ({
+        id: tr.referee.id,
+        firstName: tr.referee.firstName,
+        lastName: tr.referee.lastName,
+        email: tr.referee.email ?? undefined,
+        phone: tr.referee.phone ?? undefined,
+      })),
+      classifiers: t.classifiers.map((tc) => ({
+        id: tc.classifier.id,
+        firstName: tc.classifier.firstName,
+        lastName: tc.classifier.lastName,
+        email: tc.classifier.email ?? undefined,
+        phone: tc.classifier.phone ?? undefined,
+      })),
       volunteers: t.volunteers.map((v) => ({
         id: v.id,
         firstName: v.firstName,
@@ -248,11 +262,66 @@ export async function addTeamsToTournament(tournamentId: string, teamIds: string
 }
 
 export async function removeTeamFromTournament(tournamentId: string, teamId: string) {
-  // Delete relation row directly. If it doesn't exist, we treat it as a no-op.
-  // This keeps the API safe for repeated clicks / stale UI state.
   await prisma.tournamentTeam.deleteMany({
     where: { tournamentId, teamId },
   });
+  return tournamentId;
+}
 
+export async function addRefereesToTournament(tournamentId: string, refereeIds: string[]) {
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true, seasonId: true },
+  });
+  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+
+  const referees = await prisma.referee.findMany({
+    where: { id: { in: refereeIds } },
+    select: { id: true, seasonId: true },
+  });
+  if (referees.length !== refereeIds.length) throw new Error("REFEREE_NOT_FOUND");
+  const wrongSeason = referees.find((r) => r.seasonId !== tournament.seasonId);
+  if (wrongSeason) throw new Error("REFEREE_WRONG_SEASON");
+
+  await prisma.tournamentReferee.createMany({
+    data: refereeIds.map((refereeId) => ({ tournamentId, refereeId })),
+    skipDuplicates: true,
+  });
+  return tournamentId;
+}
+
+export async function removeRefereeFromTournament(tournamentId: string, refereeId: string) {
+  await prisma.tournamentReferee.deleteMany({
+    where: { tournamentId, refereeId },
+  });
+  return tournamentId;
+}
+
+export async function addClassifiersToTournament(tournamentId: string, classifierIds: string[]) {
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true, seasonId: true },
+  });
+  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+
+  const classifiers = await prisma.classifier.findMany({
+    where: { id: { in: classifierIds } },
+    select: { id: true, seasonId: true },
+  });
+  if (classifiers.length !== classifierIds.length) throw new Error("CLASSIFIER_NOT_FOUND");
+  const wrongSeason = classifiers.find((c) => c.seasonId !== tournament.seasonId);
+  if (wrongSeason) throw new Error("CLASSIFIER_WRONG_SEASON");
+
+  await prisma.tournamentClassifier.createMany({
+    data: classifierIds.map((classifierId) => ({ tournamentId, classifierId })),
+    skipDuplicates: true,
+  });
+  return tournamentId;
+}
+
+export async function removeClassifierFromTournament(tournamentId: string, classifierId: string) {
+  await prisma.tournamentClassifier.deleteMany({
+    where: { tournamentId, classifierId },
+  });
   return tournamentId;
 }

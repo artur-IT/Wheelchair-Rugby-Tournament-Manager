@@ -31,6 +31,15 @@ const tournamentFixture = {
   volunteers: [],
 };
 
+const refereeList = [
+  { id: "ref-1", firstName: "Jan", lastName: "Kowalski", email: "jan@example.com", seasonId: "s1" },
+  { id: "ref-2", firstName: "Anna", lastName: "Nowak", email: "anna@example.com", seasonId: "s1" },
+];
+const classifierList = [
+  { id: "cls-1", firstName: "Piotr", lastName: "Wiśniewski", email: "p@example.com", seasonId: "s1" },
+  { id: "cls-2", firstName: "Maria", lastName: "Lewandowska", email: "m@example.com", seasonId: "s1" },
+];
+
 beforeEach(() => {
   const tournamentWithTeams = {
     ...tournamentFixture,
@@ -43,8 +52,17 @@ beforeEach(() => {
     ...tournamentFixture,
     teams: [{ id: "team-2", name: "Krakow Eagles", seasonId: "s1" }],
   };
+  const tournamentWithReferees = { ...tournamentFixture, referees: refereeList };
+  const tournamentAfterRefereeRemove = { ...tournamentFixture, referees: [refereeList[1]] };
+  const tournamentWithClassifiers = { ...tournamentFixture, classifiers: classifierList };
+  const tournamentAfterClassifierRemove = { ...tournamentFixture, classifiers: [classifierList[1]] };
+
   let teamsAdded = false;
   let teamRemoved = false;
+  let refereesAdded = false;
+  let refereeRemoved = false;
+  let classifiersAdded = false;
+  let classifierRemoved = false;
 
   vi.stubGlobal(
     "fetch",
@@ -58,6 +76,18 @@ beforeEach(() => {
       if (url === "/api/tournaments/t1" && (!init || init.method == null)) {
         if (teamRemoved) {
           return new Response(JSON.stringify(tournamentAfterRemove), { status: 200 });
+        }
+        if (refereeRemoved && refereesAdded) {
+          return new Response(JSON.stringify(tournamentAfterRefereeRemove), { status: 200 });
+        }
+        if (classifierRemoved && classifiersAdded) {
+          return new Response(JSON.stringify(tournamentAfterClassifierRemove), { status: 200 });
+        }
+        if (refereesAdded) {
+          return new Response(JSON.stringify(tournamentWithReferees), { status: 200 });
+        }
+        if (classifiersAdded) {
+          return new Response(JSON.stringify(tournamentWithClassifiers), { status: 200 });
         }
         return new Response(JSON.stringify(teamsAdded ? tournamentWithTeams : tournamentFixture), { status: 200 });
       }
@@ -80,6 +110,30 @@ beforeEach(() => {
 
       if (url === "/api/tournaments/t1/teams/team-1" && init?.method === "DELETE") {
         teamRemoved = true;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+
+      if (url === "/api/referees?seasonId=s1") {
+        return new Response(JSON.stringify(refereeList), { status: 200 });
+      }
+      if (url === "/api/tournaments/t1/referees" && init?.method === "POST") {
+        refereesAdded = true;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      if (url === "/api/tournaments/t1/referees/ref-1" && init?.method === "DELETE") {
+        refereeRemoved = true;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+
+      if (url === "/api/classifiers?seasonId=s1") {
+        return new Response(JSON.stringify(classifierList), { status: 200 });
+      }
+      if (url === "/api/tournaments/t1/classifiers" && init?.method === "POST") {
+        classifiersAdded = true;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      if (url === "/api/tournaments/t1/classifiers/cls-1" && init?.method === "DELETE") {
+        classifierRemoved = true;
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
 
@@ -109,7 +163,8 @@ describe("TournamentDetails", () => {
     expect(await screen.findByText("Hotel Sport")).toBeInTheDocument();
     expect(await screen.findByText("Hotel + Catering na hali")).toBeInTheDocument();
     expect(await screen.findByText("Brak przypisanych drużyn.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dodaj" })).toBeInTheDocument();
+    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div");
+    expect(within(teamsSection as HTMLElement).getByRole("button", { name: "Dodaj" })).toBeInTheDocument();
   });
 
   it("adds multiple teams via dialog and shows them", async () => {
@@ -117,7 +172,8 @@ describe("TournamentDetails", () => {
     render(<TournamentDetails id="t1" />);
 
     await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
-    await user.click(screen.getByRole("button", { name: "Dodaj" }));
+    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div");
+    await user.click(within(teamsSection as HTMLElement).getByRole("button", { name: "Dodaj" }));
 
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("Dodaj drużyny")).toBeInTheDocument();
@@ -136,7 +192,8 @@ describe("TournamentDetails", () => {
     render(<TournamentDetails id="t1" />);
 
     await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
-    await user.click(screen.getByRole("button", { name: "Dodaj" }));
+    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div");
+    await user.click(within(teamsSection as HTMLElement).getByRole("button", { name: "Dodaj" }));
 
     const addDialog = await screen.findByRole("dialog");
     await user.click(within(addDialog).getByText("Warsaw Raptors"));
@@ -154,5 +211,97 @@ describe("TournamentDetails", () => {
 
     expect(await screen.findByText("Krakow Eagles")).toBeInTheDocument();
     expect(screen.queryByText("Warsaw Raptors")).not.toBeInTheDocument();
+  });
+
+  it("adds referees via dialog and shows them", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+    const refereesSection = screen.getByText("Sędziowie").closest("div");
+    const addRefereesBtn = within(refereesSection as HTMLElement).getByRole("button", { name: "Dodaj" });
+    await user.click(addRefereesBtn);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Dodaj sędziów")).toBeInTheDocument();
+    await user.click(within(dialog).getByText("Jan Kowalski"));
+    await user.click(within(dialog).getByText("Anna Nowak"));
+    await user.click(within(dialog).getByRole("button", { name: "Dodaj" }));
+
+    expect(await screen.findByText("Jan Kowalski")).toBeInTheDocument();
+    expect(screen.getByText("Anna Nowak")).toBeInTheDocument();
+  });
+
+  it("removes a referee from tournament after confirmation", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+    const refereesSection = screen.getByText("Sędziowie").closest("div");
+    await user.click(within(refereesSection as HTMLElement).getByRole("button", { name: "Dodaj" }));
+
+    const addDialog = await screen.findByRole("dialog");
+    await user.click(within(addDialog).getByText("Jan Kowalski"));
+    await user.click(within(addDialog).getByText("Anna Nowak"));
+    await user.click(within(addDialog).getByRole("button", { name: "Dodaj" }));
+
+    expect(await screen.findByText("Jan Kowalski")).toBeInTheDocument();
+    expect(screen.getByText("Anna Nowak")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Usuń sędziego Jan Kowalski z turnieju/i }));
+
+    const confirmDialog = await screen.findByRole("dialog");
+    expect(within(confirmDialog).getByText("Usunąć sędziego z turnieju?")).toBeInTheDocument();
+    await user.click(within(confirmDialog).getByRole("button", { name: "Usuń" }));
+
+    expect(await screen.findByText("Anna Nowak")).toBeInTheDocument();
+    expect(screen.queryByText("Jan Kowalski")).not.toBeInTheDocument();
+  });
+
+  it("adds classifiers via dialog and shows them", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+    const classifiersSection = screen.getByText("Klasyfikatorzy").closest("div");
+    const addClassifiersBtn = within(classifiersSection as HTMLElement).getByRole("button", { name: "Dodaj" });
+    await user.click(addClassifiersBtn);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Dodaj klasyfikatorów")).toBeInTheDocument();
+    await user.click(within(dialog).getByText("Piotr Wiśniewski"));
+    await user.click(within(dialog).getByText("Maria Lewandowska"));
+    await user.click(within(dialog).getByRole("button", { name: "Dodaj" }));
+
+    expect(await screen.findByText("Piotr Wiśniewski")).toBeInTheDocument();
+    expect(screen.getByText("Maria Lewandowska")).toBeInTheDocument();
+  });
+
+  it("removes a classifier from tournament after confirmation", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+    const classifiersSection = screen.getByText("Klasyfikatorzy").closest("div");
+    await user.click(within(classifiersSection as HTMLElement).getByRole("button", { name: "Dodaj" }));
+
+    const addDialog = await screen.findByRole("dialog");
+    await user.click(within(addDialog).getByText("Piotr Wiśniewski"));
+    await user.click(within(addDialog).getByText("Maria Lewandowska"));
+    await user.click(within(addDialog).getByRole("button", { name: "Dodaj" }));
+
+    expect(await screen.findByText("Piotr Wiśniewski")).toBeInTheDocument();
+    expect(screen.getByText("Maria Lewandowska")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /Usuń klasyfikatora Piotr Wiśniewski z turnieju/i })
+    );
+
+    const confirmDialog = await screen.findByRole("dialog");
+    expect(within(confirmDialog).getByText("Usunąć klasyfikatora z turnieju?")).toBeInTheDocument();
+    await user.click(within(confirmDialog).getByRole("button", { name: "Usuń" }));
+
+    expect(await screen.findByText("Maria Lewandowska")).toBeInTheDocument();
+    expect(screen.queryByText("Piotr Wiśniewski")).not.toBeInTheDocument();
   });
 });

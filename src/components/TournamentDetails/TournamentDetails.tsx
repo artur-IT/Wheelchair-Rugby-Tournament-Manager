@@ -23,7 +23,7 @@ import {
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
-import type { Team, Tournament } from "@/types";
+import type { Person, Team, Tournament } from "@/types";
 
 interface TournamentDetailsProps {
   id: string;
@@ -53,6 +53,28 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
   const [teamToRemove, setTeamToRemove] = useState<Team | null>(null);
   const [removeTeamLoading, setRemoveTeamLoading] = useState(false);
   const [removeTeamError, setRemoveTeamError] = useState<string | null>(null);
+
+  const [addRefereesOpen, setAddRefereesOpen] = useState(false);
+  const [availableReferees, setAvailableReferees] = useState<Person[]>([]);
+  const [availableRefereesLoading, setAvailableRefereesLoading] = useState(false);
+  const [availableRefereesError, setAvailableRefereesError] = useState<string | null>(null);
+  const [selectedRefereeIds, setSelectedRefereeIds] = useState<string[]>([]);
+  const [saveRefereesLoading, setSaveRefereesLoading] = useState(false);
+  const [saveRefereesError, setSaveRefereesError] = useState<string | null>(null);
+  const [refereeToRemove, setRefereeToRemove] = useState<Person | null>(null);
+  const [removeRefereeLoading, setRemoveRefereeLoading] = useState(false);
+  const [removeRefereeError, setRemoveRefereeError] = useState<string | null>(null);
+
+  const [addClassifiersOpen, setAddClassifiersOpen] = useState(false);
+  const [availableClassifiers, setAvailableClassifiers] = useState<Person[]>([]);
+  const [availableClassifiersLoading, setAvailableClassifiersLoading] = useState(false);
+  const [availableClassifiersError, setAvailableClassifiersError] = useState<string | null>(null);
+  const [selectedClassifierIds, setSelectedClassifierIds] = useState<string[]>([]);
+  const [saveClassifiersLoading, setSaveClassifiersLoading] = useState(false);
+  const [saveClassifiersError, setSaveClassifiersError] = useState<string | null>(null);
+  const [classifierToRemove, setClassifierToRemove] = useState<Person | null>(null);
+  const [removeClassifierLoading, setRemoveClassifierLoading] = useState(false);
+  const [removeClassifierError, setRemoveClassifierError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -190,6 +212,190 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
       setRemoveTeamLoading(false);
     }
   }
+
+  async function openAddRefereesDialog() {
+    if (!tournament) return;
+    setAddRefereesOpen(true);
+    setAvailableRefereesError(null);
+    setSaveRefereesError(null);
+    setSelectedRefereeIds(tournament.referees.map((r) => r.id));
+    if (availableRefereesLoading || availableReferees.length > 0) return;
+    setAvailableRefereesLoading(true);
+    try {
+      const res = await fetch(`/api/referees?seasonId=${encodeURIComponent(tournament.seasonId)}`);
+      if (!res.ok) throw new Error("Nie udało się pobrać sędziów");
+      const list: Person[] = await res.json();
+      setAvailableReferees(list);
+    } catch (e) {
+      setAvailableRefereesError(e instanceof Error ? e.message : "Nie udało się pobrać sędziów");
+    } finally {
+      setAvailableRefereesLoading(false);
+    }
+  }
+
+  function closeAddRefereesDialog() {
+    if (saveRefereesLoading) return;
+    setAddRefereesOpen(false);
+    setSaveRefereesError(null);
+  }
+
+  function toggleSelectedReferee(refereeId: string) {
+    setSelectedRefereeIds((prev) =>
+      prev.includes(refereeId) ? prev.filter((id) => id !== refereeId) : [...prev, refereeId]
+    );
+  }
+
+  async function saveSelectedReferees() {
+    if (!tournament) return;
+    if (selectedRefereeIds.length === 0) {
+      setSaveRefereesError("Wybierz przynajmniej jednego sędziego");
+      return;
+    }
+    setSaveRefereesLoading(true);
+    setSaveRefereesError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournament.id}/referees`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refereeIds: selectedRefereeIds }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || "Nie udało się dodać sędziów");
+      }
+      await refreshTournament(tournament.id);
+      setAddRefereesOpen(false);
+    } catch (e) {
+      setSaveRefereesError(e instanceof Error ? e.message : "Nie udało się dodać sędziów");
+    } finally {
+      setSaveRefereesLoading(false);
+    }
+  }
+
+  function openRemoveRefereeDialog(person: Person) {
+    setRemoveRefereeError(null);
+    setRefereeToRemove(person);
+  }
+
+  function closeRemoveRefereeDialog() {
+    if (removeRefereeLoading) return;
+    setRefereeToRemove(null);
+    setRemoveRefereeError(null);
+  }
+
+  async function confirmRemoveReferee() {
+    if (!tournament || !refereeToRemove) return;
+    setRemoveRefereeLoading(true);
+    setRemoveRefereeError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournament.id}/referees/${refereeToRemove.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || "Nie udało się usunąć sędziego z turnieju");
+      }
+      await refreshTournament(tournament.id);
+      setRefereeToRemove(null);
+    } catch (e) {
+      setRemoveRefereeError(e instanceof Error ? e.message : "Nie udało się usunąć sędziego z turnieju");
+    } finally {
+      setRemoveRefereeLoading(false);
+    }
+  }
+
+  async function openAddClassifiersDialog() {
+    if (!tournament) return;
+    setAddClassifiersOpen(true);
+    setAvailableClassifiersError(null);
+    setSaveClassifiersError(null);
+    setSelectedClassifierIds(tournament.classifiers.map((c) => c.id));
+    if (availableClassifiersLoading || availableClassifiers.length > 0) return;
+    setAvailableClassifiersLoading(true);
+    try {
+      const res = await fetch(`/api/classifiers?seasonId=${encodeURIComponent(tournament.seasonId)}`);
+      if (!res.ok) throw new Error("Nie udało się pobrać klasyfikatorów");
+      const list: Person[] = await res.json();
+      setAvailableClassifiers(list);
+    } catch (e) {
+      setAvailableClassifiersError(e instanceof Error ? e.message : "Nie udało się pobrać klasyfikatorów");
+    } finally {
+      setAvailableClassifiersLoading(false);
+    }
+  }
+
+  function closeAddClassifiersDialog() {
+    if (saveClassifiersLoading) return;
+    setAddClassifiersOpen(false);
+    setSaveClassifiersError(null);
+  }
+
+  function toggleSelectedClassifier(classifierId: string) {
+    setSelectedClassifierIds((prev) =>
+      prev.includes(classifierId) ? prev.filter((id) => id !== classifierId) : [...prev, classifierId]
+    );
+  }
+
+  async function saveSelectedClassifiers() {
+    if (!tournament) return;
+    if (selectedClassifierIds.length === 0) {
+      setSaveClassifiersError("Wybierz przynajmniej jednego klasyfikatora");
+      return;
+    }
+    setSaveClassifiersLoading(true);
+    setSaveClassifiersError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournament.id}/classifiers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classifierIds: selectedClassifierIds }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || "Nie udało się dodać klasyfikatorów");
+      }
+      await refreshTournament(tournament.id);
+      setAddClassifiersOpen(false);
+    } catch (e) {
+      setSaveClassifiersError(e instanceof Error ? e.message : "Nie udało się dodać klasyfikatorów");
+    } finally {
+      setSaveClassifiersLoading(false);
+    }
+  }
+
+  function openRemoveClassifierDialog(person: Person) {
+    setRemoveClassifierError(null);
+    setClassifierToRemove(person);
+  }
+
+  function closeRemoveClassifierDialog() {
+    if (removeClassifierLoading) return;
+    setClassifierToRemove(null);
+    setRemoveClassifierError(null);
+  }
+
+  async function confirmRemoveClassifier() {
+    if (!tournament || !classifierToRemove) return;
+    setRemoveClassifierLoading(true);
+    setRemoveClassifierError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournament.id}/classifiers/${classifierToRemove.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error || "Nie udało się usunąć klasyfikatora z turnieju");
+      }
+      await refreshTournament(tournament.id);
+      setClassifierToRemove(null);
+    } catch (e) {
+      setRemoveClassifierError(e instanceof Error ? e.message : "Nie udało się usunąć klasyfikatora z turnieju");
+    } finally {
+      setRemoveClassifierLoading(false);
+    }
+  }
+
+  const personDisplayName = (p: Person) => `${p.firstName} ${p.lastName}`.trim() || "—";
 
   if (loading) {
     return (
@@ -514,15 +720,66 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
                   Sędziowie
                 </Typography>
                 {tournament.referees.length === 0 ? (
-                  <Typography variant="body2" color="textSecondary">
-                    Brak przypisanych sędziów.
-                  </Typography>
-                ) : (
-                  tournament.referees.map((r) => (
-                    <Typography key={r.id} variant="body2" sx={{ fontWeight: 500 }}>
-                      {r.firstName} {r.lastName}
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      Brak przypisanych sędziów.
                     </Typography>
-                  ))
+                    <Button variant="contained" onClick={openAddRefereesDialog} sx={{ alignSelf: "flex-start" }}>
+                      Dodaj
+                    </Button>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {tournament.referees.map((r) => (
+                      <Box
+                        key={r.id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: "grey.50",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            bgcolor: "white",
+                            borderRadius: 1,
+                            border: "1px solid",
+                            borderColor: "grey.200",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "bold",
+                            color: "primary.main",
+                          }}
+                        >
+                          {r.firstName[0] ?? "?"}
+                        </Box>
+                        <Typography sx={{ fontWeight: 500, flex: 1 }}>{personDisplayName(r)}</Typography>
+                        <Tooltip title="Usuń sędziego z turnieju">
+                          <span>
+                            <IconButton
+                              aria-label={`Usuń sędziego ${personDisplayName(r)} z turnieju`}
+                              color="error"
+                              onClick={() => openRemoveRefereeDialog(r)}
+                              size="small"
+                              disabled={removeRefereeLoading && refereeToRemove?.id === r.id}
+                              sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}
+                            >
+                              <Trash2 size={18} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Box>
+                    ))}
+                    <Button variant="outlined" onClick={openAddRefereesDialog} sx={{ alignSelf: "flex-start" }}>
+                      Dodaj
+                    </Button>
+                  </Box>
                 )}
               </Box>
               <Box>
@@ -539,15 +796,66 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
                   Klasyfikatorzy
                 </Typography>
                 {tournament.classifiers.length === 0 ? (
-                  <Typography variant="body2" color="textSecondary">
-                    Brak przypisanych klasyfikatorów.
-                  </Typography>
-                ) : (
-                  tournament.classifiers.map((c) => (
-                    <Typography key={c.id} variant="body2" sx={{ fontWeight: 500 }}>
-                      {c.firstName} {c.lastName}
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      Brak przypisanych klasyfikatorów.
                     </Typography>
-                  ))
+                    <Button variant="contained" onClick={openAddClassifiersDialog} sx={{ alignSelf: "flex-start" }}>
+                      Dodaj
+                    </Button>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {tournament.classifiers.map((c) => (
+                      <Box
+                        key={c.id}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: "grey.50",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            bgcolor: "white",
+                            borderRadius: 1,
+                            border: "1px solid",
+                            borderColor: "grey.200",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "bold",
+                            color: "primary.main",
+                          }}
+                        >
+                          {c.firstName[0] ?? "?"}
+                        </Box>
+                        <Typography sx={{ fontWeight: 500, flex: 1 }}>{personDisplayName(c)}</Typography>
+                        <Tooltip title="Usuń klasyfikatora z turnieju">
+                          <span>
+                            <IconButton
+                              aria-label={`Usuń klasyfikatora ${personDisplayName(c)} z turnieju`}
+                              color="error"
+                              onClick={() => openRemoveClassifierDialog(c)}
+                              size="small"
+                              disabled={removeClassifierLoading && classifierToRemove?.id === c.id}
+                              sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}
+                            >
+                              <Trash2 size={18} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Box>
+                    ))}
+                    <Button variant="outlined" onClick={openAddClassifiersDialog} sx={{ alignSelf: "flex-start" }}>
+                      Dodaj
+                    </Button>
+                  </Box>
                 )}
               </Box>
             </Box>
@@ -618,6 +926,146 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
         onConfirm={confirmRemoveTeam}
         loading={removeTeamLoading}
         errorMessage={removeTeamError}
+        confirmLabel="Usuń"
+        cancelLabel="Anuluj"
+      />
+
+      <Dialog open={addRefereesOpen} onClose={closeAddRefereesDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Dodaj sędziów</DialogTitle>
+        <DialogContent dividers>
+          {availableRefereesError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {availableRefereesError}
+            </Alert>
+          ) : null}
+          {saveRefereesError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {saveRefereesError}
+            </Alert>
+          ) : null}
+          {availableRefereesLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <List dense>
+              {availableReferees.map((referee) => {
+                const checked = selectedRefereeIds.includes(referee.id);
+                return (
+                  <ListItemButton key={referee.id} onClick={() => toggleSelectedReferee(referee.id)}>
+                    <ListItemIcon>
+                      <Checkbox edge="start" checked={checked} tabIndex={-1} disableRipple />
+                    </ListItemIcon>
+                    <ListItemText primary={personDisplayName(referee)} />
+                  </ListItemButton>
+                );
+              })}
+              {availableReferees.length === 0 && !availableRefereesError ? (
+                <Typography color="textSecondary" sx={{ py: 1 }}>
+                  Brak dostępnych sędziów w tym sezonie.
+                </Typography>
+              ) : null}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeAddRefereesDialog} disabled={saveRefereesLoading}>
+            Anuluj
+          </Button>
+          <Button
+            variant="contained"
+            onClick={saveSelectedReferees}
+            disabled={saveRefereesLoading || availableRefereesLoading}
+          >
+            Dodaj
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmationDialog
+        open={Boolean(refereeToRemove)}
+        title="Usunąć sędziego z turnieju?"
+        description={
+          refereeToRemove ? (
+            <Typography color="textSecondary">
+              Sędzia: <strong>{personDisplayName(refereeToRemove)}</strong>
+            </Typography>
+          ) : null
+        }
+        onClose={closeRemoveRefereeDialog}
+        onConfirm={confirmRemoveReferee}
+        loading={removeRefereeLoading}
+        errorMessage={removeRefereeError}
+        confirmLabel="Usuń"
+        cancelLabel="Anuluj"
+      />
+
+      <Dialog open={addClassifiersOpen} onClose={closeAddClassifiersDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Dodaj klasyfikatorów</DialogTitle>
+        <DialogContent dividers>
+          {availableClassifiersError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {availableClassifiersError}
+            </Alert>
+          ) : null}
+          {saveClassifiersError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {saveClassifiersError}
+            </Alert>
+          ) : null}
+          {availableClassifiersLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <List dense>
+              {availableClassifiers.map((classifier) => {
+                const checked = selectedClassifierIds.includes(classifier.id);
+                return (
+                  <ListItemButton key={classifier.id} onClick={() => toggleSelectedClassifier(classifier.id)}>
+                    <ListItemIcon>
+                      <Checkbox edge="start" checked={checked} tabIndex={-1} disableRipple />
+                    </ListItemIcon>
+                    <ListItemText primary={personDisplayName(classifier)} />
+                  </ListItemButton>
+                );
+              })}
+              {availableClassifiers.length === 0 && !availableClassifiersError ? (
+                <Typography color="textSecondary" sx={{ py: 1 }}>
+                  Brak dostępnych klasyfikatorów w tym sezonie.
+                </Typography>
+              ) : null}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeAddClassifiersDialog} disabled={saveClassifiersLoading}>
+            Anuluj
+          </Button>
+          <Button
+            variant="contained"
+            onClick={saveSelectedClassifiers}
+            disabled={saveClassifiersLoading || availableClassifiersLoading}
+          >
+            Dodaj
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmationDialog
+        open={Boolean(classifierToRemove)}
+        title="Usunąć klasyfikatora z turnieju?"
+        description={
+          classifierToRemove ? (
+            <Typography color="textSecondary">
+              Klasyfikator: <strong>{personDisplayName(classifierToRemove)}</strong>
+            </Typography>
+          ) : null
+        }
+        onClose={closeRemoveClassifierDialog}
+        onConfirm={confirmRemoveClassifier}
+        loading={removeClassifierLoading}
+        errorMessage={removeClassifierError}
         confirmLabel="Usuń"
         cancelLabel="Anuluj"
       />
