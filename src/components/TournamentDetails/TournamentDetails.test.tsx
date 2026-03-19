@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -63,6 +63,21 @@ beforeEach(() => {
   let refereeRemoved = false;
   let classifiersAdded = false;
   let classifierRemoved = false;
+
+  interface MatchStub {
+    id: string;
+    scheduledAt: string;
+    court: string | null;
+    jerseyInfo: string | null;
+    scoreA: number | null;
+    scoreB: number | null;
+    status: string;
+    tournamentId: string;
+    teamAId: string;
+    teamBId: string;
+  }
+
+  let matches: MatchStub[] = [];
 
   vi.stubGlobal(
     "fetch",
@@ -134,6 +149,53 @@ beforeEach(() => {
       }
       if (url === "/api/tournaments/t1/classifiers/cls-1" && init?.method === "DELETE") {
         classifierRemoved = true;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+
+      if (url === "/api/tournaments/t1/matches" && (!init?.method || init.method === "GET")) {
+        return new Response(JSON.stringify(matches), { status: 200 });
+      }
+
+      if (url === "/api/tournaments/t1/matches" && init?.method === "POST") {
+        const body = init?.body ? JSON.parse(String(init.body)) : {};
+        matches = [
+          {
+            id: "match-1",
+            scheduledAt: body.scheduledAt ?? new Date("2024-05-10T10:00:00.000Z").toISOString(),
+            court: body.court ?? null,
+            jerseyInfo: body.jerseyInfo ?? null,
+            scoreA: body.scoreA ?? null,
+            scoreB: body.scoreB ?? null,
+            status: "SCHEDULED",
+            tournamentId: "t1",
+            teamAId: body.teamAId ?? "team-1",
+            teamBId: body.teamBId ?? "team-2",
+          },
+        ];
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+
+      if (url === "/api/tournaments/t1/matches/match-1" && init?.method === "PUT") {
+        const body = init?.body ? JSON.parse(String(init.body)) : {};
+        matches = [
+          {
+            id: "match-1",
+            scheduledAt: body.scheduledAt ?? new Date("2024-05-10T10:00:00.000Z").toISOString(),
+            court: body.court ?? null,
+            jerseyInfo: body.jerseyInfo ?? null,
+            scoreA: body.scoreA ?? null,
+            scoreB: body.scoreB ?? null,
+            status: "SCHEDULED",
+            tournamentId: "t1",
+            teamAId: body.teamAId ?? "team-1",
+            teamBId: body.teamBId ?? "team-2",
+          },
+        ];
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+
+      if (url === "/api/tournaments/t1/matches/match-1" && init?.method === "DELETE") {
+        matches = [];
         return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
 
@@ -243,6 +305,162 @@ describe("TournamentDetails", () => {
     expect(screen.queryByText("Warsaw Raptors")).not.toBeInTheDocument();
   });
 
+  it("adds first match when plan is empty", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+
+    // Add teams so dialog has valid options.
+    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div") as HTMLElement;
+    await user.click(within(teamsSection).getByRole("button", { name: "Dodaj" }));
+
+    const addTeamsDialog = await screen.findByRole("dialog");
+    await user.click(within(addTeamsDialog).getByText("Warsaw Raptors"));
+    await user.click(within(addTeamsDialog).getByText("Krakow Eagles"));
+    await user.click(within(addTeamsDialog).getByRole("button", { name: "Dodaj" }));
+
+    // Wait for teams list to update (and teams dialog to close).
+    expect(await screen.findByText("Warsaw Raptors")).toBeInTheDocument();
+
+    const planSection = screen.getByRole("heading", { name: "Plan Rozgrywek" }).closest("div") as HTMLElement;
+    await user.click(within(planSection).getByRole("button", { name: "Dodaj" }));
+
+    const addMatchDialog = await screen.findByRole("dialog");
+    expect(within(addMatchDialog).getByText("Tworzenie planu rozgrywek")).toBeInTheDocument();
+
+    expect(within(addMatchDialog).getByLabelText("Dzień tygodnia")).toBeInTheDocument();
+    expect(within(addMatchDialog).getByLabelText("Drużyna A")).toBeInTheDocument();
+    expect(within(addMatchDialog).getByLabelText("Drużyna B")).toBeInTheDocument();
+    expect(within(addMatchDialog).getByLabelText("Start")).toBeInTheDocument();
+    expect(within(addMatchDialog).getByLabelText("Koniec")).toBeInTheDocument();
+    expect(within(addMatchDialog).getByLabelText("Numer boiska")).toBeInTheDocument();
+    expect(within(addMatchDialog).getByLabelText("Wynik drużyny A")).toBeInTheDocument();
+    expect(within(addMatchDialog).getByLabelText("Wynik drużyny B")).toBeInTheDocument();
+
+    await user.click(within(addMatchDialog).getByRole("button", { name: "Dodaj" }));
+
+    expect(await within(planSection).findByText("Warsaw Raptors")).toBeInTheDocument();
+    expect(within(planSection).getByText("Krakow Eagles")).toBeInTheDocument();
+    expect(within(planSection).getByText(/A:\s*Jasne\s*B:\s*Ciemne/)).toBeInTheDocument();
+  }, 10000);
+
+  it("edits match from plan", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+
+    // Add teams so dialog has valid options.
+    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div") as HTMLElement;
+    await user.click(within(teamsSection).getByRole("button", { name: "Dodaj" }));
+
+    const addTeamsDialog = await screen.findByRole("dialog");
+    await user.click(within(addTeamsDialog).getByText("Warsaw Raptors"));
+    await user.click(within(addTeamsDialog).getByText("Krakow Eagles"));
+    await user.click(within(addTeamsDialog).getByRole("button", { name: "Dodaj" }));
+    expect(await screen.findByText("Warsaw Raptors")).toBeInTheDocument();
+
+    // Add first match.
+    const planSection = screen.getByRole("heading", { name: "Plan Rozgrywek" }).closest("div") as HTMLElement;
+    await user.click(within(planSection).getByRole("button", { name: "Dodaj" }));
+
+    const addMatchDialog = await screen.findByRole("dialog");
+    await user.click(within(addMatchDialog).getByRole("button", { name: "Dodaj" }));
+
+    expect(await within(planSection).findByText("Warsaw Raptors")).toBeInTheDocument();
+    expect(within(planSection).getByText("Krakow Eagles")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Tworzenie planu rozgrywek")).not.toBeInTheDocument());
+
+    await user.click(within(planSection).getByRole("button", { name: "Edytuj" }));
+
+    const editDialog = await screen.findByRole("dialog");
+    expect(within(editDialog).getByText("Edycja meczu")).toBeInTheDocument();
+
+    const scoreAInput = within(editDialog).getByLabelText("Wynik drużyny A") as HTMLInputElement;
+    await user.clear(scoreAInput);
+    await user.type(scoreAInput, "2");
+
+    await user.click(within(editDialog).getByRole("button", { name: "Zapisz" }));
+
+    expect(await within(planSection).findByText("2")).toBeInTheDocument();
+  }, 10000);
+
+  it("deletes match from plan", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+
+    // Add teams so dialog has valid options.
+    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div") as HTMLElement;
+    await user.click(within(teamsSection).getByRole("button", { name: "Dodaj" }));
+
+    const addTeamsDialog = await screen.findByRole("dialog");
+    await user.click(within(addTeamsDialog).getByText("Warsaw Raptors"));
+    await user.click(within(addTeamsDialog).getByText("Krakow Eagles"));
+    await user.click(within(addTeamsDialog).getByRole("button", { name: "Dodaj" }));
+    expect(await screen.findByText("Warsaw Raptors")).toBeInTheDocument();
+
+    // Add first match.
+    const planSection = screen.getByRole("heading", { name: "Plan Rozgrywek" }).closest("div") as HTMLElement;
+    await user.click(within(planSection).getByRole("button", { name: "Dodaj" }));
+
+    const addMatchDialog = await screen.findByRole("dialog");
+    await user.click(within(addMatchDialog).getByRole("button", { name: "Dodaj" }));
+
+    expect(await within(planSection).findByText("Warsaw Raptors")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("Tworzenie planu rozgrywek")).not.toBeInTheDocument());
+
+    await user.click(within(planSection).getByRole("button", { name: "Edytuj" }));
+
+    const editDialog = await screen.findByRole("dialog");
+    await user.click(within(editDialog).getByRole("button", { name: "Usuń" }));
+
+    const confirmDialog = await screen.findByRole("dialog");
+    expect(within(confirmDialog).getByText("Usunąć mecz?")).toBeInTheDocument();
+    await user.click(within(confirmDialog).getByRole("button", { name: "Usuń" }));
+
+    expect(await screen.findByText(/Brak zaplanowanych meczów\./)).toBeInTheDocument();
+  }, 10000);
+
+  it("deletes entire scheduled day from plan", async () => {
+    const user = userEvent.setup();
+    render(<TournamentDetails id="t1" />);
+
+    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
+
+    // Add teams so dialog has valid options.
+    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div") as HTMLElement;
+    await user.click(within(teamsSection).getByRole("button", { name: "Dodaj" }));
+
+    const addTeamsDialog = await screen.findByRole("dialog");
+    await user.click(within(addTeamsDialog).getByText("Warsaw Raptors"));
+    await user.click(within(addTeamsDialog).getByText("Krakow Eagles"));
+    await user.click(within(addTeamsDialog).getByRole("button", { name: "Dodaj" }));
+    expect(await screen.findByText("Warsaw Raptors")).toBeInTheDocument();
+
+    // Add first match.
+    const planSection = screen.getByRole("heading", { name: "Plan Rozgrywek" }).closest("div") as HTMLElement;
+    await user.click(within(planSection).getByRole("button", { name: "Dodaj" }));
+
+    const addMatchDialog = await screen.findByRole("dialog");
+    await user.click(within(addMatchDialog).getByRole("button", { name: "Dodaj" }));
+
+    // Upewniamy się, że modal tworzenia meczu się zamknął.
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    expect(await within(planSection).findByText("Warsaw Raptors")).toBeInTheDocument();
+
+    // Delete whole day.
+    await user.click(screen.getByRole("button", { name: "Usuń" }));
+
+    const confirmDialog = await screen.findByRole("dialog");
+    await user.click(within(confirmDialog).getByRole("button", { name: "Usuń" }));
+
+    expect(await screen.findByText(/Brak zaplanowanych meczów\./)).toBeInTheDocument();
+  }, 10000);
+
   it("adds referees via dialog and shows them", async () => {
     const user = userEvent.setup();
     render(<TournamentDetails id="t1" />);
@@ -286,7 +504,7 @@ describe("TournamentDetails", () => {
 
     expect(await screen.findByText("Anna Nowak")).toBeInTheDocument();
     expect(screen.queryByText("Jan Kowalski")).not.toBeInTheDocument();
-  });
+  }, 10000);
 
   it("adds classifiers via dialog and shows them", async () => {
     const user = userEvent.setup();
