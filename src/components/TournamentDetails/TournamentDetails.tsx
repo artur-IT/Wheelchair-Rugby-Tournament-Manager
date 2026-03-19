@@ -395,7 +395,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
     }
   }
 
-  const personDisplayName = (p: Person) => `${p.firstName} ${p.lastName}`.trim() || "—";
+  const personDisplayName = (p: Person) => `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim() || "—";
 
   if (loading) {
     return (
@@ -757,7 +757,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
                             color: "primary.main",
                           }}
                         >
-                          {r.firstName[0] ?? "?"}
+                          {r.firstName?.[0] ?? "?"}
                         </Box>
                         <Typography sx={{ fontWeight: 500, flex: 1 }}>{personDisplayName(r)}</Typography>
                         <Tooltip title="Usuń sędziego z turnieju">
@@ -833,7 +833,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
                             color: "primary.main",
                           }}
                         >
-                          {c.firstName[0] ?? "?"}
+                          {c.firstName?.[0] ?? "?"}
                         </Box>
                         <Typography sx={{ fontWeight: 500, flex: 1 }}>{personDisplayName(c)}</Typography>
                         <Tooltip title="Usuń klasyfikatora z turnieju">

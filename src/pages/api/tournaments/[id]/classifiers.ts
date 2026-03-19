@@ -11,7 +11,12 @@ export const POST: APIRoute = async ({ params, request }) => {
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
-  const body = await request.json().catch(() => null);
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Nieprawidłowy format JSON" }, 400);
+  }
   const parsed = AddClassifiersSchema.safeParse(body);
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
 
