@@ -3,6 +3,9 @@ export interface MatchDayOption {
   label: string;
 }
 
+export const MATCH_DURATION_MINUTES = 90;
+export const MATCH_DURATION_MS = MATCH_DURATION_MINUTES * 60 * 1000;
+
 export function buildMatchDayOptions(startIso: string, endIso?: string) {
   const startDate = new Date(startIso);
   const endDate = endIso ? new Date(endIso) : startDate;
@@ -37,6 +40,13 @@ export function getMatchDayTimestamp(scheduledAtIso: string) {
 
 export function pad2(n: number) {
   return String(n).padStart(2, "0");
+}
+
+export function minutesToTime(minutes: number) {
+  const normalized = ((minutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hour = Math.floor(normalized / 60);
+  const minute = normalized % 60;
+  return `${pad2(hour)}:${pad2(minute)}`;
 }
 
 export function timeToMinutes(time: string) {

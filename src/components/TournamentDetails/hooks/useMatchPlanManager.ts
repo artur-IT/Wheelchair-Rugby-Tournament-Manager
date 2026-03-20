@@ -1,10 +1,12 @@
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import type { Match, Tournament } from "@/types";
 import {
   MatchDayOption,
   formatDayOptionLabel,
   pad2,
   parseJerseyInfo,
+  MATCH_DURATION_MINUTES,
+  minutesToTime,
   timeToMinutes,
 } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
 
@@ -23,9 +25,17 @@ interface MatchDraft {
   jerseyB: JerseyColor;
 }
 
+const DEFAULT_MATCH_START_TIME = "10:00";
+const DEFAULT_MATCH_END_TIME = minutesToTime(10 * 60 + MATCH_DURATION_MINUTES);
+
+const getMatchEndFromStart = (startTime: string) => {
+  const startMinutes = timeToMinutes(startTime);
+  if (startMinutes == null) return DEFAULT_MATCH_END_TIME;
+  return minutesToTime(startMinutes + MATCH_DURATION_MINUTES);
+};
+
 interface UseMatchPlanManagerArgs {
   tournament: Tournament;
-  matches: Match[];
   refreshMatches: (id: string) => Promise<void>;
   refreshRefereePlan: (id: string) => Promise<void>;
   matchDayOptions: MatchDayOption[];
@@ -51,13 +61,17 @@ export default function useMatchPlanManager({
   const [newMatchDayTimestamp, setNewMatchDayTimestamp] = useState<number | null>(null);
   const [newMatchTeamAId, setNewMatchTeamAId] = useState<string>("");
   const [newMatchTeamBId, setNewMatchTeamBId] = useState<string>("");
-  const [newMatchStartTime, setNewMatchStartTime] = useState<string>("10:00");
-  const [newMatchEndTime, setNewMatchEndTime] = useState<string>("11:00");
+  const [newMatchStartTime, setNewMatchStartTime] = useState<string>(DEFAULT_MATCH_START_TIME);
+  const [newMatchEndTime, setNewMatchEndTime] = useState<string>(DEFAULT_MATCH_END_TIME);
   const [newMatchCourt, setNewMatchCourt] = useState<string>("1");
   const [newMatchScoreA, setNewMatchScoreA] = useState<string>("");
   const [newMatchScoreB, setNewMatchScoreB] = useState<string>("");
   const [newMatchJerseyA, setNewMatchJerseyA] = useState<JerseyColor>("jasne");
   const [newMatchJerseyB, setNewMatchJerseyB] = useState<JerseyColor>("ciemne");
+
+  useEffect(() => {
+    setNewMatchEndTime(getMatchEndFromStart(newMatchStartTime));
+  }, [newMatchStartTime]);
 
   const [editMatchOpen, setEditMatchOpen] = useState(false);
   const [editMatch, setEditMatch] = useState<Match | null>(null);
@@ -78,8 +92,7 @@ export default function useMatchPlanManager({
     setNewMatchTeamAId(teamA?.id ?? "");
     setNewMatchTeamBId(teamB?.id ?? "");
 
-    setNewMatchStartTime("10:00");
-    setNewMatchEndTime("11:00");
+    setNewMatchStartTime(DEFAULT_MATCH_START_TIME);
     setNewMatchCourt("1");
     setNewMatchScoreA("");
     setNewMatchScoreB("");
@@ -121,24 +134,18 @@ export default function useMatchPlanManager({
     }
 
     const startMinutes = hour * 60 + minute;
-    const endMinutes = timeToMinutes(newMatchEndTime);
     const minMinutes = 7 * 60;
     const maxMinutes = 22 * 60;
+    const latestStartMinutes = maxMinutes - MATCH_DURATION_MINUTES;
+    const endMinutes = startMinutes + MATCH_DURATION_MINUTES;
 
-    if (startMinutes < minMinutes || startMinutes > maxMinutes) {
-      setCreateMatchError("Start musi być w przedziale 07:00-22:00");
+    if (startMinutes < minMinutes || startMinutes > latestStartMinutes) {
+      setCreateMatchError("Start musi być w przedziale 07:00-20:30");
       return;
     }
-    if (endMinutes == null) {
-      setCreateMatchError("Podaj poprawny Koniec");
-      return;
-    }
-    if (endMinutes < minMinutes || endMinutes > maxMinutes) {
-      setCreateMatchError("Koniec musi być w przedziale 07:00-22:00");
-      return;
-    }
-    if (endMinutes <= startMinutes) {
-      setCreateMatchError("Koniec musi być po Start");
+
+    if (endMinutes > maxMinutes) {
+      setCreateMatchError("Mecz musi zakończyć się najpóźniej o 22:00");
       return;
     }
 
@@ -210,11 +217,12 @@ export default function useMatchPlanManager({
     setEditMatchDrafts(
       matchesToEdit.map((match) => {
         const matchDate = new Date(match.scheduledAt);
-        const startTime = !Number.isNaN(matchDate.getTime())
+        const hasValidMatchDate = !Number.isNaN(matchDate.getTime());
+        const startTime = hasValidMatchDate
           ? `${pad2(matchDate.getHours())}:${pad2(matchDate.getMinutes())}`
-          : "10:00";
-        const endDate = !Number.isNaN(matchDate.getTime()) ? new Date(matchDate.getTime() + 60 * 60 * 1000) : null;
-        const endTime = endDate ? `${pad2(endDate.getHours())}:${pad2(endDate.getMinutes())}` : "11:00";
+          : DEFAULT_MATCH_START_TIME;
+        const startMinutes = hasValidMatchDate ? matchDate.getHours() * 60 + matchDate.getMinutes() : 10 * 60;
+        const endTime = minutesToTime(startMinutes + MATCH_DURATION_MINUTES);
 
         return {
           id: match.id,
@@ -248,8 +256,8 @@ export default function useMatchPlanManager({
       {
         teamAId,
         teamBId,
-        startTime: "10:00",
-        endTime: "11:00",
+        startTime: DEFAULT_MATCH_START_TIME,
+        endTime: DEFAULT_MATCH_END_TIME,
         court: "1",
         scoreA: "",
         scoreB: "",
@@ -294,24 +302,17 @@ export default function useMatchPlanManager({
         }
 
         const startMinutes = hour * 60 + minute;
-        const endMinutes = timeToMinutes(draft.endTime);
         const minMinutes = 7 * 60;
         const maxMinutes = 22 * 60;
+        const latestStartMinutes = maxMinutes - MATCH_DURATION_MINUTES;
+        const endMinutes = startMinutes + MATCH_DURATION_MINUTES;
 
-        if (startMinutes < minMinutes || startMinutes > maxMinutes) {
-          setEditMatchError("Start musi być w przedziale 07:00-22:00");
+        if (startMinutes < minMinutes || startMinutes > latestStartMinutes) {
+          setEditMatchError("Start musi być w przedziale 07:00-20:30");
           return;
         }
-        if (endMinutes == null) {
-          setEditMatchError("Podaj poprawny Koniec");
-          return;
-        }
-        if (endMinutes < minMinutes || endMinutes > maxMinutes) {
-          setEditMatchError("Koniec musi być w przedziale 07:00-22:00");
-          return;
-        }
-        if (endMinutes <= startMinutes) {
-          setEditMatchError("Koniec musi być po Start");
+        if (endMinutes > maxMinutes) {
+          setEditMatchError("Mecz musi zakończyć się najpóźniej o 22:00");
           return;
         }
 

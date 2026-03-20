@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import type { Match, Person, Tournament } from "@/types";
+import { MATCH_DURATION_MINUTES, minutesToTime, timeToMinutes } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
 import type {
   RefereePlanAddState,
   RefereePlanEditState,
@@ -45,6 +46,11 @@ interface EditRefereePlanDialogProps {
 
 const isRefereeTaken = (candidateId: string, excludeId: string, conflictingIds: string[]) =>
   candidateId !== excludeId && conflictingIds.includes(candidateId);
+
+const computeRefereeDialogEndTimeFromStart = (startTime: string) => {
+  const startMinutes = timeToMinutes(startTime) ?? 0;
+  return minutesToTime(startMinutes + MATCH_DURATION_MINUTES);
+};
 
 export function AddRefereePlanDialog({ addRefereePlan, tournament, personDisplayName }: AddRefereePlanDialogProps) {
   const addRefereePlanPenaltyConflicts = [
@@ -133,8 +139,8 @@ export function AddRefereePlanDialog({ addRefereePlan, tournament, personDisplay
               type="time"
               label="Koniec"
               value={addRefereePlan.endTime}
-              onChange={(e) => addRefereePlan.setEndTime(e.target.value)}
               InputLabelProps={{ shrink: true }}
+              InputProps={{ readOnly: true }}
               size="small"
             />
 
@@ -368,6 +374,7 @@ export function EditRefereePlanDialog({
 
                               const match = matches.find((m) => m.id === draft.id);
                               if (!match) {
+                                console.warn(`Match with id ${draft.id} not found in matches array`);
                                 editRefereePlan.setDrafts((prev) => prev.filter((d) => d.id !== draft.id));
                                 return;
                               }
@@ -424,11 +431,13 @@ export function EditRefereePlanDialog({
                         type="time"
                         label="Start"
                         value={draft.startTime}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const nextStart = e.target.value;
+                          const nextEnd = computeRefereeDialogEndTimeFromStart(nextStart);
                           editRefereePlan.setDrafts((prev) =>
-                            prev.map((d, i) => (i === idx ? { ...d, startTime: e.target.value } : d))
-                          )
-                        }
+                            prev.map((d, i) => (i === idx ? { ...d, startTime: nextStart, endTime: nextEnd } : d))
+                          );
+                        }}
                         InputLabelProps={{ shrink: true }}
                         size="small"
                       />
@@ -439,12 +448,8 @@ export function EditRefereePlanDialog({
                         type="time"
                         label="Koniec"
                         value={draft.endTime}
-                        onChange={(e) =>
-                          editRefereePlan.setDrafts((prev) =>
-                            prev.map((d, i) => (i === idx ? { ...d, endTime: e.target.value } : d))
-                          )
-                        }
                         InputLabelProps={{ shrink: true }}
+                        InputProps={{ readOnly: true }}
                         size="small"
                       />
                     </TableCell>

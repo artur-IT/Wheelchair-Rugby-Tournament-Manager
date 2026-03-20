@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Match, RefereePlanMatch, RefereeRole, Tournament } from "@/types";
 import {
+  MATCH_DURATION_MINUTES,
   MatchDayOption,
   formatDayOptionLabel,
+  minutesToTime,
   pad2,
   timeToMinutes,
 } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
@@ -20,6 +22,15 @@ interface RefereePlanDraft {
   tablePenaltyId: string;
   tableClockId: string;
 }
+
+const DEFAULT_REFEREE_PLAN_START_TIME = "10:00";
+const DEFAULT_REFEREE_PLAN_END_TIME = minutesToTime(10 * 60 + MATCH_DURATION_MINUTES);
+
+const getRefereePlanEndFromStart = (startTime: string) => {
+  const startMinutes = timeToMinutes(startTime);
+  if (startMinutes == null) return DEFAULT_REFEREE_PLAN_END_TIME;
+  return minutesToTime(startMinutes + MATCH_DURATION_MINUTES);
+};
 
 interface DialogControls {
   open: boolean;
@@ -99,8 +110,8 @@ export default function useRefereePlanManager({
   const [newRefereePlanDayTimestamp, setNewRefereePlanDayTimestamp] = useState<number | null>(null);
   const [newRefereePlanTeamAId, setNewRefereePlanTeamAId] = useState("");
   const [newRefereePlanTeamBId, setNewRefereePlanTeamBId] = useState("");
-  const [newRefereePlanStartTime, setNewRefereePlanStartTime] = useState("10:00");
-  const [newRefereePlanEndTime, setNewRefereePlanEndTime] = useState("11:00");
+  const [newRefereePlanStartTime, setNewRefereePlanStartTime] = useState(DEFAULT_REFEREE_PLAN_START_TIME);
+  const [newRefereePlanEndTime, setNewRefereePlanEndTime] = useState(DEFAULT_REFEREE_PLAN_END_TIME);
   const [newRefereePlanCourt, setNewRefereePlanCourt] = useState("1");
   const [newRefereePlanReferee1Id, setNewRefereePlanReferee1Id] = useState("");
   const [newRefereePlanReferee2Id, setNewRefereePlanReferee2Id] = useState("");
@@ -113,6 +124,10 @@ export default function useRefereePlanManager({
   const [editRefereePlanLoading, setEditRefereePlanLoading] = useState(false);
   const [editRefereePlanError, setEditRefereePlanError] = useState<string | null>(null);
   const [editRefereePlanDrafts, setEditRefereePlanDrafts] = useState<RefereePlanDraft[]>([]);
+
+  useEffect(() => {
+    setNewRefereePlanEndTime(getRefereePlanEndFromStart(newRefereePlanStartTime));
+  }, [newRefereePlanStartTime]);
 
   const refreshRefereePlan = useCallback(async (tournamentId: string) => {
     setRefereePlanLoading(true);
@@ -176,8 +191,7 @@ export default function useRefereePlanManager({
     const [teamA, teamB] = tournament.teams;
     setNewRefereePlanTeamAId(teamA?.id ?? "");
     setNewRefereePlanTeamBId(teamB?.id ?? "");
-    setNewRefereePlanStartTime("10:00");
-    setNewRefereePlanEndTime("11:00");
+    setNewRefereePlanStartTime(DEFAULT_REFEREE_PLAN_START_TIME);
     setNewRefereePlanCourt("1");
 
     const referees = tournament.referees;
@@ -225,24 +239,17 @@ export default function useRefereePlanManager({
     }
 
     const startMinutes = hour * 60 + minute;
-    const endMinutes = timeToMinutes(newRefereePlanEndTime);
     const minMinutes = 7 * 60;
     const maxMinutes = 22 * 60;
+    const latestStartMinutes = maxMinutes - MATCH_DURATION_MINUTES;
+    const endMinutes = startMinutes + MATCH_DURATION_MINUTES;
 
-    if (startMinutes < minMinutes || startMinutes > maxMinutes) {
-      setCreateRefereePlanError("Start musi być w przedziale 07:00-22:00");
+    if (startMinutes < minMinutes || startMinutes > latestStartMinutes) {
+      setCreateRefereePlanError("Start musi być w przedziale 07:00-20:30");
       return;
     }
-    if (endMinutes == null) {
-      setCreateRefereePlanError("Podaj poprawny Koniec");
-      return;
-    }
-    if (endMinutes < minMinutes || endMinutes > maxMinutes) {
-      setCreateRefereePlanError("Koniec musi być w przedziale 07:00-22:00");
-      return;
-    }
-    if (endMinutes <= startMinutes) {
-      setCreateRefereePlanError("Koniec musi być po Start");
+    if (endMinutes > maxMinutes) {
+      setCreateRefereePlanError("Mecz musi zakończyć się najpóźniej o 22:00");
       return;
     }
 
@@ -306,11 +313,12 @@ export default function useRefereePlanManager({
     setEditRefereePlanDrafts(
       matchesToEdit.map((match) => {
         const matchDate = new Date(match.scheduledAt);
-        const startTime = !Number.isNaN(matchDate.getTime())
+        const hasValidMatchDate = !Number.isNaN(matchDate.getTime());
+        const startTime = hasValidMatchDate
           ? `${pad2(matchDate.getHours())}:${pad2(matchDate.getMinutes())}`
-          : "10:00";
-        const endDate = !Number.isNaN(matchDate.getTime()) ? new Date(matchDate.getTime() + 60 * 60 * 1000) : null;
-        const endTime = endDate ? `${pad2(endDate.getHours())}:${pad2(endDate.getMinutes())}` : "11:00";
+          : DEFAULT_REFEREE_PLAN_START_TIME;
+        const startMinutes = hasValidMatchDate ? matchDate.getHours() * 60 + matchDate.getMinutes() : 10 * 60;
+        const endTime = minutesToTime(startMinutes + MATCH_DURATION_MINUTES);
 
         const assignments = refereePlanByMatchId[match.id] ?? {};
 
@@ -349,8 +357,8 @@ export default function useRefereePlanManager({
       {
         teamAId,
         teamBId,
-        startTime: "10:00",
-        endTime: "11:00",
+        startTime: DEFAULT_REFEREE_PLAN_START_TIME,
+        endTime: DEFAULT_REFEREE_PLAN_END_TIME,
         court: "1",
         referee1Id: "",
         referee2Id: "",
@@ -398,22 +406,15 @@ export default function useRefereePlanManager({
         }
 
         const startMinutes = hour * 60 + minute;
-        const endMinutes = timeToMinutes(draft.endTime);
+        const latestStartMinutes = maxMinutes - MATCH_DURATION_MINUTES;
+        const endMinutes = startMinutes + MATCH_DURATION_MINUTES;
 
-        if (startMinutes < minMinutes || startMinutes > maxMinutes) {
-          setEditRefereePlanError("Start musi być w przedziale 07:00-22:00");
+        if (startMinutes < minMinutes || startMinutes > latestStartMinutes) {
+          setEditRefereePlanError("Start musi być w przedziale 07:00-20:30");
           return;
         }
-        if (endMinutes == null) {
-          setEditRefereePlanError("Podaj poprawny Koniec");
-          return;
-        }
-        if (endMinutes < minMinutes || endMinutes > maxMinutes) {
-          setEditRefereePlanError("Koniec musi być w przedziale 07:00-22:00");
-          return;
-        }
-        if (endMinutes <= startMinutes) {
-          setEditRefereePlanError("Koniec musi być po Start");
+        if (endMinutes > maxMinutes) {
+          setEditRefereePlanError("Mecz musi zakończyć się najpóźniej o 22:00");
           return;
         }
 

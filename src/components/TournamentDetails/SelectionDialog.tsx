@@ -59,7 +59,7 @@ export default function SelectionDialog({
   const showEmptyState = !items.length && !availableLoading;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle>{title}</DialogTitle>
       <DialogContent dividers>
         {description}
@@ -91,13 +91,13 @@ export default function SelectionDialog({
                 </ListItemButton>
               );
             })}
-            {showEmptyState ? (
-              emptyState ?? (
-                <Typography color="textSecondary" sx={{ py: 1 }}>
-                  Brak pozycji do wyboru.
-                </Typography>
-              )
-            ) : null}
+            {showEmptyState
+              ? (emptyState ?? (
+                  <Typography color="textSecondary" sx={{ py: 1 }}>
+                    Brak pozycji do wyboru.
+                  </Typography>
+                ))
+              : null}
           </List>
         )}
       </DialogContent>
@@ -106,11 +106,7 @@ export default function SelectionDialog({
         <Button onClick={onClose} disabled={loading}>
           {cancelLabel}
         </Button>
-        <Button
-          variant="contained"
-          onClick={onSave}
-          disabled={loading || availableLoading}
-        >
+        <Button variant="contained" onClick={onSave} disabled={loading || availableLoading}>
           {confirmLabel}
         </Button>
       </DialogActions>

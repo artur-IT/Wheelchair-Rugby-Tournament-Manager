@@ -25,6 +25,7 @@ import {
 } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import type { Match, Tournament } from "@/types";
+import { MATCH_DURATION_MINUTES, minutesToTime, timeToMinutes } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
 import type { MatchPlanAddState, MatchPlanEditState } from "@/components/TournamentDetails/hooks/useMatchPlanManager";
 
 interface AddMatchDialogProps {
@@ -40,6 +41,11 @@ interface EditMatchDialogProps {
   setMatchToDelete: (match: Match) => void;
   setDeleteMatchError: (value: string | null) => void;
 }
+
+const computeDraftEndTime = (startTime: string) => {
+  const startMinutes = timeToMinutes(startTime) ?? 0;
+  return minutesToTime(startMinutes + MATCH_DURATION_MINUTES);
+};
 
 export function AddMatchDialog({ addMatch, tournament }: AddMatchDialogProps) {
   return (
@@ -135,8 +141,8 @@ export function AddMatchDialog({ addMatch, tournament }: AddMatchDialogProps) {
             type="time"
             label="Koniec"
             value={addMatch.endTime}
-            onChange={(e) => addMatch.setEndTime(e.target.value)}
             InputLabelProps={{ shrink: true }}
+            InputProps={{ readOnly: true }}
             size="small"
             sx={{ minWidth: 120 }}
           />
@@ -326,7 +332,10 @@ export function EditMatchDialog({
 
                       return (
                         <Tooltip title="Usuń rozgrywkę">
-                          <Box sx={{ display: "flex", justifyContent: "center", width: "100%" }}>
+                          <Box
+                            component="span"
+                            sx={{ display: "inline-flex", justifyContent: "center", width: "100%" }}
+                          >
                             <IconButton
                               aria-label={`Usuń rozgrywkę ${teamAName} vs ${teamBName}`}
                               color="error"
@@ -408,11 +417,13 @@ export function EditMatchDialog({
                       type="time"
                       label="Start"
                       value={draft.startTime}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const nextStart = e.target.value;
+                        const nextEnd = computeDraftEndTime(nextStart);
                         editMatch.setDrafts((prev) =>
-                          prev.map((d, i) => (i === idx ? { ...d, startTime: e.target.value } : d))
-                        )
-                      }
+                          prev.map((d, i) => (i === idx ? { ...d, startTime: nextStart, endTime: nextEnd } : d))
+                        );
+                      }}
                       InputLabelProps={{ shrink: true }}
                       size="small"
                     />
@@ -423,12 +434,8 @@ export function EditMatchDialog({
                       type="time"
                       label="Koniec"
                       value={draft.endTime}
-                      onChange={(e) =>
-                        editMatch.setDrafts((prev) =>
-                          prev.map((d, i) => (i === idx ? { ...d, endTime: e.target.value } : d))
-                        )
-                      }
                       InputLabelProps={{ shrink: true }}
+                      InputProps={{ readOnly: true }}
                       size="small"
                     />
                   </TableCell>
@@ -578,7 +585,7 @@ export function EditMatchDialog({
         <Button
           color="error"
           variant="outlined"
-          disabled={editMatch.loading}
+          disabled={editMatch.loading || deleteMatchLoading}
           onClick={() => {
             if (!editMatch.match) return;
             setDeleteMatchError(null);

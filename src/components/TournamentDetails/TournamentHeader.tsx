@@ -38,9 +38,6 @@ export default function TournamentHeader({ id, tournament, formatDateRange }: To
         <Typography color="textSecondary">{formatDateRange(tournament.startDate, tournament.endDate)}</Typography>
       </Box>
       <Box sx={{ display: "flex", gap: 1.5 }}>
-        <Button variant="outlined" sx={{ borderRadius: 4, fontWeight: "bold" }}>
-          Wyczyść dane
-        </Button>
         <Button
           component="a"
           href={`/tournaments/${id}/edit`}
@@ -53,4 +50,3 @@ export default function TournamentHeader({ id, tournament, formatDateRange }: To
     </Box>
   );
 }
-

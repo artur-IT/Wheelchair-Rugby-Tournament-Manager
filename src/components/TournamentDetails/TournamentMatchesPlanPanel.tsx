@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { Match, Tournament } from "@/types";
+import { MATCH_DURATION_MS } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
 
 interface TournamentMatchesPlanPanelProps {
   tournament: Tournament;
@@ -156,7 +157,7 @@ export default function TournamentMatchesPlanPanel({
                             const teamAName = tournament.teams.find((t) => t.id === m.teamAId)?.name ?? "—";
                             const teamBName = tournament.teams.find((t) => t.id === m.teamBId)?.name ?? "—";
                             const startD = new Date(m.scheduledAt);
-                            const endD = new Date(startD.getTime() + 60 * 60 * 1000);
+                            const endD = new Date(startD.getTime() + MATCH_DURATION_MS);
                             const startTime = !Number.isNaN(startD.getTime())
                               ? startD.toLocaleTimeString("pl-PL", {
                                   hour: "2-digit",

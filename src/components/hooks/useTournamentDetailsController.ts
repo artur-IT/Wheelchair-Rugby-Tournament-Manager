@@ -351,7 +351,9 @@ export function useTournamentDetailsController(id: string) {
   }
 
   function toggleSelectedReferee(refereeId: string) {
-    setSelectedRefereeIds((prev) => (prev.includes(refereeId) ? prev.filter((id) => id !== refereeId) : [...prev, refereeId]));
+    setSelectedRefereeIds((prev) =>
+      prev.includes(refereeId) ? prev.filter((id) => id !== refereeId) : [...prev, refereeId]
+    );
   }
 
   async function saveSelectedReferees() {
@@ -490,7 +492,9 @@ export function useTournamentDetailsController(id: string) {
     setRemoveClassifierLoading(true);
     setRemoveClassifierError(null);
     try {
-      const res = await fetch(`/api/tournaments/${tournament.id}/classifiers/${classifierToRemove.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/tournaments/${tournament.id}/classifiers/${classifierToRemove.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(data?.error || "Nie udało się usunąć klasyfikatora z turnieju");
@@ -972,7 +976,15 @@ export function useTournamentDetailsController(id: string) {
         }
         const { hour, minute } = parsedStartTime;
 
-        const scheduledAt = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, 0, 0).toISOString();
+        const scheduledAt = new Date(
+          day.getFullYear(),
+          day.getMonth(),
+          day.getDate(),
+          hour,
+          minute,
+          0,
+          0
+        ).toISOString();
         const court = draft.court.trim() === "" ? undefined : draft.court.trim();
         const referee1Id = draft.referee1Id.trim() === "" ? undefined : draft.referee1Id.trim();
         const referee2Id = draft.referee2Id.trim() === "" ? undefined : draft.referee2Id.trim();
@@ -1140,12 +1152,21 @@ export function useTournamentDetailsController(id: string) {
           return;
         }
 
-        const scheduledAt = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, 0, 0).toISOString();
+        const scheduledAt = new Date(
+          day.getFullYear(),
+          day.getMonth(),
+          day.getDate(),
+          hour,
+          minute,
+          0,
+          0
+        ).toISOString();
 
         const scoreA = draft.scoreA.trim() === "" ? undefined : Number(draft.scoreA);
         const scoreB = draft.scoreB.trim() === "" ? undefined : Number(draft.scoreB);
         if (
-          (scoreA !== undefined && (!Number.isFinite(scoreA) || !Number.isInteger(scoreA) || scoreA < 0 || scoreA > 99)) ||
+          (scoreA !== undefined &&
+            (!Number.isFinite(scoreA) || !Number.isInteger(scoreA) || scoreA < 0 || scoreA > 99)) ||
           (scoreB !== undefined && (!Number.isFinite(scoreB) || !Number.isInteger(scoreB) || scoreB < 0 || scoreB > 99))
         ) {
           setEditMatchError("Wynik musi być w zakresie 0-99");
@@ -1156,7 +1177,9 @@ export function useTournamentDetailsController(id: string) {
         const jerseyInfo = `Team A: ${draft.jerseyA}, Team B: ${draft.jerseyB}`;
 
         const res = await fetch(
-          draft.id ? `/api/tournaments/${tournament.id}/matches/${draft.id}` : `/api/tournaments/${tournament.id}/matches`,
+          draft.id
+            ? `/api/tournaments/${tournament.id}/matches/${draft.id}`
+            : `/api/tournaments/${tournament.id}/matches`,
           {
             method: draft.id ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
@@ -1174,7 +1197,9 @@ export function useTournamentDetailsController(id: string) {
 
         if (!res.ok) {
           const data = (await res.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(data?.error || (draft.id ? "Nie udało się zaktualizować meczu" : "Nie udało się utworzyć meczu"));
+          throw new Error(
+            data?.error || (draft.id ? "Nie udało się zaktualizować meczu" : "Nie udało się utworzyć meczu")
+          );
         }
       }
 
@@ -1274,9 +1299,13 @@ export function useTournamentDetailsController(id: string) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   };
 
-  const matchesDayTimestamps = Array.from(new Set(matches.map((m) => getMatchDayTimestamp(m.scheduledAt)))).sort((a, b) => a - b);
+  const matchesDayTimestamps = Array.from(new Set(matches.map((m) => getMatchDayTimestamp(m.scheduledAt)))).sort(
+    (a, b) => a - b
+  );
 
-  const scheduleTableDayTimestamps = Array.from(new Set([...scheduleDayTimestamps, ...matchesDayTimestamps])).sort((a, b) => a - b);
+  const scheduleTableDayTimestamps = Array.from(new Set([...scheduleDayTimestamps, ...matchesDayTimestamps])).sort(
+    (a, b) => a - b
+  );
 
   const newMatchDayOptionsForSelect = allowedNewDayTimestamps
     ? matchDayOptions.filter((o) => allowedNewDayTimestamps.includes(o.timestamp))
@@ -1305,7 +1334,10 @@ export function useTournamentDetailsController(id: string) {
       return merged;
     });
 
-    openAddMatchDialog(nextDay, freeDayOptions.map((o) => o.timestamp));
+    openAddMatchDialog(
+      nextDay,
+      freeDayOptions.map((o) => o.timestamp)
+    );
   }
 
   function openNewDayRefereePlanTable() {
@@ -1323,7 +1355,10 @@ export function useTournamentDetailsController(id: string) {
       return merged;
     });
 
-    openAddRefereePlanDialog(nextDay, freeDayOptions.map((o) => o.timestamp));
+    openAddRefereePlanDialog(
+      nextDay,
+      freeDayOptions.map((o) => o.timestamp)
+    );
   }
 
   return {
@@ -1517,4 +1552,3 @@ export function useTournamentDetailsController(id: string) {
     openNewDayRefereePlanTable,
   };
 }
-
