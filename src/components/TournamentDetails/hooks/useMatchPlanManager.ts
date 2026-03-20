@@ -36,6 +36,7 @@ const getMatchEndFromStart = (startTime: string) => {
 
 interface UseMatchPlanManagerArgs {
   tournament: Tournament;
+  matches: Match[];
   refreshMatches: (id: string) => Promise<void>;
   refreshRefereePlan: (id: string) => Promise<void>;
   matchDayOptions: MatchDayOption[];
@@ -49,10 +50,26 @@ interface DialogControls {
 
 export default function useMatchPlanManager({
   tournament,
+  matches,
   refreshMatches,
   refreshRefereePlan,
   matchDayOptions,
 }: UseMatchPlanManagerArgs) {
+  const isOnSameDay = (scheduledAtIso: string, dayTimestamp: number) => {
+    const date = new Date(scheduledAtIso);
+    if (Number.isNaN(date.getTime())) return false;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() === dayTimestamp;
+  };
+
+  const normalizeCourt = (court?: string) => {
+    const next = (court ?? "").trim();
+    return next === "" ? undefined : next;
+  };
+
+  const hasTimeOverlap = (startA: number, endA: number, startB: number, endB: number) => {
+    return startA < endB && endA > startB;
+  };
+
   const [addMatchOpen, setAddMatchOpen] = useState(false);
   const [createMatchLoading, setCreateMatchLoading] = useState(false);
   const [createMatchError, setCreateMatchError] = useState<string | null>(null);
@@ -147,6 +164,26 @@ export default function useMatchPlanManager({
     if (endMinutes > maxMinutes) {
       setCreateMatchError("Mecz musi zakończyć się najpóźniej o 22:00");
       return;
+    }
+
+    const selectedCourt = normalizeCourt(newMatchCourt);
+    if (selectedCourt) {
+      const overlappingMatch = matches.find((match) => {
+        if (normalizeCourt(match.court) !== selectedCourt) return false;
+        if (!isOnSameDay(match.scheduledAt, newMatchDayTimestamp)) return false;
+
+        const matchStart = new Date(match.scheduledAt);
+        if (Number.isNaN(matchStart.getTime())) return false;
+        const matchStartMinutes = matchStart.getHours() * 60 + matchStart.getMinutes();
+        const matchEndMinutes = matchStartMinutes + MATCH_DURATION_MINUTES;
+
+        return hasTimeOverlap(startMinutes, endMinutes, matchStartMinutes, matchEndMinutes);
+      });
+
+      if (overlappingMatch) {
+        setCreateMatchError("Na tym boisku jest już mecz w tym czasie. Wybierz inną godzinę startu.");
+        return;
+      }
     }
 
     const day = new Date(newMatchDayTimestamp);
@@ -279,11 +316,14 @@ export default function useMatchPlanManager({
     }
 
     const day = new Date(editMatchDayTimestamp);
+    const draftIds = new Set(editMatchDrafts.map((draft) => draft.id).filter((id): id is string => Boolean(id)));
+    const outsideDraftMatches = matches.filter((match) => !draftIds.has(match.id));
+    const plannedDraftSlots: { row: number; start: number; end: number; court?: string }[] = [];
 
     setEditMatchLoading(true);
     setEditMatchError(null);
     try {
-      for (const draft of editMatchDrafts) {
+      for (const [index, draft] of editMatchDrafts.entries()) {
         if (!draft.teamAId || !draft.teamBId) {
           setEditMatchError("Wybierz drużyny A i B");
           return;
@@ -315,6 +355,45 @@ export default function useMatchPlanManager({
           setEditMatchError("Mecz musi zakończyć się najpóźniej o 22:00");
           return;
         }
+
+        const selectedCourt = normalizeCourt(draft.court);
+        if (selectedCourt) {
+          const overlapWithOutsideMatch = outsideDraftMatches.find((match) => {
+            if (!isOnSameDay(match.scheduledAt, editMatchDayTimestamp)) return false;
+            if (normalizeCourt(match.court) !== selectedCourt) return false;
+
+            const matchStart = new Date(match.scheduledAt);
+            if (Number.isNaN(matchStart.getTime())) return false;
+
+            const matchStartMinutes = matchStart.getHours() * 60 + matchStart.getMinutes();
+            const matchEndMinutes = matchStartMinutes + MATCH_DURATION_MINUTES;
+            return hasTimeOverlap(startMinutes, endMinutes, matchStartMinutes, matchEndMinutes);
+          });
+          if (overlapWithOutsideMatch) {
+            setEditMatchError(
+              `Mecz w wierszu ${index + 1} koliduje czasowo z innym meczem na tym samym boisku.`
+            );
+            return;
+          }
+
+          const overlapWithDraft = plannedDraftSlots.find(
+            (slot) =>
+              slot.court === selectedCourt && hasTimeOverlap(startMinutes, endMinutes, slot.start, slot.end)
+          );
+          if (overlapWithDraft) {
+            setEditMatchError(
+              `Mecz w wierszu ${index + 1} koliduje czasowo z meczem w wierszu ${overlapWithDraft.row}.`
+            );
+            return;
+          }
+        }
+
+        plannedDraftSlots.push({
+          row: index + 1,
+          start: startMinutes,
+          end: endMinutes,
+          court: selectedCourt,
+        });
 
         const scheduledAt = new Date(
           day.getFullYear(),

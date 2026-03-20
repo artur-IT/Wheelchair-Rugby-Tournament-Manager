@@ -61,6 +61,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
 
   const matchManager = useMatchPlanManager({
     tournament,
+    matches,
     refreshMatches,
     refreshRefereePlan: refereePlanManager.refreshRefereePlan,
     matchDayOptions,
