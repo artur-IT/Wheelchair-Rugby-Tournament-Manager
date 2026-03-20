@@ -163,6 +163,7 @@ export async function updateRefereePlanMatchForTournament(
   if (!match || match.tournamentId !== tournamentId) throw new Error("MATCH_NOT_FOUND");
 
   const [teamAId, teamBId] = [input.teamAId, input.teamBId];
+  if (!teamAId || !teamBId) throw new Error("TEAM_IDS_REQUIRED");
   if (teamAId === teamBId) throw new Error("TEAMS_MUST_BE_DIFFERENT");
 
   const teams = await prisma.tournamentTeam.findMany({

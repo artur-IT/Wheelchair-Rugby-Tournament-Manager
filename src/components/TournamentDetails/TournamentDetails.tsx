@@ -974,6 +974,12 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
     try {
       const day = new Date(editRefereePlanDayTimestamp);
 
+      const minMinutes = 7 * 60;
+      const maxMinutes = 22 * 60;
+
+      // Najpierw walidujemy wszystkie drafty, aby nie wykonywać żadnych fetchy
+      // (czyli unikamy sytuacji, gdzie część wpisów zdąży się zapisać).
+      const parsedStartTimes: { hour: number; minute: number }[] = [];
       for (const draft of editRefereePlanDrafts) {
         if (!draft.teamAId || !draft.teamBId) {
           setEditRefereePlanError("Wybierz drużyny A i B");
@@ -994,8 +1000,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
 
         const startMinutes = hour * 60 + minute;
         const endMinutes = timeToMinutes(draft.endTime);
-        const minMinutes = 7 * 60;
-        const maxMinutes = 22 * 60;
 
         if (startMinutes < minMinutes || startMinutes > maxMinutes) {
           setEditRefereePlanError("Start musi być w przedziale 07:00-22:00");
@@ -1014,6 +1018,19 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
           return;
         }
 
+        parsedStartTimes.push({ hour, minute });
+      }
+
+      // Only after passing validation do we perform fetch for all entries.
+      for (let i = 0; i < editRefereePlanDrafts.length; i++) {
+        const draft = editRefereePlanDrafts[i];
+        const parsedStartTime = parsedStartTimes[i];
+        if (!parsedStartTime) {
+          setEditRefereePlanError("Nie udało się przygotować godziny zapisu");
+          return;
+        }
+        const { hour, minute } = parsedStartTime;
+
         const scheduledAt = new Date(
           day.getFullYear(),
           day.getMonth(),
@@ -1025,7 +1042,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
         ).toISOString();
 
         const court = draft.court.trim() === "" ? undefined : draft.court.trim();
-
         const referee1Id = draft.referee1Id.trim() === "" ? undefined : draft.referee1Id.trim();
         const referee2Id = draft.referee2Id.trim() === "" ? undefined : draft.referee2Id.trim();
         const tablePenaltyId = draft.tablePenaltyId.trim() === "" ? undefined : draft.tablePenaltyId.trim();
@@ -1623,7 +1639,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
 
           <Paper sx={{ p: 4, borderRadius: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 3 }}>
-              Plan Rozgrywek
+              📋 Plan Rozgrywek
             </Typography>
             {matchesLoading ? (
               <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
