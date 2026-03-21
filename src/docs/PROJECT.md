@@ -783,7 +783,7 @@ To jest profesjonalizm. **Max. 2 taski w Progress**.
 
 **Cel:** Dodanie dashboardu do aplikacji.
 
-### 📊 Dashboard
+### 📊 Dashboard - DONE
 
 <details style="margin-left: 1.5em">
 <summary><h3 style="display:inline; margin:0">US1: Podgląd całego wydarzenia (Dashboard) - DONE</h3></summary>
@@ -885,7 +885,7 @@ To jest profesjonalizm. **Max. 2 taski w Progress**.
 - Frontend
   - [ x ] Sekcja „Listy osób” na dashboardzie (podsekcje: drużyny, sędziowie, klasyfikatorzy, wolontariusze).
   - [ x ] Proste listy (np. tabela lub lista) + czytelne nagłówki.
-  - [ ] Integracja z API (np. `GET /tournaments/:id/teams`, `.../referees`, `.../classifiers`, `.../volunteers` lub 1 endpoint zbiorczy).
+  - [ x ] Integracja z API (np. `GET /tournaments/:id/teams`, `.../referees`, `.../classifiers`, `.../volunteers` lub 1 endpoint zbiorczy).
 - Backend / API
   - [ x ] Endpointy do pobrania list przypisanych do turnieju.
   - [ x ] Spójne sortowanie (np. alfabetycznie po nazwisku/nazwie).

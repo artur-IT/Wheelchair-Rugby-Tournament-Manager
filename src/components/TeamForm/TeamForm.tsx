@@ -202,6 +202,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
   // Fetch seasons and when edit mode pre-fill from initialTeam
   useEffect(() => {
     async function fetchSeasons() {
+      setLoadingSeasons(true);
       setSeasonsLoadError(null);
       try {
         const res = await fetch("/api/seasons");
