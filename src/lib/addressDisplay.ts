@@ -15,7 +15,7 @@ export function buildGoogleMapsSearchUrl(parts: { name?: string; address?: strin
 /** Prefer a stored map link; otherwise build a search URL from name and address. */
 export function resolveMapsHref(params: { mapUrl?: string; name?: string; address?: string }): string | null {
   const manual = params.mapUrl?.trim();
-  if (manual) {
+  if (manual && /^https?:\/\//i.test(manual)) {
     return manual;
   }
   return buildGoogleMapsSearchUrl({ name: params.name, address: params.address });
@@ -43,10 +43,7 @@ export function getAddressLines(address: string): string[] {
 }
 
 /** Title-cases each line of a comma-split address for readable UI (fixes all-lowercase input). */
-export function formatAddressForDisplay(
-  address: string | null | undefined,
-  lineJoin: "\n" | ", " = "\n"
-): string {
+export function formatAddressForDisplay(address: string | null | undefined, lineJoin: "\n" | ", " = "\n"): string {
   const raw = (address ?? "").trim();
   if (!raw) {
     return "";

@@ -10,10 +10,7 @@ import {
 
 describe("getAddressLines", () => {
   it("splits street and city line at the first comma", () => {
-    expect(getAddressLines("ul. Sportowa 1, 00-001 Warszawa")).toEqual([
-      "ul. Sportowa 1",
-      "00-001 Warszawa",
-    ]);
+    expect(getAddressLines("ul. Sportowa 1, 00-001 Warszawa")).toEqual(["ul. Sportowa 1", "00-001 Warszawa"]);
   });
 
   it("trims spaces around parts", () => {
@@ -47,8 +44,7 @@ describe("formatAddressForDisplay", () => {
 describe("buildGoogleMapsSearchUrl", () => {
   it("joins name and address and encodes the query", () => {
     expect(buildGoogleMapsSearchUrl({ name: "Hotel Sport", address: "ul. A 1, 00-001 Warszawa" })).toBe(
-      "https://www.google.com/maps/search/?api=1&query=" +
-        encodeURIComponent("Hotel Sport, ul. A 1, 00-001 Warszawa")
+      "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("Hotel Sport, ul. A 1, 00-001 Warszawa")
     );
   });
 
@@ -81,6 +77,8 @@ describe("resolvePlaceMapsHref", () => {
   });
 
   it("delegates to resolveMapsHref when place is defined", () => {
-    expect(resolvePlaceMapsHref({ name: "Hala", address: "ul. 1" })).toBe(resolveMapsHref({ name: "Hala", address: "ul. 1" }));
+    expect(resolvePlaceMapsHref({ name: "Hala", address: "ul. 1" })).toBe(
+      "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("Hala, ul. 1")
+    );
   });
 });

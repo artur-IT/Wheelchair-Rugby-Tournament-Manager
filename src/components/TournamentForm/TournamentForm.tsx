@@ -385,7 +385,7 @@ function TournamentFormContent({ tournamentId }: Props) {
                     label="Link do Mapy (Hala)"
                     placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
                     error={!!errors.hallMapLink}
-                    helperText={errors.hallMapLink?.message}
+                    helperText={errors.hallMapLink?.message || "Zostanie wygenerowany automatycznie jeśli nie podasz"}
                   />
                 )}
               />

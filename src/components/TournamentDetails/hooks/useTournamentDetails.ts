@@ -65,14 +65,20 @@ export default function useTournamentDetails(id: string): UseTournamentDetailsRe
   }, [id]);
 
   const refreshTournament = useCallback(async (nextId: string) => {
-    const refreshed = await fetch(`/api/tournaments/${nextId}`);
-    if (refreshed.status === 404) {
-      setTournament(null);
-      return;
+    const controller = new AbortController();
+    try {
+      const refreshed = await fetch(`/api/tournaments/${nextId}`, { signal: controller.signal });
+      if (refreshed.status === 404) {
+        setTournament(null);
+        return;
+      }
+      if (!refreshed.ok) throw new Error("Nie udało się odświeżyć turnieju");
+      const updated: Tournament = await refreshed.json();
+      setTournament(updated);
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      throw err;
     }
-    if (!refreshed.ok) throw new Error("Nie udało się odświeżyć turnieju");
-    const updated: Tournament = await refreshed.json();
-    setTournament(updated);
   }, []);
 
   const refreshMatches = useCallback(async (tournamentId: string) => {

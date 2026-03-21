@@ -142,4 +142,3 @@ export default function TournamentVenueCards({ tournament, venue, accommodation 
     </Box>
   );
 }
-
