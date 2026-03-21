@@ -15,7 +15,7 @@ import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import { createTournament, fetchTournamentById, updateTournament } from "@/lib/api/tournaments";
 import { queryKeys } from "@/lib/queryKeys";
 import { tournamentFormSchema, type TournamentFormData } from "@/lib/validateInputs";
-import { tournamentToTournamentFormDefaults } from "@/lib/tournamentFormMapping";
+import { tournamentDatesChangedForEdit, tournamentToTournamentFormDefaults } from "@/lib/tournamentFormMapping";
 
 interface Props {
   tournamentId?: string;
@@ -94,8 +94,15 @@ function TournamentFormContent({ tournamentId }: Props) {
   const submitMutation = useMutation({
     mutationFn: (data: TournamentFormData) =>
       tournamentId ? updateTournament(tournamentId, data) : createTournament(data),
-    onSuccess: async (saved) => {
+    onSuccess: async (saved, variables) => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.list() });
+      if (tournamentId && tournamentForEdit) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.detail(tournamentId) });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
+        if (tournamentDatesChangedForEdit(tournamentForEdit, variables)) {
+          sessionStorage.setItem(`wr-tournament-dates-edited:${tournamentId}`, "1");
+        }
+      }
       if (saved.seasonId) {
         await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.season(saved.seasonId) });
       } else {

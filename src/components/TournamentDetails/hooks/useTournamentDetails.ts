@@ -1,7 +1,13 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SetStateAction } from "react";
-import { buildMatchDayOptions, formatDayOptionLabel, getMatchDayTimestamp } from "./matchPlanHelpers";
+import {
+  buildMatchDayOptions,
+  formatDayOptionLabel,
+  getMatchDayTimestamp,
+  isDayTimestampOutsideTournamentRange,
+  isScheduledDayOutsideTournamentRange,
+} from "./matchPlanHelpers";
 import { fetchTournamentByIdOrNull, fetchTournamentMatches } from "@/lib/api/tournaments";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Match, Tournament } from "@/types";
@@ -21,6 +27,10 @@ interface UseTournamentDetailsResult {
   getScheduleDayLabel: (timestamp: number) => string;
   refreshTournament: (nextId: string) => Promise<void>;
   refreshMatches: (tournamentId: string) => Promise<void>;
+  /** True if any match falls outside current tournament start/end (calendar days). */
+  hasMatchesOutsideTournamentRange: boolean;
+  isScheduledDayOutsideTournamentRange: (scheduledAtIso: string) => boolean;
+  isDayTimestampOutsideTournamentRange: (dayTimestamp: number) => boolean;
 }
 
 export default function useTournamentDetails(id: string): UseTournamentDetailsResult {
@@ -98,6 +108,29 @@ export default function useTournamentDetails(id: string): UseTournamentDetailsRe
     [matchDayOptions]
   );
 
+  const hasMatchesOutsideTournamentRange = useMemo(() => {
+    if (!tournament) return false;
+    return matches.some((m) =>
+      isScheduledDayOutsideTournamentRange(m.scheduledAt, tournament.startDate, tournament.endDate)
+    );
+  }, [tournament, matches]);
+
+  const isScheduledDayOutsideTournamentRangeCb = useCallback(
+    (scheduledAtIso: string) =>
+      tournament
+        ? isScheduledDayOutsideTournamentRange(scheduledAtIso, tournament.startDate, tournament.endDate)
+        : false,
+    [tournament]
+  );
+
+  const isDayTimestampOutsideTournamentRangeCb = useCallback(
+    (dayTimestamp: number) =>
+      tournament
+        ? isDayTimestampOutsideTournamentRange(dayTimestamp, tournament.startDate, tournament.endDate)
+        : false,
+    [tournament]
+  );
+
   return {
     tournament,
     loading,
@@ -113,5 +146,8 @@ export default function useTournamentDetails(id: string): UseTournamentDetailsRe
     getScheduleDayLabel,
     refreshTournament,
     refreshMatches,
+    hasMatchesOutsideTournamentRange,
+    isScheduledDayOutsideTournamentRange: isScheduledDayOutsideTournamentRangeCb,
+    isDayTimestampOutsideTournamentRange: isDayTimestampOutsideTournamentRangeCb,
   };
 }

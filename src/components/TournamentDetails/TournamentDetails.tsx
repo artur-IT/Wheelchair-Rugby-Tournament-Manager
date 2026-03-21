@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
-import { Box, Typography, Paper, Link as MuiLink, CircularProgress } from "@mui/material";
+import { Alert, Box, Typography, Paper, Link as MuiLink, CircularProgress } from "@mui/material";
 import QueryProvider from "@/components/QueryProvider/QueryProvider";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
@@ -44,6 +44,8 @@ export default function TournamentDetails({ id }: TournamentDetailsProps) {
 }
 
 function TournamentDetailsContent({ id }: TournamentDetailsProps) {
+  const [showPostEditDateHint, setShowPostEditDateHint] = useState(false);
+
   const {
     tournament,
     loading,
@@ -57,7 +59,22 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
     scheduleTableDayTimestamps,
     getScheduleDayLabel,
     refreshMatches,
+    hasMatchesOutsideTournamentRange,
+    isScheduledDayOutsideTournamentRange,
+    isDayTimestampOutsideTournamentRange,
   } = useTournamentDetails(id);
+
+  useEffect(() => {
+    const key = `wr-tournament-dates-edited:${id}`;
+    try {
+      if (sessionStorage.getItem(key)) {
+        sessionStorage.removeItem(key);
+        setShowPostEditDateHint(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [id]);
 
   const queryClient = useQueryClient();
 
@@ -218,9 +235,33 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
   const venueMapsHref = resolvePlaceMapsHref(venue);
   const accommodationMapsHref = resolvePlaceMapsHref(accommodation);
 
+  const showScheduleDateAlert = showPostEditDateHint || hasMatchesOutsideTournamentRange;
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <TournamentHeader id={id} tournament={tournament} formatDateRange={formatDateRange} />
+
+      {showScheduleDateAlert ? (
+        <Alert
+          severity={hasMatchesOutsideTournamentRange ? "error" : "warning"}
+          variant="outlined"
+          onClose={
+            showPostEditDateHint && !hasMatchesOutsideTournamentRange ? () => setShowPostEditDateHint(false) : undefined
+          }
+        >
+          {hasMatchesOutsideTournamentRange ? (
+            <Typography variant="body2" component="span">
+              Część meczów jest zaplanowana poza aktualnymi datami turnieju. Zaktualizuj terminy w planie rozgrywek i w
+              planie sędziów.
+            </Typography>
+          ) : (
+            <Typography variant="body2" component="span">
+              Daty turnieju zostały zmienione. Sprawdź i zaktualizuj terminy meczów w planie rozgrywek oraz w planie
+              sędziów — stare daty nie przesuwają się automatycznie.
+            </Typography>
+          )}
+        </Alert>
+      ) : null}
 
       <Box
         sx={{
@@ -374,6 +415,8 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
             setMatchDayToDelete={setMatchDayToDelete}
             deleteMatchDayLoading={deleteMatchDayMutation.isPending}
             matchDayToDelete={matchDayToDelete}
+            isMatchOutOfRange={isScheduledDayOutsideTournamentRange}
+            isDayOutOfRange={isDayTimestampOutsideTournamentRange}
           />
 
           <TournamentRefereePlanPanel
@@ -393,6 +436,8 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
             setMatchDayToDelete={setMatchDayToDelete}
             deleteMatchDayLoading={deleteMatchDayMutation.isPending}
             matchDayToDelete={matchDayToDelete}
+            isMatchOutOfRange={isScheduledDayOutsideTournamentRange}
+            isDayOutOfRange={isDayTimestampOutsideTournamentRange}
           />
         </Box>
 
