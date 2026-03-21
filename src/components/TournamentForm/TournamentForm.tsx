@@ -265,7 +265,7 @@ function TournamentFormContent({ tournamentId }: Props) {
                     {...field}
                     fullWidth
                     label="Link do Mapy"
-                    placeholder="https://..."
+                    placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
                     error={!!errors.mapLink}
                     helperText={errors.mapLink?.message}
                   />
@@ -383,7 +383,7 @@ function TournamentFormContent({ tournamentId }: Props) {
                     {...field}
                     fullWidth
                     label="Link do Mapy (Hala)"
-                    placeholder="https://..."
+                    placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
                     error={!!errors.hallMapLink}
                     helperText={errors.hallMapLink?.message}
                   />
