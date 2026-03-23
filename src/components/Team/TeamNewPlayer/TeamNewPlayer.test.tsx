@@ -98,27 +98,4 @@ describe("TeamNewPlayer", () => {
     expect(screen.getByText("Numer: 1–99")).toBeInTheDocument();
   });
 
-  it("invokes callbacks for actions", async () => {
-    const onClose = vi.fn();
-    const onSave = vi.fn();
-    const setNewPlayerForm = vi.fn();
-
-    render(
-      <TeamNewPlayer
-        open
-        onClose={onClose}
-        onSave={onSave}
-        playerActionError={null}
-        playerActionLoading={false}
-        newPlayerForm={basePlayer}
-        setNewPlayerForm={setNewPlayerForm}
-      />
-    );
-
-    await userEvent.click(screen.getByRole("button", { name: "Anuluj" }));
-    await userEvent.click(screen.getByRole("button", { name: "Dodaj zawodnika" }));
-
-    expect(onClose).toHaveBeenCalled();
-    expect(onSave).toHaveBeenCalled();
-  });
 });

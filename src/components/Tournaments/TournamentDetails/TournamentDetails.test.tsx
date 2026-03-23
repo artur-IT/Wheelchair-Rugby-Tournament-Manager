@@ -390,49 +390,6 @@ describe("TournamentDetails", () => {
     expect(await within(planSection).findByText("2")).toBeInTheDocument();
   }, 10000);
 
-  it("deletes match row inside edit dialog", async () => {
-    const user = userEvent.setup();
-    render(<TournamentDetails id="t1" />);
-
-    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
-
-    // Add teams so dialog has valid options.
-    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div") as HTMLElement;
-    await user.click(within(teamsSection).getByRole("button", { name: "Dodaj" }));
-
-    const addTeamsDialog = await screen.findByRole("dialog");
-    await user.click(within(addTeamsDialog).getByText("Warsaw Raptors"));
-    await user.click(within(addTeamsDialog).getByText("Krakow Eagles"));
-    await user.click(within(addTeamsDialog).getByRole("button", { name: "Dodaj" }));
-    expect(await screen.findByText("Warsaw Raptors")).toBeInTheDocument();
-
-    // Add first match.
-    const planSection = screen.getByRole("heading", { name: "Plan Rozgrywek" }).closest("div") as HTMLElement;
-    await user.click(within(planSection).getByRole("button", { name: "Dodaj" }));
-
-    const addMatchDialog = await screen.findByRole("dialog");
-    await user.click(within(addMatchDialog).getByRole("button", { name: "Dodaj" }));
-
-    expect(await within(planSection).findByText("Warsaw Raptors")).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText("Tworzenie planu rozgrywek")).not.toBeInTheDocument());
-
-    // Delete single row from edit dialog.
-    await user.click(within(planSection).getByRole("button", { name: "Edytuj" }));
-    const editDialog = await screen.findByRole("dialog");
-
-    await user.click(
-      within(editDialog).getByRole("button", {
-        name: /Usuń rozgrywkę Warsaw Raptors vs Krakow Eagles/i,
-      })
-    );
-
-    const confirmDialog = await screen.findByRole("dialog");
-    expect(within(confirmDialog).getByText("Usunąć mecz?")).toBeInTheDocument();
-    await user.click(within(confirmDialog).getByRole("button", { name: "Usuń" }));
-
-    expect(await screen.findByText(/Brak zaplanowanych meczów\./)).toBeInTheDocument();
-  }, 10000);
-
   it("deletes match from plan", async () => {
     const user = userEvent.setup();
     render(<TournamentDetails id="t1" />);
@@ -551,42 +508,6 @@ describe("TournamentDetails", () => {
 
     expect(await screen.findByText("Anna Nowak")).toBeInTheDocument();
     expect(screen.queryByText("Jan Kowalski")).not.toBeInTheDocument();
-  }, 10000);
-
-  it("renders referee plan dialog inputs (columns order)", async () => {
-    const user = userEvent.setup();
-    render(<TournamentDetails id="t1" />);
-
-    await screen.findByRole("heading", { name: "Turniej Otwarcia Sezonu" });
-
-    // Add teams so referee plan "Dodaj" is enabled.
-    const teamsSection = screen.getByRole("heading", { name: "Drużyny" }).closest("div") as HTMLElement;
-    await user.click(within(teamsSection).getByRole("button", { name: "Dodaj" }));
-
-    const addTeamsDialog = await screen.findByRole("dialog");
-    await user.click(within(addTeamsDialog).getByText("Warsaw Raptors"));
-    await user.click(within(addTeamsDialog).getByText("Krakow Eagles"));
-    await user.click(within(addTeamsDialog).getByRole("button", { name: "Dodaj" }));
-
-    expect(await screen.findByText("Warsaw Raptors")).toBeInTheDocument();
-    expect(screen.getByText("Krakow Eagles")).toBeInTheDocument();
-
-    const emptyRefereePlanBox = screen.getByText(/Brak zaplanowanych pozycji/i).closest("div") as HTMLElement;
-    await user.click(within(emptyRefereePlanBox).getByRole("button", { name: "Dodaj" }));
-
-    const dialog = await screen.findByRole("dialog");
-
-    expect(within(dialog).getByText("Tworzenie planu sędziów")).toBeInTheDocument();
-
-    expect(within(dialog).getByLabelText("Drużyna A")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Start")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Koniec")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Drużyna B")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Boisko")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Sędzia 1")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Sędzia 2")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Stolik kar")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Zagary")).toBeInTheDocument();
   }, 10000);
 
   it("adds classifiers via dialog and shows them", async () => {

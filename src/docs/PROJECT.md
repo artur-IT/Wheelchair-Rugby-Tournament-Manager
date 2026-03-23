@@ -22,14 +22,8 @@ Użytkownikiem będzie 1 osoba odpowiedzialna za organizację całego turnieju. 
 <details style="margin-left: 1.5em">
 <summary><h3 style="display:inline; margin:0">v.2 (opcjonalne):</h3></summary>
 
-- rozpiska meczy (+pdf),
-- plan meczów dla sędziów (+pdf):
-  - kto z kim,
-  - o której,
-  - które boisko,
-- dodawanie wyników meczów z tego turnieju:
-  - kto z kim,
-  - wynik
+- rozpiska meczy (pdf),
+- plan meczów dla sędziów (pdf):
 - plan klasyfikacji zawodników (+pdf):
   - zawodnik,
   - gdzie,
