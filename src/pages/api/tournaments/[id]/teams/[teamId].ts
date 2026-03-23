@@ -10,8 +10,7 @@ export const DELETE: APIRoute = async ({ params }) => {
   try {
     await removeTeamFromTournament(id, teamId);
     return json({ ok: true }, 200);
-  } catch (error) {
-    console.error("Failed to remove team from tournament:", error);
+  } catch {
     return json({ error: "Nie udało się usunąć drużyny z turnieju" }, 500);
   }
 };

@@ -29,7 +29,6 @@ export const POST: APIRoute = async ({ params, request }) => {
       return json({ error: "Wybrana drużyna jest z innego sezonu" }, 400);
     }
 
-    console.error("Failed to add teams to tournament:", error);
     return json({ error: "Nie udało się dodać drużyn do turnieju" }, 500);
   }
 };

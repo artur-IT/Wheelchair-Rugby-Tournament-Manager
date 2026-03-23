@@ -1,4 +1,8 @@
+/* eslint-env node */
+
 import { createPrismaClient } from "./prismaClient.mjs";
+
+const { console, process } = globalThis;
 
 const prisma = createPrismaClient();
 
@@ -36,10 +40,8 @@ async function clearDb() {
 
 try {
   await clearDb();
-  // eslint-disable-next-line no-console
   console.log("✅ Database cleared (data only).");
 } catch (err) {
-  // eslint-disable-next-line no-console
   console.error("❌ Failed to clear database:", err);
   process.exitCode = 1;
 } finally {

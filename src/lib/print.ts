@@ -5,7 +5,10 @@ const PRINT_WINDOW_FEATURES = "width=1200,height=800";
  */
 export function printElementAsLandscapePdf(title: string, element: HTMLElement, tournamentDateRange?: string) {
   const printWindow = window.open("", "_blank", PRINT_WINDOW_FEATURES);
-  if (!printWindow) return;
+  if (!printWindow) {
+    alert("Unable to open print window. Please allow popups for this site.");
+    return;
+  }
 
   const clone = element.cloneNode(true) as HTMLElement;
   clone.querySelectorAll(".wr-print-hide").forEach((node) => node.remove());

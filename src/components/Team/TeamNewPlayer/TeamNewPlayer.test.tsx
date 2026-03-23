@@ -97,5 +97,4 @@ describe("TeamNewPlayer", () => {
     expect(screen.getByText("Klasyfikacja: 0.5–3.5")).toBeInTheDocument();
     expect(screen.getByText("Numer: 1–99")).toBeInTheDocument();
   });
-
 });

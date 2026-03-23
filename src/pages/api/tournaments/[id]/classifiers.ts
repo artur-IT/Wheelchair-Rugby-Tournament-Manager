@@ -33,7 +33,6 @@ export const POST: APIRoute = async ({ params, request }) => {
     if (error instanceof Error && error.message === "CLASSIFIER_WRONG_SEASON") {
       return json({ error: "Wybrany klasyfikator jest z innego sezonu" }, 400);
     }
-    console.error("Failed to add classifiers to tournament:", error);
     return json({ error: "Nie udało się dodać klasyfikatorów do turnieju" }, 500);
   }
 };

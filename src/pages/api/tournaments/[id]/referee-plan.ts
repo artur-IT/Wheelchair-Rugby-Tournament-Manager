@@ -32,7 +32,6 @@ export const GET: APIRoute = async ({ params }) => {
       return json({ error: "Nie znaleziono turnieju" }, 404);
     }
 
-    console.error("Failed to list referee plan:", error);
     return json({ error: "Nie udało się pobrać planu sędziów" }, 500);
   }
 };
@@ -66,7 +65,6 @@ export const POST: APIRoute = async ({ params, request }) => {
         return json({ error: "Ten sam sędzia nie może pełnić kilku ról w jednym meczu" }, 400);
     }
 
-    console.error("Failed to create referee plan entry:", error);
     return json({ error: "Nie udało się utworzyć wpisu w planie sędziów" }, 500);
   }
 };

@@ -46,5 +46,11 @@ export const buildPlayerPayloadFromRow = (row: PlayerRowLike): TeamPlayerPayload
 
 export const buildPlayerPayloadFromEntity = (player: Player): TeamPlayerPayload => buildPlayerPayload(player);
 
-export const toWebsiteHref = (websiteUrl: string) =>
-  websiteUrl.startsWith("http://") || websiteUrl.startsWith("https://") ? websiteUrl : `https://${websiteUrl}`;
+export const toWebsiteHref = (websiteUrl: string) => {
+  if (!websiteUrl) return "";
+  const lowerUrl = websiteUrl.toLowerCase();
+  if (lowerUrl.startsWith("http://") || lowerUrl.startsWith("https://") || websiteUrl.startsWith("//")) {
+    return websiteUrl;
+  }
+  return `https://${websiteUrl}`;
+};

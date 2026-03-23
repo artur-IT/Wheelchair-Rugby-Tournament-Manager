@@ -28,7 +28,6 @@ export const POST: APIRoute = async ({ params, request }) => {
     if (error instanceof Error && error.message === "REFEREE_WRONG_SEASON") {
       return json({ error: "Wybrany sędzia jest z innego sezonu" }, 400);
     }
-    console.error("Failed to add referees to tournament:", error);
     return json({ error: "Nie udało się dodać sędziów do turnieju" }, 500);
   }
 };

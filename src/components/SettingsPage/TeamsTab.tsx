@@ -6,7 +6,7 @@ import { fetchTeamsBySeason } from "@/lib/api/teams";
 import { queryKeys } from "@/lib/queryKeys";
 
 interface TeamsTabProps {
-  seasonId: string;
+  seasonId: string | undefined;
 }
 
 export default function TeamsTab({ seasonId }: TeamsTabProps) {

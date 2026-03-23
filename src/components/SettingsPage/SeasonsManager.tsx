@@ -70,6 +70,7 @@ export default function SeasonsManager({ onSeasonChange }: SeasonsManagerProps) 
   }, [defaultSeasonId, seasons]);
 
   useEffect(() => {
+    if (!selectedId) return;
     onSeasonChange(selectedId);
   }, [onSeasonChange, selectedId]);
 

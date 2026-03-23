@@ -22,8 +22,6 @@ Użytkownikiem będzie 1 osoba odpowiedzialna za organizację całego turnieju. 
 <details style="margin-left: 1.5em">
 <summary><h3 style="display:inline; margin:0">v.2 (opcjonalne):</h3></summary>
 
-- rozpiska meczy (pdf),
-- plan meczów dla sędziów (pdf):
 - plan klasyfikacji zawodników (+pdf):
   - zawodnik,
   - gdzie,
@@ -128,10 +126,12 @@ Użytkownikiem będzie 1 osoba odpowiedzialna za organizację całego turnieju. 
 ### 8) User Flow rozszerzony (v2 - opcjonalnie)
 
 1. Po przygotowaniu turnieju użytkownik może wygenerować dokumenty PDF:
-   - rozpiska meczów,
-   - plan meczów dla sędziów,
-   - plan klasyfikacji zawodników,
-   - informator turniejowy.
+
+- plan meczów dla sędziów (pdf),
+- plan meczów dla sędziów (pdf):
+- plan klasyfikacji zawodników (pdf):
+  - informator turniejowy.
+
 2. W trakcie lub po turnieju użytkownik wpisuje wyniki meczów.
 3. System automatycznie aktualizuje:
    - tabelę turniejową,

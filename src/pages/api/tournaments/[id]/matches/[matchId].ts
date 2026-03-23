@@ -46,7 +46,6 @@ export const PUT: APIRoute = async ({ params, request }) => {
     if (error instanceof Error && error.message === "TEAM_NOT_IN_TOURNAMENT") {
       return json({ error: "Wybrane drużyny nie należą do turnieju" }, 400);
     }
-    console.error("Failed to update match:", error);
     return json({ error: "Nie udało się zaktualizować meczu" }, 500);
   }
 };
@@ -66,7 +65,6 @@ export const DELETE: APIRoute = async ({ params }) => {
     if (error instanceof Error && error.message === "MATCH_NOT_FOUND") {
       return json({ error: "Nie znaleziono meczu" }, 404);
     }
-    console.error("Failed to delete match:", error);
     return json({ error: "Nie udało się usunąć meczu" }, 500);
   }
 };

@@ -67,7 +67,8 @@ describe("TeamForm", () => {
 
     const coachCall = fetchMock.mock.calls.find((c) => c[0] === "/api/coaches") as [string, RequestInit] | undefined;
     expect(coachCall).toBeDefined();
-    const [, coachOptions] = coachCall!;
+    if (!coachCall) throw new Error("Coach call missing");
+    const [, coachOptions] = coachCall;
     expect(JSON.parse(String(coachOptions.body))).toEqual({
       firstName: "Anna",
       lastName: "Nowak",
@@ -80,7 +81,8 @@ describe("TeamForm", () => {
       (c) => c[0] === "/api/teams" && (c[1] as RequestInit)?.method === "POST"
     ) as [string, RequestInit] | undefined;
     expect(teamPostCall).toBeDefined();
-    const [, submitOptions] = teamPostCall!;
+    if (!teamPostCall) throw new Error("Team submit call missing");
+    const [, submitOptions] = teamPostCall;
     expect(JSON.parse(String(submitOptions.body))).toEqual({
       name: "Test Team",
       address: "Test Address",

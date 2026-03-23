@@ -116,16 +116,18 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
   const deleteTeamMutation = useMutation({
     mutationFn: deleteTeamById,
     onSuccess: () => {
-      window.location.href = "/settings";
+      window.location.assign("/settings");
     },
   });
   const updatePlayersMutation = useMutation({
-    mutationFn: async (playersPayload: {
-      firstName: string;
-      lastName: string;
-      classification?: number;
-      number?: number;
-    }[]) => {
+    mutationFn: async (
+      playersPayload: {
+        firstName: string;
+        lastName: string;
+        classification?: number;
+        number?: number;
+      }[]
+    ) => {
       if (!team) throw new Error("Nie znaleziono drużyny");
       return updateTeamById(team.id, buildTeamUpdateBody(team, playersPayload));
     },
@@ -239,8 +241,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       setPlayerActionError("Imię i nazwisko są wymagane");
       return;
     }
-    const classification =
-      parseOptionalNumber(editForm.classification);
+    const classification = parseOptionalNumber(editForm.classification);
     const classificationError = getPlayerClassificationError(classification);
     if (classificationError) {
       setPlayerActionError(classificationError);
@@ -278,7 +279,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       firstName: "",
       lastName: "",
       classification: undefined,
-      number: 0,
+      number: undefined,
     });
     setAddingNewPlayer(true);
   };
@@ -304,7 +305,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       setPlayerActionError(classificationError);
       return;
     }
-    const number = newPlayerForm.number ? Number(newPlayerForm.number) : undefined;
+    const number = newPlayerForm.number != null ? Number(newPlayerForm.number) : undefined;
     const numberError = getPlayerNumberError(number);
     if (numberError) {
       setPlayerActionError(numberError);
@@ -349,12 +350,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
             {team.name}
           </Typography>
           {team.websiteUrl ? (
-            <Link
-              href={toWebsiteHref(team.websiteUrl)}
-              target="_blank"
-              rel="noreferrer"
-              underline="hover"
-            >
+            <Link href={toWebsiteHref(team.websiteUrl)} target="_blank" rel="noreferrer" underline="hover">
               <Typography color="textSecondary">{team.websiteUrl}</Typography>
             </Link>
           ) : (
@@ -447,7 +443,11 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
           <Button onClick={handleEditPlayerClose} disabled={updatePlayersMutation.isPending}>
             Anuluj
           </Button>
-          <Button variant="contained" onClick={handleEditPlayerSave} disabled={updatePlayersMutation.isPending || !editForm}>
+          <Button
+            variant="contained"
+            onClick={handleEditPlayerSave}
+            disabled={updatePlayersMutation.isPending || !editForm}
+          >
             {updatePlayersMutation.isPending ? <CircularProgress size={24} /> : "Zapisz"}
           </Button>
         </DialogActions>
@@ -521,7 +521,7 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
                 <TableBody>
                   {players.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                      <TableCell colSpan={4} align="center" sx={{ py: 4, color: "text.secondary" }}>
                         Brak zawodników w drużynie.
                       </TableCell>
                     </TableRow>
@@ -558,8 +558,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
               Kontakt
             </Typography>
             <Typography sx={{ fontWeight: "bold" }}>
-              {team.contactFirstName ?? "Brak"} {team.contactLastName ?? "danych"}
-            </Typography>
+              {team.contactFirstName && team.contactLastName
+                ? `${team.contactFirstName} ${team.contactLastName}`
+                : "Brak danych"}
+            </Typography>{" "}
             <Typography variant="body2" color="textSecondary">
               {team.contactEmail ?? "Brak emaila"}
             </Typography>

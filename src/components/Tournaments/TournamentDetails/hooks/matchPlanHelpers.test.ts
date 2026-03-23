@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  isDayTimestampOutsideTournamentRange,
-  isScheduledDayOutsideTournamentRange,
-} from "./matchPlanHelpers";
+import { isDayTimestampOutsideTournamentRange, isScheduledDayOutsideTournamentRange } from "./matchPlanHelpers";
 
 describe("matchPlanHelpers tournament range", () => {
   it("isScheduledDayOutsideTournamentRange is false inside inclusive bounds", () => {
@@ -27,8 +24,7 @@ describe("matchPlanHelpers tournament range", () => {
   it("isDayTimestampOutsideTournamentRange matches scheduled-day helper for same calendar day", () => {
     const start = "2024-05-10T00:00:00.000Z";
     const end = "2024-05-12T00:00:00.000Z";
-    const d = new Date(2024, 4, 9);
-    const ts = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const ts = Date.UTC(2024, 4, 9);
     expect(isDayTimestampOutsideTournamentRange(ts, start, end)).toBe(true);
     expect(isScheduledDayOutsideTournamentRange(new Date(ts).toISOString(), start, end)).toBe(true);
   });

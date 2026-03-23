@@ -125,9 +125,7 @@ export default function useTournamentDetails(id: string): UseTournamentDetailsRe
 
   const isDayTimestampOutsideTournamentRangeCb = useCallback(
     (dayTimestamp: number) =>
-      tournament
-        ? isDayTimestampOutsideTournamentRange(dayTimestamp, tournament.startDate, tournament.endDate)
-        : false,
+      tournament ? isDayTimestampOutsideTournamentRange(dayTimestamp, tournament.startDate, tournament.endDate) : false,
     [tournament]
   );
 

@@ -49,7 +49,6 @@ export const POST: APIRoute = async ({ request }) => {
         return json({ error: "Classifier already exists" }, 409);
       }
     }
-    console.error("Failed to create classifier:", error);
     return json({ error: "Failed to create classifier" }, 500);
   }
 };

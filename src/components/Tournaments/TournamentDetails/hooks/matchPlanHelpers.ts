@@ -39,7 +39,10 @@ export function getMatchDayTimestamp(scheduledAtIso: string) {
 }
 
 /** Returns calendar-day bounds (local) for the tournament, same logic as `buildMatchDayOptions`. */
-function tournamentDayBounds(tournamentStartIso: string, tournamentEndIso?: string | null): { first: number; last: number } | null {
+function tournamentDayBounds(
+  tournamentStartIso: string,
+  tournamentEndIso?: string | null
+): { first: number; last: number } | null {
   const start = new Date(tournamentStartIso);
   const end = tournamentEndIso ? new Date(tournamentEndIso) : start;
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
@@ -58,6 +61,7 @@ export function isScheduledDayOutsideTournamentRange(
   const bounds = tournamentDayBounds(tournamentStartIso, tournamentEndIso);
   if (!bounds) return false;
   const matchDay = getMatchDayTimestamp(scheduledAtIso);
+  if (Number.isNaN(matchDay)) return true; // Treat invalid dates as outside range
   return matchDay < bounds.first || matchDay > bounds.last;
 }
 

@@ -14,11 +14,17 @@ import TournamentTeamsPanel from "@/components/Tournaments/TournamentDetails/Tou
 import TournamentPersonnelPanels from "@/components/Tournaments/TournamentDetails/TournamentPersonnelPanels";
 import SelectionDialog from "@/components/Tournaments/TournamentDetails/SelectionDialog";
 import { AddMatchDialog, EditMatchDialog } from "@/components/Tournaments/TournamentDetails/dialogs/MatchPlanDialogs";
-import { AddRefereePlanDialog, EditRefereePlanDialog } from "@/components/Tournaments/TournamentDetails/dialogs/RefereePlanDialogs";
+import {
+  AddRefereePlanDialog,
+  EditRefereePlanDialog,
+} from "@/components/Tournaments/TournamentDetails/dialogs/RefereePlanDialogs";
 import useMatchPlanManager from "@/components/Tournaments/TournamentDetails/hooks/useMatchPlanManager";
 import useRefereePlanManager from "@/components/Tournaments/TournamentDetails/hooks/useRefereePlanManager";
 import useTournamentDetails from "@/components/Tournaments/TournamentDetails/hooks/useTournamentDetails";
-import { getMatchDayTimestamp, parseJerseyInfo } from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
+import {
+  getMatchDayTimestamp,
+  parseJerseyInfo,
+} from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 import useTournamentPersonnelManager from "@/components/Tournaments/TournamentDetails/hooks/useTournamentPersonnelManager";
 import { formatAddressForDisplay, resolvePlaceMapsHref } from "@/lib/addressDisplay";
 import { deleteTournamentMatch } from "@/lib/api/tournaments";

@@ -146,7 +146,8 @@ export default function TeamNewPlayer({
                 inputProps={{ inputMode: "numeric" }}
                 value={newPlayerForm.number}
                 onChange={(e) => {
-                  setNewPlayerForm((form) => (form ? { ...form, number: Number(e.target.value) } : form));
+                  const val = e.target.value;
+                  setNewPlayerForm((form) => (form ? { ...form, number: val === "" ? 0 : Number(val) } : form));
                   clearFieldError("number");
                 }}
                 fullWidth

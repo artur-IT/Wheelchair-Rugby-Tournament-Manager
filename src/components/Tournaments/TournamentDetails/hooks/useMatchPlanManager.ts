@@ -393,15 +393,12 @@ export default function useMatchPlanManager({
             return hasTimeOverlap(startMinutes, endMinutes, matchStartMinutes, matchEndMinutes);
           });
           if (overlapWithOutsideMatch) {
-            setEditMatchError(
-              `Mecz w wierszu ${index + 1} koliduje czasowo z innym meczem na tym samym boisku.`
-            );
+            setEditMatchError(`Mecz w wierszu ${index + 1} koliduje czasowo z innym meczem na tym samym boisku.`);
             return;
           }
 
           const overlapWithDraft = plannedDraftSlots.find(
-            (slot) =>
-              slot.court === selectedCourt && hasTimeOverlap(startMinutes, endMinutes, slot.start, slot.end)
+            (slot) => slot.court === selectedCourt && hasTimeOverlap(startMinutes, endMinutes, slot.start, slot.end)
           );
           if (overlapWithDraft) {
             setEditMatchError(

@@ -380,6 +380,11 @@ export default function useRefereePlanManager({
 
   function addAnotherEditRefereePlanRow() {
     if (!tournament) return;
+    if (tournament.teams.length < 2) {
+      setEditRefereePlanError("Brak wystarczającej liczby drużyn do utworzenia rozgrywki");
+      return;
+    }
+
     const teamAId = tournament.teams[0]?.id ?? "";
     const teamBId = tournament.teams.find((t) => t.id !== teamAId)?.id ?? teamAId;
     setEditRefereePlanDrafts((prev) => [

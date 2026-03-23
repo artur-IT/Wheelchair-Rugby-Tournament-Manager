@@ -29,7 +29,6 @@ export const GET: APIRoute = async ({ params }) => {
     if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {
       return json({ error: "Nie znaleziono turnieju" }, 404);
     }
-    console.error("Failed to list matches:", error);
     return json({ error: "Nie udało się pobrać meczów" }, 500);
   }
 };
@@ -58,7 +57,6 @@ export const POST: APIRoute = async ({ params, request }) => {
     if (error instanceof Error && error.message === "TEAM_NOT_IN_TOURNAMENT") {
       return json({ error: "Wybrane drużyny nie należą do turnieju" }, 400);
     }
-    console.error("Failed to create match:", error);
     return json({ error: "Nie udało się utworzyć meczu" }, 500);
   }
 };

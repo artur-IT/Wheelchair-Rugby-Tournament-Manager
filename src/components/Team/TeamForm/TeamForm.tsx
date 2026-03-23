@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useState, useEffect, useMemo, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
@@ -25,10 +25,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
 import QueryProvider from "@/components/QueryProvider/QueryProvider";
-import {
-  buildPlayerPayloadFromRow,
-  normalizeText,
-} from "@/components/Team/shared/teamFormUtils";
+import { buildPlayerPayloadFromRow, normalizeText } from "@/components/Team/shared/teamFormUtils";
 import { useEditableRows } from "@/components/Team/shared/useEditableRows";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import MutationErrorAlert from "@/components/ui/MutationErrorAlert";
@@ -203,7 +200,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
     queryFn: ({ signal }) => fetchSeasonsList(signal),
   });
 
-  const seasons = seasonsData ?? [];
+  const seasons = useMemo(() => seasonsData ?? [], [seasonsData]);
   const seasonsLoadError = seasonsQueryFailed && seasonsQueryError instanceof Error ? seasonsQueryError.message : null;
 
   const effectiveSeasonId = seasonId || (isEdit && initialTeam ? initialTeam.seasonId : "");
@@ -232,6 +229,15 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
         contactPhone: "",
         coachFirstName: "",
         coachLastName: "",
+        coachEmail: "",
+        coachPhone: "",
+        websiteUrl: "",
+        refereeFirstName: "",
+        refereeLastName: "",
+        refereeEmail: "",
+        refereePhone: "",
+        staffFirstName: "",
+        staffLastName: "",
       };
 
   const {
@@ -254,7 +260,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
     } else if (seasons.length > 0 && !isEdit) {
       setSeasonId(seasons[0].id);
     }
-  }, [seasons, isEdit, initialTeam, reset]);
+  }, [seasons, isEdit, initialTeam, reset, setPlayers, setStaff]);
 
   const submitMutation = useMutation({
     mutationFn: async (data: TeamFormValues) => {

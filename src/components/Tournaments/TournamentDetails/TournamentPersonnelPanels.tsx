@@ -27,7 +27,6 @@ export default function TournamentPersonnelPanels({
   removeClassifierLoading,
   classifierToRemove,
 }: TournamentPersonnelPanelsProps) {
-
   return (
     <Paper sx={{ p: 3, borderRadius: 3 }}>
       <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>

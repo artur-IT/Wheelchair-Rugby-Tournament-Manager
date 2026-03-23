@@ -22,7 +22,11 @@ import {
 } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import type { Match, Person, Tournament } from "@/types";
-import { MATCH_DURATION_MINUTES, minutesToTime, timeToMinutes } from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
+import {
+  MATCH_DURATION_MINUTES,
+  minutesToTime,
+  timeToMinutes,
+} from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 import type {
   RefereePlanAddState,
   RefereePlanEditState,
@@ -374,7 +378,6 @@ export function EditRefereePlanDialog({
 
                               const match = matches.find((m) => m.id === draft.id);
                               if (!match) {
-                                console.warn(`Match with id ${draft.id} not found in matches array`);
                                 editRefereePlan.setDrafts((prev) => prev.filter((d) => d.id !== draft.id));
                                 return;
                               }

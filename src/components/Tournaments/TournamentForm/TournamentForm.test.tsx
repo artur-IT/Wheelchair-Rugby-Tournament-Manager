@@ -131,10 +131,12 @@ describe("TournamentForm", () => {
 
     await user.click(screen.getByRole("button", { name: "Zapisz Turniej" }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await waitFor(() => {
+      const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === "PUT");
+      expect(putCall).toBeDefined();
+    });
 
     const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === "PUT") as [string, RequestInit];
-    expect(putCall).toBeDefined();
     expect(putCall[0]).toBe("/api/tournaments/t1");
 
     const [, putInit] = putCall;

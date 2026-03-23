@@ -49,7 +49,10 @@ describe("personnel mutations", () => {
   });
 
   it("deletes person via API helper", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 204 }))
+    );
     await expect(deletePersonnel("/api/referees", "r1")).resolves.toBeUndefined();
   });
 });
