@@ -1,4 +1,16 @@
-import { Box, Button, CircularProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import type { Match, Tournament } from "@/types";
 import { MATCH_DURATION_MS } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
@@ -9,6 +21,14 @@ const outOfRangeTimeCellSx = {
   color: "common.white",
   fontWeight: 700,
 } as const;
+
+function getTeamNameColor(scoreA?: number, scoreB?: number, side?: "A" | "B") {
+  const hasBothScores = typeof scoreA === "number" && typeof scoreB === "number";
+  if (!hasBothScores || !side) return "text.primary";
+  if (scoreA === scoreB) return "warning.main";
+  if (side === "A") return scoreA > scoreB ? "success.main" : "error.main";
+  return scoreB > scoreA ? "success.main" : "error.main";
+}
 
 interface TournamentMatchesPlanPanelProps {
   tournament: Tournament;
@@ -165,7 +185,13 @@ export default function TournamentMatchesPlanPanel({
                   ) : (
                     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
                       <Table size="small" aria-label={`Tabela planu rozgrywek: ${dayLabel}`}>
-                        <TableHead>
+                        <TableHead
+                          sx={{
+                            "& .MuiTableCell-root": {
+                              whiteSpace: "nowrap",
+                            },
+                          }}
+                        >
                           <TableRow>
                             <TableCell align="center">Drużyna A</TableCell>
                             <TableCell align="center">Punkty A</TableCell>
@@ -204,18 +230,28 @@ export default function TournamentMatchesPlanPanel({
 
                             return (
                               <TableRow key={m.id}>
-                                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                                <TableCell
+                                  align="center"
+                                  sx={{ fontWeight: 600, color: getTeamNameColor(m.scoreA, m.scoreB, "A") }}
+                                >
                                   {teamAName}
                                 </TableCell>
-                                <TableCell align="center">{m.scoreA ?? "—"}</TableCell>
+                                <TableCell align="center" sx={{ fontSize: "1.4rem" }}>
+                                  {m.scoreA ?? "—"}
+                                </TableCell>
                                 <TableCell align="center" sx={rowOut ? outOfRangeTimeCellSx : undefined}>
                                   {startTime}
                                 </TableCell>
                                 <TableCell align="center" sx={rowOut ? outOfRangeTimeCellSx : undefined}>
                                   {endTime}
                                 </TableCell>
-                                <TableCell align="center">{m.scoreB ?? "—"}</TableCell>
-                                <TableCell align="center" sx={{ fontWeight: 600 }}>
+                                <TableCell align="center" sx={{ fontSize: "1.4rem" }}>
+                                  {m.scoreB ?? "—"}
+                                </TableCell>
+                                <TableCell
+                                  align="center"
+                                  sx={{ fontWeight: 600, color: getTeamNameColor(m.scoreA, m.scoreB, "B") }}
+                                >
                                   {teamBName}
                                 </TableCell>
                                 <TableCell align="center">{m.court ?? "—"}</TableCell>
