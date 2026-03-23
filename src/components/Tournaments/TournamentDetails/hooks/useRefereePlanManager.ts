@@ -9,7 +9,7 @@ import {
   minutesToTime,
   pad2,
   timeToMinutes,
-} from "@/components/TournamentDetails/hooks/matchPlanHelpers";
+} from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 import {
   createTournamentRefereePlanEntry,
   fetchTournamentRefereePlan,

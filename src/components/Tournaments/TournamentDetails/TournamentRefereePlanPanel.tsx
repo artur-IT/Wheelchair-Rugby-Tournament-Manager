@@ -1,96 +1,89 @@
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from "@mui/material";
+import { Box, Button, CircularProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
-import type { Match, Tournament } from "@/types";
-import { MATCH_DURATION_MS } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
+import type { Match, Person, RefereeRole, Tournament } from "@/types";
+import { MATCH_DURATION_MS } from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 
-/** Highlight for match times when the scheduled day is outside tournament dates. */
 const outOfRangeTimeCellSx = {
   bgcolor: "error.main",
   color: "common.white",
   fontWeight: 700,
 } as const;
 
-function getTeamNameColor(scoreA?: number, scoreB?: number, side?: "A" | "B") {
-  const hasBothScores = typeof scoreA === "number" && typeof scoreB === "number";
-  if (!hasBothScores || !side) return "text.primary";
-  if (scoreA === scoreB) return "warning.main";
-  if (side === "A") return scoreA > scoreB ? "success.main" : "error.main";
-  return scoreB > scoreA ? "success.main" : "error.main";
-}
-
-interface TournamentMatchesPlanPanelProps {
+interface TournamentRefereePlanPanelProps {
   tournament: Tournament;
   matches: Match[];
-  matchesLoading: boolean;
-  matchesError: string | null;
-  onRetryMatches?: () => void;
+  refereePlanByMatchId: Record<string, Partial<Record<RefereeRole, string>>>;
+  refereePlanLoading: boolean;
+  refereePlanError: string | null;
+  onRetryRefereePlan?: () => void;
   scheduleTableDayTimestamps: number[];
-  parseJerseyInfo: (jerseyInfo?: string) => { teamA: "jasne" | "ciemne"; teamB: "jasne" | "ciemne" };
-  jerseyValueToNounLabel: (value: "jasne" | "ciemne") => string;
   getMatchDayTimestamp: (scheduledAtIso: string) => number;
   getScheduleDayLabel: (timestamp: number) => string;
-  openAddMatchDialog: (presetDayTimestamp?: number | null, allowedDays?: number[] | null) => void;
-  openNewDayTable: () => void;
-  openEditMatchDialog: (matchesToEdit: Match[]) => void;
+  openAddRefereePlanDialog: (presetDayTimestamp?: number | null, allowedDays?: number[] | null) => void;
+  openNewDayRefereePlanTable: () => void;
+  openEditRefereePlanDialog: (matchesToEdit: Match[]) => void;
+  personDisplayName: (p: Person) => string;
   setMatchDayToDelete: (timestamp: number) => void;
   deleteMatchDayLoading: boolean;
   matchDayToDelete: number | null;
-  /** When set, Start/Koniec cells and day headings use error styling if outside tournament window. */
   isMatchOutOfRange?: (scheduledAtIso: string) => boolean;
   isDayOutOfRange?: (dayTimestamp: number) => boolean;
 }
 
-export default function TournamentMatchesPlanPanel({
+export default function TournamentRefereePlanPanel({
   tournament,
   matches,
-  matchesLoading,
-  matchesError,
-  onRetryMatches,
+  refereePlanByMatchId,
+  refereePlanLoading,
+  refereePlanError,
+  onRetryRefereePlan,
   scheduleTableDayTimestamps,
-  parseJerseyInfo,
-  jerseyValueToNounLabel,
   getMatchDayTimestamp,
   getScheduleDayLabel,
-  openAddMatchDialog,
-  openNewDayTable,
-  openEditMatchDialog,
+  openAddRefereePlanDialog,
+  openNewDayRefereePlanTable,
+  openEditRefereePlanDialog,
+  personDisplayName,
   setMatchDayToDelete,
   deleteMatchDayLoading,
   matchDayToDelete,
   isMatchOutOfRange,
   isDayOutOfRange,
-}: TournamentMatchesPlanPanelProps) {
+}: TournamentRefereePlanPanelProps) {
   return (
     <Paper
       sx={{
         p: 4,
         borderRadius: 3,
-        bgcolor: "#F1F7FC",
+        bgcolor: "#fff7ed",
         border: "1px solid",
         borderColor: "grey.200",
       }}
     >
-      <Typography variant="h6" sx={{ fontWeight: "bold", mb: 3 }}>
-        Plan Rozgrywek
-      </Typography>
-      {matchesLoading ? (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+        <Box
+          sx={{
+            bgcolor: "#fde68a",
+            p: 1,
+            borderRadius: 2,
+            color: "#b45309",
+          }}
+        >
+          <Typography component="div" sx={{ fontWeight: 900 }}>
+            SJ
+          </Typography>
+        </Box>
+        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+          Plan Sędziów
+        </Typography>
+      </Box>
+
+      {refereePlanLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
           <CircularProgress size={24} />
         </Box>
-      ) : matchesError ? (
-        <DataLoadAlert message={matchesError} onRetry={onRetryMatches} />
+      ) : refereePlanError ? (
+        <DataLoadAlert message={refereePlanError} onRetry={onRetryRefereePlan} />
       ) : scheduleTableDayTimestamps.length === 0 ? (
         <Box
           sx={{
@@ -108,15 +101,19 @@ export default function TournamentMatchesPlanPanel({
           }}
         >
           <Typography>
-            Brak zaplanowanych meczów.
+            Brak zaplanowanych pozycji sędziów.
             <br />
-            Dodaj nowy mecz do planu.
+            Dodaj nowy wpis do planu.
           </Typography>
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
-            <Button variant="contained" onClick={() => openAddMatchDialog()} disabled={tournament.teams.length < 2}>
+            <Button
+              variant="contained"
+              onClick={() => openAddRefereePlanDialog()}
+              disabled={tournament.teams.length < 2}
+            >
               Dodaj
             </Button>
-            <Button variant="outlined" onClick={openNewDayTable} disabled={tournament.teams.length < 2}>
+            <Button variant="outlined" onClick={openNewDayRefereePlanTable} disabled={tournament.teams.length < 2}>
               Nowy dzień
             </Button>
           </Box>
@@ -124,7 +121,7 @@ export default function TournamentMatchesPlanPanel({
       ) : (
         <>
           <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
-            <Button variant="outlined" onClick={openNewDayTable} disabled={tournament.teams.length < 2}>
+            <Button variant="outlined" onClick={openNewDayRefereePlanTable} disabled={tournament.teams.length < 2}>
               Nowy dzień
             </Button>
           </Box>
@@ -176,31 +173,26 @@ export default function TournamentMatchesPlanPanel({
                       <Typography>Brak zaplanowanych meczów w tym dniu.</Typography>
                       <Button
                         variant="contained"
-                        onClick={() => openAddMatchDialog(dayTimestamp)}
+                        onClick={() => openAddRefereePlanDialog(dayTimestamp)}
                         disabled={tournament.teams.length < 2}
                       >
-                        Dodaj mecz
+                        Dodaj wpis sędziów
                       </Button>
                     </Box>
                   ) : (
                     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
-                      <Table size="small" aria-label={`Tabela planu rozgrywek: ${dayLabel}`}>
-                        <TableHead
-                          sx={{
-                            "& .MuiTableCell-root": {
-                              whiteSpace: "nowrap",
-                            },
-                          }}
-                        >
+                      <Table size="small" aria-label={`Tabela planu sędziów: ${dayLabel}`}>
+                        <TableHead>
                           <TableRow>
                             <TableCell align="center">Drużyna A</TableCell>
-                            <TableCell align="center">Punkty A</TableCell>
                             <TableCell align="center">Start</TableCell>
                             <TableCell align="center">Koniec</TableCell>
-                            <TableCell align="center">Punkty B</TableCell>
                             <TableCell align="center">Drużyna B</TableCell>
                             <TableCell align="center">Boisko</TableCell>
-                            <TableCell align="center">Koszulki</TableCell>
+                            <TableCell align="center">Sędzia 1</TableCell>
+                            <TableCell align="center">Sędzia 2</TableCell>
+                            <TableCell align="center">Stolik kar</TableCell>
+                            <TableCell align="center">Zagary</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -209,6 +201,7 @@ export default function TournamentMatchesPlanPanel({
                             // Wtedy pokazujemy „—” zamiast surowego ID.
                             const teamAName = tournament.teams.find((t) => t.id === m.teamAId)?.name ?? "—";
                             const teamBName = tournament.teams.find((t) => t.id === m.teamBId)?.name ?? "—";
+
                             const startD = new Date(m.scheduledAt);
                             const endD = new Date(startD.getTime() + MATCH_DURATION_MS);
                             const startTime = !Number.isNaN(startD.getTime())
@@ -225,19 +218,28 @@ export default function TournamentMatchesPlanPanel({
                                   hour12: false,
                                 })
                               : "—";
-                            const { teamA: jerseyA, teamB: jerseyB } = parseJerseyInfo(m.jerseyInfo);
+
+                            const assignments = refereePlanByMatchId[m.id] ?? {};
+                            const ref1 = assignments.REFEREE_1;
+                            const ref2 = assignments.REFEREE_2;
+                            const tablePenalty = assignments.TABLE_PENALTY;
+                            const tableClock = assignments.TABLE_CLOCK;
+
+                            const ref1Name = ref1 ? tournament.referees.find((r) => r.id === ref1) : undefined;
+                            const ref2Name = ref2 ? tournament.referees.find((r) => r.id === ref2) : undefined;
+                            const tablePenaltyName = tablePenalty
+                              ? tournament.referees.find((r) => r.id === tablePenalty)
+                              : undefined;
+                            const tableClockName = tableClock
+                              ? tournament.referees.find((r) => r.id === tableClock)
+                              : undefined;
+
                             const rowOut = isMatchOutOfRange?.(m.scheduledAt) ?? false;
 
                             return (
                               <TableRow key={m.id}>
-                                <TableCell
-                                  align="center"
-                                  sx={{ fontWeight: 600, color: getTeamNameColor(m.scoreA, m.scoreB, "A") }}
-                                >
+                                <TableCell align="center" sx={{ fontWeight: 600 }}>
                                   {teamAName}
-                                </TableCell>
-                                <TableCell align="center" sx={{ fontSize: "1.4rem" }}>
-                                  {m.scoreA ?? "—"}
                                 </TableCell>
                                 <TableCell align="center" sx={rowOut ? outOfRangeTimeCellSx : undefined}>
                                   {startTime}
@@ -245,32 +247,17 @@ export default function TournamentMatchesPlanPanel({
                                 <TableCell align="center" sx={rowOut ? outOfRangeTimeCellSx : undefined}>
                                   {endTime}
                                 </TableCell>
-                                <TableCell align="center" sx={{ fontSize: "1.4rem" }}>
-                                  {m.scoreB ?? "—"}
-                                </TableCell>
-                                <TableCell
-                                  align="center"
-                                  sx={{ fontWeight: 600, color: getTeamNameColor(m.scoreA, m.scoreB, "B") }}
-                                >
+                                <TableCell align="center" sx={{ fontWeight: 600 }}>
                                   {teamBName}
                                 </TableCell>
                                 <TableCell align="center">{m.court ?? "—"}</TableCell>
-                                <TableCell align="center" sx={{ minWidth: 260 }}>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      alignItems: "center",
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="body2"
-                                      component="div"
-                                      sx={{ textAlign: "center", whiteSpace: "pre-line" }}
-                                    >
-                                      {`A: ${jerseyValueToNounLabel(jerseyA)}\nB: ${jerseyValueToNounLabel(jerseyB)}`}
-                                    </Typography>
-                                  </Box>
+                                <TableCell align="center">{ref1Name ? personDisplayName(ref1Name) : "—"}</TableCell>
+                                <TableCell align="center">{ref2Name ? personDisplayName(ref2Name) : "—"}</TableCell>
+                                <TableCell align="center">
+                                  {tablePenaltyName ? personDisplayName(tablePenaltyName) : "—"}
+                                </TableCell>
+                                <TableCell align="center">
+                                  {tableClockName ? personDisplayName(tableClockName) : "—"}
                                 </TableCell>
                               </TableRow>
                             );
@@ -284,7 +271,7 @@ export default function TournamentMatchesPlanPanel({
                     <Button
                       variant="outlined"
                       color="primary"
-                      onClick={() => openEditMatchDialog(dayMatches)}
+                      onClick={() => openEditRefereePlanDialog(dayMatches)}
                       disabled={dayMatches.length === 0}
                     >
                       Edytuj
@@ -295,7 +282,7 @@ export default function TournamentMatchesPlanPanel({
                       onClick={() => setMatchDayToDelete(dayTimestamp)}
                       disabled={deleteMatchDayLoading && matchDayToDelete === dayTimestamp}
                     >
-                      Usuń
+                      Usuń dzień
                     </Button>
                   </Box>
                 </Box>

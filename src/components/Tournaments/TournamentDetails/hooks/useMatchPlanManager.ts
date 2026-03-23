@@ -9,7 +9,7 @@ import {
   MATCH_DURATION_MINUTES,
   minutesToTime,
   timeToMinutes,
-} from "@/components/TournamentDetails/hooks/matchPlanHelpers";
+} from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 import { createTournamentMatch, updateTournamentMatch } from "@/lib/api/tournaments";
 
 type JerseyColor = "jasne" | "ciemne";

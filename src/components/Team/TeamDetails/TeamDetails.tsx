@@ -25,8 +25,8 @@ import {
 import AppShell from "@/components/AppShell/AppShell";
 import QueryProvider from "@/components/QueryProvider/QueryProvider";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
-import { TeamFormContent } from "@/components/TeamForm/TeamForm";
-import TeamNewPlayer, { type PlayerRow } from "@/components/TeamNewPlayer/TeamNewPlayer";
+import { TeamFormContent } from "@/components/Team/TeamForm/TeamForm";
+import TeamNewPlayer, { type PlayerRow } from "@/components/Team/TeamNewPlayer/TeamNewPlayer";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import { deleteTeamById, fetchTeamById, updateTeamById } from "@/lib/api/teams";

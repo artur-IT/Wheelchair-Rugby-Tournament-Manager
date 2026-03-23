@@ -25,8 +25,8 @@ import {
 } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import type { Match, Tournament } from "@/types";
-import { MATCH_DURATION_MINUTES, minutesToTime, timeToMinutes } from "@/components/TournamentDetails/hooks/matchPlanHelpers";
-import type { MatchPlanAddState, MatchPlanEditState } from "@/components/TournamentDetails/hooks/useMatchPlanManager";
+import { MATCH_DURATION_MINUTES, minutesToTime, timeToMinutes } from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
+import type { MatchPlanAddState, MatchPlanEditState } from "@/components/Tournaments/TournamentDetails/hooks/useMatchPlanManager";
 
 interface AddMatchDialogProps {
   addMatch: MatchPlanAddState;
