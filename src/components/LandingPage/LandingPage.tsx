@@ -20,60 +20,84 @@ const FEATURES = [
   },
 ];
 
+const PAGE_SX = {
+  minHeight: "100vh",
+  bgcolor: "#0f172a",
+  color: "white",
+  display: "flex",
+  flexDirection: "column",
+} as const;
+
+const NAV_SX = {
+  p: 3,
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  maxWidth: "80rem",
+  mx: "auto",
+  width: "100%",
+} as const;
+
+const HERO_SX = {
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  px: 3,
+  textAlign: "center",
+} as const;
+
+const FEATURE_CARD_SX = {
+  bgcolor: "rgba(0, 16, 54, 0.6)",
+  color: "#cbd5e1",
+  borderRadius: "16px",
+  border: "1px solid #2563eb",
+} as const;
+
+const CTA_BUTTON_SX = {
+  backgroundColor: "#ffffff",
+  color: "#0f172a",
+  fontWeight: 700,
+  px: 4,
+  py: 2,
+  "&:hover": { backgroundColor: "#e2e8f0" },
+} as const;
+
+const FOOTER_SX = {
+  p: 4,
+  textAlign: "center",
+  color: "#64748b",
+  fontSize: "0.875rem",
+} as const;
+
 export default function LandingPage() {
   const [loginOpen, setLoginOpen] = useState(false);
+  const openLogin = () => setLoginOpen(true);
+  const closeLogin = () => setLoginOpen(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.has("login")) setLoginOpen(true);
+    if (params.has("login")) openLogin();
   }, []);
 
   return (
     <ThemeRegistry>
-      <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-      <Box
-        sx={{
-          minHeight: "100vh",
-          bgcolor: "#0f172a",
-          color: "white",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Box
-          component="nav"
-          sx={{
-            p: 3,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            maxWidth: "80rem",
-            mx: "auto",
-            width: "100%",
-          }}
-        >
+      <LoginModal open={loginOpen} onClose={closeLogin} />
+      <Box sx={PAGE_SX}>
+        <Box component="nav" sx={NAV_SX}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Trophy color="#6366f1" size={32} />
             <Typography variant="h5" sx={{ letterSpacing: "-0.05em" }}>
               Wheelchair Rugby Manager
             </Typography>
           </Box>
-          <Button variant="contained" onClick={() => setLoginOpen(true)}>
+          <Button variant="contained" onClick={openLogin}>
             Zaloguj się
           </Button>
         </Box>
 
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            px: 3,
-            textAlign: "center",
-          }}
-        >
+        <Box sx={HERO_SX}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <Typography
               variant="h2"
@@ -101,34 +125,16 @@ export default function LandingPage() {
               Kompleksowe narzędzie dla organizatorów. Planuj turnieje, zarządzaj drużynami, sędziami i wolontariuszami
               w jednym miejscu.
             </Typography>
-            <Button
-              variant="contained"
-              onClick={() => setLoginOpen(true)}
-              sx={{
-                backgroundColor: "#ffffff",
-                color: "#0f172a",
-                fontWeight: 700,
-                px: 4,
-                py: 2,
-                "&:hover": { backgroundColor: "#e2e8f0" },
-              }}
-            >
+            <Button variant="contained" onClick={openLogin} sx={CTA_BUTTON_SX}>
               Rozpocznij teraz
             </Button>
           </motion.div>
 
           <Box sx={{ mt: 10, maxWidth: "72rem", width: "100%" }}>
             <Grid container spacing={3}>
-              {FEATURES.map((feature, i) => (
-                <Grid size={{ xs: 12, md: 4 }} key={i}>
-                  <Card
-                    sx={{
-                      bgcolor: "rgba(0, 16, 54, 0.6)",
-                      color: "#cbd5e1",
-                      borderRadius: "16px",
-                      border: "1px solid #2563eb",
-                    }}
-                  >
+              {FEATURES.map((feature) => (
+                <Grid size={{ xs: 12, md: 4 }} key={feature.title}>
+                  <Card sx={FEATURE_CARD_SX}>
                     <CardContent>
                       <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
                         {feature.title}
@@ -142,15 +148,7 @@ export default function LandingPage() {
           </Box>
         </Box>
 
-        <Box
-          component="footer"
-          sx={{
-            p: 4,
-            textAlign: "center",
-            color: "#64748b",
-            fontSize: "0.875rem",
-          }}
-        >
+        <Box component="footer" sx={FOOTER_SX}>
           &copy; 2024 RugbyManager. Wszystkie prawa zastrzeżone.
         </Box>
       </Box>

@@ -2,7 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import SettingsPage, { AddPersonDialog } from "./SettingsPage";
+import SettingsPage from "./SettingsPage";
+import AddPersonDialog from "./AddPersonDialog";
 import { MAX_SHORT_TEXT } from "@/lib/validateInputs";
 
 // Stub fetch so SeasonsManager doesn't crash (no real server in tests)
