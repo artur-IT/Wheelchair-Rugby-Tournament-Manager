@@ -10,8 +10,7 @@ export const DELETE: APIRoute = async ({ params }) => {
   try {
     await removeClassifierFromTournament(id, classifierId);
     return json({ ok: true }, 200);
-  } catch (error) {
-    console.error("Failed to remove classifier from tournament:", error);
+  } catch {
     return json({ error: "Nie udało się usunąć klasyfikatora z turnieju" }, 500);
   }
 };

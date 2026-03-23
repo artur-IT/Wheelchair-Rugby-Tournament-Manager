@@ -1,4 +1,9 @@
+/* eslint-env node */
+/* global fetch */
+
 import "dotenv/config";
+
+const { console, process } = globalThis;
 
 const token = process.env.GITHUB_GIST_TOKEN || process.env.GIST_TOKEN;
 const gistUrl = process.env.GITHUB_DAILY_NOTES_GIST_URL;

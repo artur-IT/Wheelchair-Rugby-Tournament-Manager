@@ -13,7 +13,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const handleLoginSuccess = onLoginSuccess ?? (() => (window.location.href = "/dashboard"));
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(false);
     setLoading(true);
@@ -27,17 +27,17 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
       const data = await res.json();
 
       if (data.ok) {
-        setLoading(false);
         handleLoginSuccess();
         return;
       }
     } catch {
-      // network error — fall through to show error
+      // Ignore network errors and show generic message.
+    } finally {
+      setLoading(false);
     }
 
     setError(true);
-    setLoading(false);
-  }
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>

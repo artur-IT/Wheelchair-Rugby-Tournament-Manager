@@ -29,9 +29,13 @@ interface Props {
   id?: string;
 }
 
-function redirectToSettings() {
-  window.location.assign("/settings");
-}
+const redirectToSettings = () => window.location.assign("/settings");
+
+const toSeasonUpsertBody = (data: SeasonFormValues): SeasonUpsertBody => ({
+  name: data.name,
+  year: data.year,
+  description: data.description,
+});
 
 export default function SeasonForm({ id }: Props) {
   return (
@@ -47,7 +51,7 @@ export default function SeasonForm({ id }: Props) {
 
 function SeasonFormContent({ id }: Props) {
   const queryClient = useQueryClient();
-  const isEdit = !!id;
+  const isEdit = Boolean(id);
 
   const {
     register,
@@ -83,14 +87,8 @@ function SeasonFormContent({ id }: Props) {
   }, [seasonData, reset]);
 
   const submitMutation = useMutation({
-    mutationFn: (data: SeasonFormValues) => {
-      const body: SeasonUpsertBody = {
-        name: data.name,
-        year: data.year,
-        description: data.description,
-      };
-      return isEdit && id ? updateSeason(id, body) : createSeason(body);
-    },
+    mutationFn: (data: SeasonFormValues) =>
+      isEdit && id ? updateSeason(id, toSeasonUpsertBody(data)) : createSeason(toSeasonUpsertBody(data)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.seasons.list() });
       await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
@@ -98,9 +96,8 @@ function SeasonFormContent({ id }: Props) {
     },
   });
 
-  const onSubmit = (data: SeasonFormValues) => {
-    submitMutation.mutate(data);
-  };
+  const onSubmit = (data: SeasonFormValues) => submitMutation.mutate(data);
+  const isSaveDisabled = isSubmitting || submitMutation.isPending;
 
   if (loading && isEdit) {
     return (
@@ -161,14 +158,8 @@ function SeasonFormContent({ id }: Props) {
           <Button variant="outlined" fullWidth component="a" href="/settings">
             Anuluj
           </Button>
-          <Button
-            variant="contained"
-            color="success"
-            type="submit"
-            fullWidth
-            disabled={isSubmitting || submitMutation.isPending}
-          >
-            {isSubmitting || submitMutation.isPending ? <CircularProgress size={24} /> : "Zapisz Sezon"}
+          <Button variant="contained" color="success" type="submit" fullWidth disabled={isSaveDisabled}>
+            {isSaveDisabled ? <CircularProgress size={24} /> : "Zapisz Sezon"}
           </Button>
         </Box>
       </form>

@@ -51,7 +51,6 @@ export const PUT: APIRoute = async ({ params, request }) => {
         return json({ error: "Ten sam sędzia nie może pełnić kilku ról w jednym meczu" }, 400);
     }
 
-    console.error("Failed to update referee plan entry:", error);
     return json({ error: "Nie udało się zaktualizować wpisu w planie sędziów" }, 500);
   }
 };

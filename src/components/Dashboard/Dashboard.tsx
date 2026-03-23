@@ -13,21 +13,51 @@ import { queryKeys } from "@/lib/queryKeys";
 import { formatTournamentDateRange } from "@/lib/dashboardSeason";
 import type { Tournament } from "@/types";
 
-export default function Dashboard() {
-  return (
-    <QueryProvider>
-      <ThemeRegistry>
-        <AppShell currentPath="/dashboard">
-          <DashboardContent />
-        </AppShell>
-      </ThemeRegistry>
-    </QueryProvider>
-  );
+const DEFAULT_STATS = { tournaments: 0, teams: 0, referees: 0, volunteers: 0 } as const;
+
+const STAT_ITEMS = [
+  { key: "tournaments", label: "Turnieje", icon: Trophy, color: "#3b82f6" },
+  { key: "teams", label: "Drużyny", icon: Users, color: "#10b981" },
+  { key: "referees", label: "Sędziowie", icon: UserCircle, color: "#f59e0b" },
+  { key: "volunteers", label: "Wolontariusze", icon: UserCircle, color: "#8b5cf6" },
+] as const;
+
+const getErrorMessage = (isError: boolean, error: unknown) =>
+  isError && error instanceof Error ? error.message : null;
+
+const getSeasonChipLabel = (name: string, year?: number | null) => `${name}${year ? ` (${year})` : ""}`;
+
+function useDashboardSeasonData(seasonId?: string) {
+  const dashboardQuery = useQuery({
+    queryKey: queryKeys.dashboard.season(seasonId ?? "__none__"),
+    queryFn: ({ signal }) => {
+      if (!seasonId) {
+        return Promise.reject(new Error("Missing season id"));
+      }
+
+      return fetchDashboardSeasonData(seasonId, signal);
+    },
+    enabled: Boolean(seasonId),
+  });
+
+  const seasonMetaQuery = useQuery({
+    queryKey: queryKeys.seasons.detail(seasonId ?? "__none__"),
+    queryFn: ({ signal }) => {
+      if (!seasonId) {
+        return Promise.reject(new Error("Missing season id"));
+      }
+
+      return fetchSeasonById(seasonId, signal);
+    },
+    enabled: Boolean(seasonId),
+  });
+
+  return { dashboardQuery, seasonMetaQuery };
 }
 
 function DashboardContent() {
   const { defaultSeasonId } = useDefaultSeason();
-  const seasonId = defaultSeasonId;
+  const { dashboardQuery, seasonMetaQuery } = useDashboardSeasonData(defaultSeasonId);
 
   const {
     data: seasonData,
@@ -35,16 +65,7 @@ function DashboardContent() {
     isError: dashboardIsError,
     error: dashboardErrorObj,
     refetch: refetchDashboard,
-  } = useQuery({
-    queryKey: queryKeys.dashboard.season(seasonId ?? "__none__"),
-    queryFn: ({ signal }) => {
-      if (!seasonId) {
-        return Promise.reject(new Error("Missing season id"));
-      }
-      return fetchDashboardSeasonData(seasonId, signal);
-    },
-    enabled: Boolean(seasonId),
-  });
+  } = dashboardQuery;
 
   const {
     data: defaultSeason,
@@ -52,31 +73,21 @@ function DashboardContent() {
     error: seasonMetaErr,
     refetch: refetchSeasonMeta,
     isPending: seasonLoading,
-  } = useQuery({
-    queryKey: queryKeys.seasons.detail(seasonId ?? "__none__"),
-    queryFn: ({ signal }) => {
-      if (!seasonId) {
-        return Promise.reject(new Error("Missing season id"));
-      }
-      return fetchSeasonById(seasonId, signal);
-    },
-    enabled: Boolean(seasonId),
-  });
+  } = seasonMetaQuery;
 
   const upcoming = seasonData?.upcoming ?? [];
   const completed = seasonData?.completed ?? [];
   const partialWarning = seasonData?.partialWarning ?? null;
-  const dashboardError = dashboardIsError && dashboardErrorObj instanceof Error ? dashboardErrorObj.message : null;
-  const seasonMetaError = seasonMetaIsError && seasonMetaErr instanceof Error ? seasonMetaErr.message : null;
+  const dashboardError = getErrorMessage(dashboardIsError, dashboardErrorObj);
+  const seasonMetaError = getErrorMessage(seasonMetaIsError, seasonMetaErr);
 
   const statItems = useMemo(() => {
-    const stats = seasonData?.stats ?? { tournaments: 0, teams: 0, referees: 0, volunteers: 0 };
-    return [
-      { label: "Turnieje", value: stats.tournaments, icon: Trophy, color: "#3b82f6" },
-      { label: "Drużyny", value: stats.teams, icon: Users, color: "#10b981" },
-      { label: "Sędziowie", value: stats.referees, icon: UserCircle, color: "#f59e0b" },
-      { label: "Wolontariusze", value: stats.volunteers, icon: UserCircle, color: "#8b5cf6" },
-    ] as const;
+    const stats = seasonData?.stats ?? DEFAULT_STATS;
+
+    return STAT_ITEMS.map((item) => ({
+      ...item,
+      value: stats[item.key],
+    }));
   }, [seasonData]);
 
   return (
@@ -94,11 +105,11 @@ function DashboardContent() {
               onRetry={() => void refetchSeasonMeta()}
               sx={{ py: 0 }}
             />
-          ) : seasonId && seasonLoading ? (
+          ) : defaultSeasonId && seasonLoading ? (
             <CircularProgress size={18} sx={{ ml: 0.5 }} />
           ) : defaultSeason ? (
             <Chip
-              label={`${defaultSeason.name}${defaultSeason.year ? ` (${defaultSeason.year})` : ""}`}
+              label={getSeasonChipLabel(defaultSeason.name, defaultSeason.year)}
               size="small"
               color="warning"
               component="a"
@@ -124,15 +135,15 @@ function DashboardContent() {
         <DataLoadAlert message={partialWarning} severity="warning" onRetry={() => void refetchDashboard()} />
       ) : null}
 
-      {dashboardLoading && seasonId ? (
+      {dashboardLoading && defaultSeasonId ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
           <CircularProgress size={32} />
         </Box>
       ) : null}
 
       <Grid container spacing={3}>
-        {statItems.map((stat, i) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
+        {statItems.map((stat) => (
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.key}>
             <Card sx={{ borderRadius: 3 }}>
               <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Box
@@ -170,30 +181,12 @@ function DashboardContent() {
         <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  Nadchodzące Turnieje
-                </Typography>
-                <Button component="a" href="/tournaments" size="small">
-                  Zobacz wszystkie
-                </Button>
-              </Box>
+              <DashboardSectionHeader title="Nadchodzące Turnieje" href="/tournaments" />
               <Box>
-                {!seasonId ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Ustaw domyślny sezon w Ustawieniach, aby zobaczyć turnieje.
-                  </Typography>
+                {!defaultSeasonId ? (
+                  <DashboardEmptyState message="Ustaw domyślny sezon w Ustawieniach, aby zobaczyć turnieje." />
                 ) : upcoming.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Brak nadchodzących turniejów w tym sezonie.
-                  </Typography>
+                  <DashboardEmptyState message="Brak nadchodzących turniejów w tym sezonie." />
                 ) : (
                   upcoming.map((t) => <DashboardTournamentRow key={t.id} tournament={t} calendarIconColor="#4f46e5" />)
                 )}
@@ -210,33 +203,13 @@ function DashboardContent() {
               </Typography>
               <Grid container spacing={2}>
                 <Grid size={6}>
-                  <Button
-                    component="a"
-                    href="/tournaments/new"
-                    variant="outlined"
-                    fullWidth
-                    sx={{
-                      borderStyle: "dashed",
-                      py: 3,
-                      flexDirection: "column",
-                      gap: 1,
-                    }}
-                  >
-                    <Plus size={24} />
-                    <Typography variant="caption">Nowy Turniej</Typography>
-                  </Button>
+                  <QuickActionButton href="/tournaments/new" label="Nowy Turniej" />
                 </Grid>
                 <Grid size={6}>
-                  <Button
-                    component="a"
+                  <QuickActionButton
                     href="/settings/teams/new"
-                    variant="outlined"
-                    fullWidth
+                    label="Nowa Drużyna"
                     sx={{
-                      borderStyle: "dashed",
-                      py: 3,
-                      flexDirection: "column",
-                      gap: 1,
                       color: "success.main",
                       borderColor: "success.main",
                       "&:hover": {
@@ -244,10 +217,7 @@ function DashboardContent() {
                         bgcolor: "success.50",
                       },
                     }}
-                  >
-                    <Plus size={24} />
-                    <Typography variant="caption">Nowa Drużyna</Typography>
-                  </Button>
+                  />
                 </Grid>
               </Grid>
             </CardContent>
@@ -259,30 +229,12 @@ function DashboardContent() {
         <Grid size={{ xs: 12 }}>
           <Card sx={{ borderRadius: 3 }}>
             <CardContent>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  Zakończone turnieje
-                </Typography>
-                <Button component="a" href="/tournaments" size="small">
-                  Zobacz wszystkie
-                </Button>
-              </Box>
+              <DashboardSectionHeader title="Zakończone turnieje" href="/tournaments" />
               <Box>
-                {!seasonId ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Ustaw domyślny sezon w Ustawieniach, aby zobaczyć turnieje.
-                  </Typography>
+                {!defaultSeasonId ? (
+                  <DashboardEmptyState message="Ustaw domyślny sezon w Ustawieniach, aby zobaczyć turnieje." />
                 ) : completed.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Brak zakończonych turniejów w tym sezonie.
-                  </Typography>
+                  <DashboardEmptyState message="Brak zakończonych turniejów w tym sezonie." />
                 ) : (
                   completed.map((t) => <DashboardTournamentRow key={t.id} tournament={t} calendarIconColor="#64748b" />)
                 )}
@@ -292,6 +244,55 @@ function DashboardContent() {
         </Grid>
       </Grid>
     </Box>
+  );
+}
+
+function DashboardSectionHeader({ title, href }: { title: string; href: string }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        mb: 2,
+      }}
+    >
+      <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+        {title}
+      </Typography>
+      <Button component="a" href={href} size="small">
+        Zobacz wszystkie
+      </Button>
+    </Box>
+  );
+}
+
+function DashboardEmptyState({ message }: { message: string }) {
+  return (
+    <Typography variant="body2" color="text.secondary">
+      {message}
+    </Typography>
+  );
+}
+
+function QuickActionButton({ href, label, sx }: { href: string; label: string; sx?: Record<string, unknown> }) {
+  return (
+    <Button
+      component="a"
+      href={href}
+      variant="outlined"
+      fullWidth
+      sx={{
+        borderStyle: "dashed",
+        py: 3,
+        flexDirection: "column",
+        gap: 1,
+        ...sx,
+      }}
+    >
+      <Plus size={24} />
+      <Typography variant="caption">{label}</Typography>
+    </Button>
   );
 }
 
@@ -334,5 +335,17 @@ function DashboardTournamentRow({
       </Box>
       <ChevronRight size={20} style={{ color: "#cbd5e1" }} />
     </Box>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <QueryProvider>
+      <ThemeRegistry>
+        <AppShell currentPath="/dashboard">
+          <DashboardContent />
+        </AppShell>
+      </ThemeRegistry>
+    </QueryProvider>
   );
 }

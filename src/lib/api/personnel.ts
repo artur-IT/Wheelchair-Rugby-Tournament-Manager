@@ -41,11 +41,7 @@ export async function createPersonnel(
 }
 
 /** PATCH /api/referees/:id or /api/classifiers/:id */
-export async function updatePersonnel(
-  apiEndpoint: string,
-  id: string,
-  payload: PersonnelPayload
-): Promise<Person> {
+export async function updatePersonnel(apiEndpoint: string, id: string, payload: PersonnelPayload): Promise<Person> {
   const res = await fetch(`${apiEndpoint}/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

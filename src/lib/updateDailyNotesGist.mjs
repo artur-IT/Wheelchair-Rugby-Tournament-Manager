@@ -5,8 +5,12 @@
  *
  * Gist structure: one file per day named YYYY-MM-DD.md; week files named week-N.md.
  */
+/* eslint-env node */
+/* global fetch */
 
 import "dotenv/config";
+
+const { console, process } = globalThis;
 
 const token = process.env.GITHUB_GIST_TOKEN || process.env.GIST_TOKEN;
 const gistId = process.env.GIST_ID || process.env.GITHUB_DAILY_NOTES_GIST_ID;

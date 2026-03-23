@@ -46,8 +46,7 @@ export const GET: APIRoute = async () => {
   try {
     const tournaments = await listTournamentsWithDetails();
     return json(tournaments);
-  } catch (error) {
-    console.error("Failed to get tournaments:", error);
+  } catch {
     return json({ error: "Nie udało się pobrać turniejów." }, 500);
   }
 };

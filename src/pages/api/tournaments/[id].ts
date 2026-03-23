@@ -116,7 +116,6 @@ export const DELETE: APIRoute = async ({ params }) => {
       return json({ error: "Nie znaleziono turnieju" }, 404);
     }
 
-    console.error("Failed to delete tournament:", error);
     return json({ error: "Nie udało się usunąć turnieju" }, 500);
   }
 };

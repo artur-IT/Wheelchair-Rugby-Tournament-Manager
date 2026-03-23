@@ -30,78 +30,90 @@ const MENU_ITEMS = [
 ];
 
 const DRAWER_WIDTH = 280;
+const APP_TITLE = "Wheelchair Rugby Manager";
 
-export default function AppShell({ children, currentPath }: AppShellProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+const isPathActive = (currentPath: string, path: string) =>
+  currentPath === path || (path !== "/" && currentPath.startsWith(path));
 
-  const isActive = (path: string) => currentPath === path || (path !== "/" && currentPath.startsWith(path));
+const SELECTED_ITEM_SX = {
+  borderRadius: 1.5,
+  mb: 1,
+  "&.Mui-selected": {
+    backgroundColor: "primary.main",
+    color: "white",
+    "&:hover": { backgroundColor: "primary.dark" },
+  },
+};
 
-  const selectedSx = {
-    borderRadius: 1.5,
-    mb: 1,
-    "&.Mui-selected": {
-      backgroundColor: "primary.main",
-      color: "white",
-      "&:hover": { backgroundColor: "primary.dark" },
-    },
-  };
+function NavigationItem({
+  href,
+  label,
+  icon,
+  selected,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  selected?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <ListItem disablePadding>
+      <ListItemButton component="a" href={href} selected={selected} onClick={onClick} sx={SELECTED_ITEM_SX}>
+        <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{icon}</ListItemIcon>
+        <ListItemText primary={label} />
+      </ListItemButton>
+    </ListItem>
+  );
+}
 
-  const drawerContent = (
+function DrawerContent({
+  currentPath,
+  onCloseMobile,
+  onLogout,
+}: {
+  currentPath: string;
+  onCloseMobile: () => void;
+  onLogout: () => Promise<void>;
+}) {
+  return (
     <Box sx={{ width: DRAWER_WIDTH, p: 2 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
         <Avatar sx={{ bgcolor: "primary.main", width: 40, height: 40 }}>
           <Trophy size={24} />
         </Avatar>
         <Typography variant="h6" sx={{ fontWeight: "bold", lineHeight: 1.2 }}>
-          Wheelchair Rugby Manager
+          {APP_TITLE}
         </Typography>
       </Box>
 
       <List sx={{ mb: 3 }}>
         {MENU_ITEMS.map(({ href, icon: Icon, label }) => (
-          <ListItem key={href} disablePadding>
-            <ListItemButton
-              component="a"
-              href={href}
-              onClick={() => setMobileOpen(false)}
-              selected={isActive(href)}
-              sx={selectedSx}
-            >
-              <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                <Icon size={20} />
-              </ListItemIcon>
-              <ListItemText primary={label} />
-            </ListItemButton>
-          </ListItem>
+          <NavigationItem
+            key={href}
+            href={href}
+            label={label}
+            icon={<Icon size={20} />}
+            selected={isPathActive(currentPath, href)}
+            onClick={onCloseMobile}
+          />
         ))}
       </List>
 
       <Divider sx={{ my: 2 }} />
 
       <List>
-        <ListItem disablePadding>
-          <ListItemButton
-            component="a"
-            href="/profile"
-            onClick={() => setMobileOpen(false)}
-            selected={isActive("/profile")}
-            sx={selectedSx}
-          >
-            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-              <UserCircle size={20} />
-            </ListItemIcon>
-            <ListItemText primary="Mój Profil" />
-          </ListItemButton>
-        </ListItem>
+        <NavigationItem
+          href="/profile"
+          label="Mój Profil"
+          icon={<UserCircle size={20} />}
+          selected={isPathActive(currentPath, "/profile")}
+          onClick={onCloseMobile}
+        />
 
         <ListItem disablePadding>
-          <ListItemButton
-            onClick={async () => {
-              await fetch("/api/logout", { method: "POST" });
-              window.location.href = "/";
-            }}
-            sx={{ borderRadius: 1.5, color: "error.main" }}
-          >
+          <ListItemButton onClick={() => void onLogout()} sx={{ borderRadius: 1.5, color: "error.main" }}>
             <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
               <LogOut size={20} />
             </ListItemIcon>
@@ -111,6 +123,16 @@ export default function AppShell({ children, currentPath }: AppShellProps) {
       </List>
     </Box>
   );
+}
+
+export default function AppShell({ children, currentPath }: AppShellProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const closeMobileDrawer = () => setMobileOpen(false);
+  const toggleMobileDrawer = () => setMobileOpen((prev) => !prev);
+  const handleLogout = async () => {
+    await fetch("/api/logout", { method: "POST" });
+    window.location.href = "/";
+  };
 
   return (
     <Box
@@ -131,7 +153,7 @@ export default function AppShell({ children, currentPath }: AppShellProps) {
           },
         }}
       >
-        {drawerContent}
+        <DrawerContent currentPath={currentPath} onCloseMobile={closeMobileDrawer} onLogout={handleLogout} />
       </Drawer>
 
       <Box
@@ -153,9 +175,9 @@ export default function AppShell({ children, currentPath }: AppShellProps) {
           <Toolbar>
             <Trophy size={24} style={{ marginRight: 8 }} />
             <Typography variant="h6" sx={{ flex: 1, fontWeight: "bold" }}>
-              Wheelchair Rugby Manager
+              {APP_TITLE}
             </Typography>
-            <IconButton color="inherit" onClick={() => setMobileOpen(!mobileOpen)}>
+            <IconButton color="inherit" onClick={toggleMobileDrawer}>
               {mobileOpen ? <X size={24} /> : <Menu size={24} />}
             </IconButton>
           </Toolbar>
@@ -164,10 +186,10 @@ export default function AppShell({ children, currentPath }: AppShellProps) {
         <Drawer
           anchor="left"
           open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
+          onClose={closeMobileDrawer}
           sx={{ display: { xs: "block", md: "none" } }}
         >
-          {drawerContent}
+          <DrawerContent currentPath={currentPath} onCloseMobile={closeMobileDrawer} onLogout={handleLogout} />
         </Drawer>
 
         <Box
