@@ -1,7 +1,9 @@
 import { Box, Button, CircularProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
+import { useRef } from "react";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import type { Match, Person, RefereeRole, Tournament } from "@/types";
 import { MATCH_DURATION_MS } from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
+import { printElementAsLandscapePdf } from "@/lib/print";
 
 const outOfRangeTimeCellSx = {
   bgcolor: "error.main",
@@ -50,8 +52,25 @@ export default function TournamentRefereePlanPanel({
   isMatchOutOfRange,
   isDayOutOfRange,
 }: TournamentRefereePlanPanelProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const tournamentDateRangeLabel = (() => {
+    const start = new Date(tournament.startDate);
+    const end = tournament.endDate ? new Date(tournament.endDate) : null;
+
+    if (Number.isNaN(start.getTime())) return "";
+    if (!end || Number.isNaN(end.getTime())) return start.toLocaleDateString("pl-PL");
+    return `${start.toLocaleDateString("pl-PL")} - ${end.toLocaleDateString("pl-PL")}`;
+  })();
+
+  function handlePrintPlan() {
+    if (!panelRef.current) return;
+    printElementAsLandscapePdf(`Plan sędziów - ${tournament.name}`, panelRef.current, tournamentDateRangeLabel);
+  }
+
   return (
     <Paper
+      ref={panelRef}
       sx={{
         p: 4,
         borderRadius: 3,
@@ -60,7 +79,7 @@ export default function TournamentRefereePlanPanel({
         borderColor: "grey.200",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+      <Box className="wr-print-duplicate-title" sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
         <Box
           sx={{
             bgcolor: "#fde68a",
@@ -120,9 +139,12 @@ export default function TournamentRefereePlanPanel({
         </Box>
       ) : (
         <>
-          <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+          <Box className="wr-print-hide" sx={{ display: "flex", justifyContent: "flex-start", mb: 2, gap: 2 }}>
             <Button variant="outlined" onClick={openNewDayRefereePlanTable} disabled={tournament.teams.length < 2}>
               Nowy dzień
+            </Button>
+            <Button variant="contained" onClick={handlePrintPlan}>
+              Wydrukuj
             </Button>
           </Box>
 
@@ -182,7 +204,14 @@ export default function TournamentRefereePlanPanel({
                   ) : (
                     <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
                       <Table size="small" aria-label={`Tabela planu sędziów: ${dayLabel}`}>
-                        <TableHead>
+                        <TableHead
+                          sx={{
+                            bgcolor: "#ffedd5",
+                            "& .MuiTableCell-root": {
+                              fontWeight: 700,
+                            },
+                          }}
+                        >
                           <TableRow>
                             <TableCell align="center">Drużyna A</TableCell>
                             <TableCell align="center">Start</TableCell>
@@ -267,7 +296,7 @@ export default function TournamentRefereePlanPanel({
                     </TableContainer>
                   )}
 
-                  <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2, gap: 2 }}>
+                  <Box className="wr-print-hide" sx={{ display: "flex", justifyContent: "flex-start", mt: 2, gap: 2 }}>
                     <Button
                       variant="outlined"
                       color="primary"

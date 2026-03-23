@@ -11,9 +11,11 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { useRef } from "react";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import type { Match, Tournament } from "@/types";
 import { MATCH_DURATION_MS } from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
+import { printElementAsLandscapePdf } from "@/lib/print";
 
 /** Highlight for match times when the scheduled day is outside tournament dates. */
 const outOfRangeTimeCellSx = {
@@ -72,8 +74,25 @@ export default function TournamentMatchesPlanPanel({
   isMatchOutOfRange,
   isDayOutOfRange,
 }: TournamentMatchesPlanPanelProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const tournamentDateRangeLabel = (() => {
+    const start = new Date(tournament.startDate);
+    const end = tournament.endDate ? new Date(tournament.endDate) : null;
+
+    if (Number.isNaN(start.getTime())) return "";
+    if (!end || Number.isNaN(end.getTime())) return start.toLocaleDateString("pl-PL");
+    return `${start.toLocaleDateString("pl-PL")} - ${end.toLocaleDateString("pl-PL")}`;
+  })();
+
+  function handlePrintPlan() {
+    if (!panelRef.current) return;
+    printElementAsLandscapePdf(`Plan rozgrywek - ${tournament.name}`, panelRef.current, tournamentDateRangeLabel);
+  }
+
   return (
     <Paper
+      ref={panelRef}
       sx={{
         p: 4,
         borderRadius: 3,
@@ -82,7 +101,7 @@ export default function TournamentMatchesPlanPanel({
         borderColor: "grey.200",
       }}
     >
-      <Typography variant="h6" sx={{ fontWeight: "bold", mb: 3 }}>
+      <Typography className="wr-print-duplicate-title" variant="h6" sx={{ fontWeight: "bold", mb: 3 }}>
         Plan Rozgrywek
       </Typography>
       {matchesLoading ? (
@@ -123,9 +142,12 @@ export default function TournamentMatchesPlanPanel({
         </Box>
       ) : (
         <>
-          <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
+          <Box className="wr-print-hide" sx={{ display: "flex", justifyContent: "flex-start", mb: 2, gap: 2 }}>
             <Button variant="outlined" onClick={openNewDayTable} disabled={tournament.teams.length < 2}>
               Nowy dzień
+            </Button>
+            <Button variant="contained" onClick={handlePrintPlan}>
+              Wydrukuj
             </Button>
           </Box>
 
@@ -187,8 +209,10 @@ export default function TournamentMatchesPlanPanel({
                       <Table size="small" aria-label={`Tabela planu rozgrywek: ${dayLabel}`}>
                         <TableHead
                           sx={{
+                            bgcolor: "#dbeafe",
                             "& .MuiTableCell-root": {
                               whiteSpace: "nowrap",
+                              fontWeight: 700,
                             },
                           }}
                         >
@@ -280,7 +304,7 @@ export default function TournamentMatchesPlanPanel({
                     </TableContainer>
                   )}
 
-                  <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 2, gap: 2 }}>
+                  <Box className="wr-print-hide" sx={{ display: "flex", justifyContent: "flex-start", mt: 2, gap: 2 }}>
                     <Button
                       variant="outlined"
                       color="primary"
