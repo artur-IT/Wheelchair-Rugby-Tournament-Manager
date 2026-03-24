@@ -27,15 +27,16 @@ describe("personnel mutations", () => {
 
   it("creates person via API helper", async () => {
     const created = { id: "r1", firstName: "A", lastName: "B" };
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify(created), { status: 200 }));
+    const fetchMock = vi.fn(async (..._args: unknown[]) => new Response(JSON.stringify(created), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
       createPersonnel("/api/referees", { firstName: "A", lastName: "B", seasonId: "s1", email: null, phone: null })
     ).resolves.toEqual(created);
 
-    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(options.method).toBe("POST");
+    const options = fetchMock.mock.calls[0]?.[1];
+    expect(options).toBeDefined();
+    expect((options as RequestInit).method).toBe("POST");
   });
 
   it("updates person via API helper", async () => {

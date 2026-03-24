@@ -21,6 +21,7 @@ import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import { deleteTournamentById, fetchTournamentsList } from "@/lib/api/tournaments";
 import { formatAddressForDisplay } from "@/lib/addressDisplay";
+import { formatDateRangePl } from "@/lib/dateFormat";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Tournament } from "@/types";
 
@@ -34,21 +35,6 @@ export default function TournamentsPage() {
       </ThemeRegistry>
     </QueryProvider>
   );
-}
-
-function formatDateRange(start: string, end?: string) {
-  const startDate = new Date(start);
-  const endDate = end ? new Date(end) : null;
-
-  if (Number.isNaN(startDate.getTime())) {
-    return end && !Number.isNaN(endDate?.getTime() ?? NaN) ? (endDate?.toLocaleDateString("pl-PL") ?? "") : "";
-  }
-
-  if (!endDate || Number.isNaN(endDate.getTime())) {
-    return startDate.toLocaleDateString("pl-PL");
-  }
-
-  return `${startDate.toLocaleDateString("pl-PL")} - ${endDate.toLocaleDateString("pl-PL")}`;
 }
 
 function TournamentsContent() {
@@ -182,7 +168,7 @@ function TournamentsContent() {
                       >
                         <Calendar size={16} />
                         <Typography variant="body2" color="textSecondary">
-                          {formatDateRange(t.startDate, t.endDate)}
+                          {formatDateRangePl(t.startDate, t.endDate)}
                         </Typography>
                       </Box>
                       {t.venue && (

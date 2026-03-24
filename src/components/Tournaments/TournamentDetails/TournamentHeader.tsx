@@ -1,13 +1,13 @@
 import { Box, Button, Typography, Link as MuiLink } from "@mui/material";
+import { formatDateRangePl } from "@/lib/dateFormat";
 import type { Tournament } from "@/types";
 
 interface TournamentHeaderProps {
   id: string;
   tournament: Tournament;
-  formatDateRange: (start: string, end?: string) => string;
 }
 
-export default function TournamentHeader({ id, tournament, formatDateRange }: TournamentHeaderProps) {
+export default function TournamentHeader({ id, tournament }: TournamentHeaderProps) {
   return (
     <Box
       sx={{
@@ -35,7 +35,7 @@ export default function TournamentHeader({ id, tournament, formatDateRange }: To
         <Typography variant="h3" sx={{ fontWeight: 900 }}>
           {tournament.name}
         </Typography>
-        <Typography color="textSecondary">{formatDateRange(tournament.startDate, tournament.endDate)}</Typography>
+        <Typography color="textSecondary">{formatDateRangePl(tournament.startDate, tournament.endDate)}</Typography>
       </Box>
       <Box sx={{ display: "flex", gap: 1.5 }}>
         <Button

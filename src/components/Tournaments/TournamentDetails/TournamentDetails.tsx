@@ -1,18 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { MapPin } from "lucide-react";
-import { Alert, Box, Typography, Paper, Link as MuiLink, CircularProgress } from "@mui/material";
+import { Alert, Box, Typography, CircularProgress } from "@mui/material";
 import QueryProvider from "@/components/QueryProvider/QueryProvider";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
-import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
+import TournamentDetailsDialogs from "@/components/Tournaments/TournamentDetails/TournamentDetailsDialogs";
 import TournamentHeader from "@/components/Tournaments/TournamentDetails/TournamentHeader";
+import TournamentInfoPanels from "@/components/Tournaments/TournamentDetails/TournamentInfoPanels";
 import TournamentMatchesPlanPanel from "@/components/Tournaments/TournamentDetails/TournamentMatchesPlanPanel";
 import TournamentRefereePlanPanel from "@/components/Tournaments/TournamentDetails/TournamentRefereePlanPanel";
 import TournamentTeamsPanel from "@/components/Tournaments/TournamentDetails/TournamentTeamsPanel";
 import TournamentPersonnelPanels from "@/components/Tournaments/TournamentDetails/TournamentPersonnelPanels";
-import SelectionDialog from "@/components/Tournaments/TournamentDetails/SelectionDialog";
 import { AddMatchDialog, EditMatchDialog } from "@/components/Tournaments/TournamentDetails/dialogs/MatchPlanDialogs";
 import {
   AddRefereePlanDialog,
@@ -26,7 +25,6 @@ import {
   parseJerseyInfo,
 } from "@/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 import useTournamentPersonnelManager from "@/components/Tournaments/TournamentDetails/hooks/useTournamentPersonnelManager";
-import { formatAddressForDisplay, resolvePlaceMapsHref } from "@/lib/addressDisplay";
 import { deleteTournamentMatch } from "@/lib/api/tournaments";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Match, Person } from "@/types";
@@ -146,21 +144,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
     return <Typography>Nie znaleziono turnieju.</Typography>;
   }
 
-  const formatDateRange = (start: string, end?: string) => {
-    const startDate = new Date(start);
-    const endDate = end ? new Date(end) : null;
-
-    if (Number.isNaN(startDate.getTime())) {
-      return end && !Number.isNaN(endDate?.getTime() ?? NaN) ? (endDate?.toLocaleDateString("pl-PL") ?? "") : "";
-    }
-
-    if (!endDate || Number.isNaN(endDate.getTime())) {
-      return startDate.toLocaleDateString("pl-PL");
-    }
-
-    return `${startDate.toLocaleDateString("pl-PL")} - ${endDate.toLocaleDateString("pl-PL")}`;
-  };
-
   /** Noun form for schedule table rows (e.g. "Jasne" / "Ciemne"). */
   function jerseyValueToNounLabel(value: "jasne" | "ciemne") {
     return value === "jasne" ? "Jasne" : "Ciemne";
@@ -179,7 +162,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
 
     try {
       await deleteMatchMutation.mutateAsync({ tournamentId: tournament.id, matchId: matchToDelete.id });
-      // Jeśli edytujemy plan w tym samym komponencie, usuń wiersz z formularza od razu.
       editMatch.setDrafts((prev) => prev.filter((d) => d.id !== deletedId));
       editRefereePlan.setDrafts((prev) => prev.filter((d) => d.id !== deletedId));
       if (editMatch.match?.id === deletedId) editMatch.setMatch(null);
@@ -238,16 +220,11 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
   const openNewDayTable = createOpenNewDayHandler(addMatch.openDialog);
   const openNewDayRefereePlanTable = createOpenNewDayHandler(addRefereePlan.openDialog);
 
-  const venue = tournament.venue;
-  const accommodation = tournament.accommodation;
-  const venueMapsHref = resolvePlaceMapsHref(venue);
-  const accommodationMapsHref = resolvePlaceMapsHref(accommodation);
-
   const showScheduleDateAlert = showPostEditDateHint || hasMatchesOutsideTournamentRange;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <TournamentHeader id={id} tournament={tournament} formatDateRange={formatDateRange} />
+      <TournamentHeader id={id} tournament={tournament} />
 
       {showScheduleDateAlert ? (
         <Alert
@@ -279,132 +256,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
         }}
       >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
-              gap: 3,
-            }}
-          >
-            {venue ? (
-              <Paper sx={{ p: 3, borderRadius: 3 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    mb: 2,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: "#dbeafe",
-                      p: 1,
-                      borderRadius: 2,
-                      color: "#2563eb",
-                    }}
-                  >
-                    <MapPin size={20} />
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    Hala Sportowa
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontWeight: 600 }}>{venue.name}</Typography>
-                <Typography color="textSecondary" sx={{ mb: 1, whiteSpace: "pre-line" }}>
-                  {formatAddressForDisplay(venue.address)}
-                </Typography>
-                {venueMapsHref ? (
-                  <MuiLink
-                    href={venueMapsHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    underline="hover"
-                    sx={{ fontWeight: "bold", fontSize: "0.875rem" }}
-                  >
-                    Otwórz w Mapach &rarr;
-                  </MuiLink>
-                ) : null}
-              </Paper>
-            ) : null}
-
-            {accommodation ? (
-              <Paper sx={{ p: 3, borderRadius: 3 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    mb: 2,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      bgcolor: "#d1fae5",
-                      p: 1,
-                      borderRadius: 2,
-                      color: "#059669",
-                    }}
-                  >
-                    <MapPin size={20} />
-                  </Box>
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    Zakwaterowanie
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontWeight: 600 }}>{accommodation.name}</Typography>
-                <Typography color="textSecondary" sx={{ mb: 1, whiteSpace: "pre-line" }}>
-                  {formatAddressForDisplay(accommodation.address)}
-                </Typography>
-                {tournament.parking ? (
-                  <Typography sx={{ mb: 1 }}>
-                    <strong>Parking:</strong> {tournament.parking}
-                  </Typography>
-                ) : null}
-                {accommodationMapsHref ? (
-                  <MuiLink
-                    href={accommodationMapsHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    underline="hover"
-                    sx={{ fontWeight: "bold", fontSize: "0.875rem" }}
-                  >
-                    Otwórz w Mapach &rarr;
-                  </MuiLink>
-                ) : null}
-              </Paper>
-            ) : null}
-
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mb: 2,
-                }}
-              >
-                <Box
-                  sx={{
-                    bgcolor: "#fff7ed",
-                    p: 1,
-                    borderRadius: 2,
-                    color: "#d97706",
-                  }}
-                >
-                  <MapPin size={20} />
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  Wyżywienie
-                </Typography>
-              </Box>
-              {tournament.catering ? (
-                <Typography sx={{ fontWeight: 600, whiteSpace: "pre-wrap" }}>{tournament.catering}</Typography>
-              ) : (
-                <Typography color="textSecondary">Brak danych.</Typography>
-              )}
-            </Paper>
-          </Box>
+          <TournamentInfoPanels tournament={tournament} />
 
           <TournamentMatchesPlanPanel
             tournament={tournament}
@@ -497,163 +349,23 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
         setDeleteMatchError={setDeleteMatchError}
         personDisplayName={getPersonDisplayName}
       />
-
-      <SelectionDialog
-        open={teams.addTeamsOpen}
-        title="Dodaj drużyny"
-        items={teams.availableTeams.map((team) => ({ id: team.id, label: team.name }))}
-        selectedIds={teams.selectedTeamIds}
-        toggleSelected={teams.toggleSelectedTeam}
-        onClose={teams.closeAddTeamsDialog}
-        onSave={teams.saveSelectedTeams}
-        loading={teams.saveTeamsLoading}
-        availableLoading={teams.availableTeamsLoading}
-        availableError={teams.availableTeamsError}
-        saveError={teams.saveTeamsError}
-        emptyState={
-          teams.availableTeams.length === 0 && !teams.availableTeamsError ? (
-            <Typography color="textSecondary" sx={{ py: 1 }}>
-              Brak dostępnych drużyn w tym sezonie.
-            </Typography>
-          ) : undefined
-        }
-      />
-
-      <ConfirmationDialog
-        open={Boolean(matchToDelete)}
-        title="Usunąć mecz?"
-        description={
-          matchToDelete ? (
-            <Typography color="textSecondary">
-              {tournament.teams.find((t) => t.id === matchToDelete.teamAId)?.name ?? matchToDelete.teamAId} vs{" "}
-              {tournament.teams.find((t) => t.id === matchToDelete.teamBId)?.name ?? matchToDelete.teamBId}
-            </Typography>
-          ) : null
-        }
-        onClose={closeDeleteMatchDialog}
-        onConfirm={confirmDeleteMatch}
-        loading={deleteMatchMutation.isPending}
-        errorMessage={deleteMatchError}
-        confirmLabel="Usuń"
-        cancelLabel="Anuluj"
-      />
-
-      <ConfirmationDialog
-        open={Boolean(matchDayToDelete)}
-        title="Usunąć dzień?"
-        description={
-          matchDayToDelete != null ? (
-            <Typography color="textSecondary">{getScheduleDayLabel(matchDayToDelete)}</Typography>
-          ) : null
-        }
-        onClose={closeDeleteMatchDayDialog}
-        onConfirm={confirmDeleteMatchDay}
-        loading={deleteMatchDayMutation.isPending}
-        errorMessage={deleteMatchDayError}
-        confirmLabel="Usuń"
-        cancelLabel="Anuluj"
-      />
-
-      <ConfirmationDialog
-        open={Boolean(teams.teamToRemove)}
-        title="Usunąć drużynę z turnieju?"
-        description={
-          teams.teamToRemove ? (
-            <Typography color="textSecondary">
-              Drużyna: <strong>{teams.teamToRemove.name}</strong>
-            </Typography>
-          ) : null
-        }
-        onClose={teams.closeRemoveTeamDialog}
-        onConfirm={teams.confirmRemoveTeam}
-        loading={teams.removeTeamLoading}
-        errorMessage={teams.removeTeamError}
-        confirmLabel="Usuń"
-        cancelLabel="Anuluj"
-      />
-
-      <SelectionDialog
-        open={referees.addRefereesOpen}
-        title="Dodaj sędziów"
-        items={referees.availableReferees.map((referee) => ({
-          id: referee.id,
-          label: getPersonDisplayName(referee),
-        }))}
-        selectedIds={referees.selectedRefereeIds}
-        toggleSelected={referees.toggleSelectedReferee}
-        onClose={referees.closeAddRefereesDialog}
-        onSave={referees.saveSelectedReferees}
-        loading={referees.saveRefereesLoading}
-        availableLoading={referees.availableRefereesLoading}
-        availableError={referees.availableRefereesError}
-        saveError={referees.saveRefereesError}
-        emptyState={
-          referees.availableReferees.length === 0 && !referees.availableRefereesError ? (
-            <Typography color="textSecondary" sx={{ py: 1 }}>
-              Brak dostępnych sędziów w tym sezonie.
-            </Typography>
-          ) : undefined
-        }
-      />
-
-      <ConfirmationDialog
-        open={Boolean(referees.refereeToRemove)}
-        title="Usunąć sędziego z turnieju?"
-        description={
-          referees.refereeToRemove ? (
-            <Typography color="textSecondary">
-              Sędzia: <strong>{getPersonDisplayName(referees.refereeToRemove)}</strong>
-            </Typography>
-          ) : null
-        }
-        onClose={referees.closeRemoveRefereeDialog}
-        onConfirm={referees.confirmRemoveReferee}
-        loading={referees.removeRefereeLoading}
-        errorMessage={referees.removeRefereeError}
-        confirmLabel="Usuń"
-        cancelLabel="Anuluj"
-      />
-
-      <SelectionDialog
-        open={classifiers.addClassifiersOpen}
-        title="Dodaj klasyfikatorów"
-        items={classifiers.availableClassifiers.map((classifier) => ({
-          id: classifier.id,
-          label: getPersonDisplayName(classifier),
-        }))}
-        selectedIds={classifiers.selectedClassifierIds}
-        toggleSelected={classifiers.toggleSelectedClassifier}
-        onClose={classifiers.closeAddClassifiersDialog}
-        onSave={classifiers.saveSelectedClassifiers}
-        loading={classifiers.saveClassifiersLoading}
-        availableLoading={classifiers.availableClassifiersLoading}
-        availableError={classifiers.availableClassifiersError}
-        saveError={classifiers.saveClassifiersError}
-        emptyState={
-          classifiers.availableClassifiers.length === 0 && !classifiers.availableClassifiersError ? (
-            <Typography color="textSecondary" sx={{ py: 1 }}>
-              Brak dostępnych klasyfikatorów w tym sezonie.
-            </Typography>
-          ) : undefined
-        }
-      />
-
-      <ConfirmationDialog
-        open={Boolean(classifiers.classifierToRemove)}
-        title="Usunąć klasyfikatora z turnieju?"
-        description={
-          classifiers.classifierToRemove ? (
-            <Typography color="textSecondary">
-              Klasyfikator: <strong>{getPersonDisplayName(classifiers.classifierToRemove)}</strong>
-            </Typography>
-          ) : null
-        }
-        onClose={classifiers.closeRemoveClassifierDialog}
-        onConfirm={classifiers.confirmRemoveClassifier}
-        loading={classifiers.removeClassifierLoading}
-        errorMessage={classifiers.removeClassifierError}
-        confirmLabel="Usuń"
-        cancelLabel="Anuluj"
+      <TournamentDetailsDialogs
+        tournament={tournament}
+        matchToDelete={matchToDelete}
+        matchDayToDelete={matchDayToDelete}
+        deleteMatchLoading={deleteMatchMutation.isPending}
+        deleteMatchError={deleteMatchError}
+        deleteMatchDayLoading={deleteMatchDayMutation.isPending}
+        deleteMatchDayError={deleteMatchDayError}
+        getScheduleDayLabel={getScheduleDayLabel}
+        closeDeleteMatchDialog={closeDeleteMatchDialog}
+        confirmDeleteMatch={confirmDeleteMatch}
+        closeDeleteMatchDayDialog={closeDeleteMatchDayDialog}
+        confirmDeleteMatchDay={confirmDeleteMatchDay}
+        teams={teams}
+        referees={referees}
+        classifiers={classifiers}
+        getPersonDisplayName={getPersonDisplayName}
       />
     </Box>
   );

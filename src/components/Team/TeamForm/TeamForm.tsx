@@ -16,15 +16,17 @@ import {
   Select,
   MenuItem,
   FormHelperText,
-  IconButton,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import type { SelectChangeEvent } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
+import TeamCoachSection from "@/components/Team/TeamForm/TeamCoachSection";
+import TeamContactSection from "@/components/Team/TeamForm/TeamContactSection";
+import TeamPlayersSection from "@/components/Team/TeamForm/TeamPlayersSection";
 import QueryProvider from "@/components/QueryProvider/QueryProvider";
+import TeamRefereeSection from "@/components/Team/TeamForm/TeamRefereeSection";
+import TeamStaffSection from "@/components/Team/TeamForm/TeamStaffSection";
 import { buildPlayerPayloadFromRow, normalizeText } from "@/components/Team/shared/teamFormUtils";
 import { useEditableRows } from "@/components/Team/shared/useEditableRows";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
@@ -80,7 +82,7 @@ const teamSchema = z.object({
   staffLastName: optionalLastNameSchema,
 });
 
-type TeamFormValues = z.infer<typeof teamSchema>;
+export type TeamFormValues = z.infer<typeof teamSchema>;
 
 const requiredFieldSx = {
   "& .MuiOutlinedInput-notchedOutline": {
@@ -107,6 +109,24 @@ interface StaffRow {
   id: string;
   firstName: string;
   lastName: string;
+}
+
+interface TeamPersonnelLike {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | number | null;
+}
+
+interface ResolvePersonnelIdParams {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  initialId?: string;
+  initialPerson?: TeamPersonnelLike;
+  seasonId: string;
+  endpoint: "/api/coaches" | "/api/referees";
 }
 
 export interface TeamFormContentProps {
@@ -157,6 +177,70 @@ const toDefaultValues = (team: Team): TeamFormValues => ({
   staffLastName: "",
 });
 
+const emptyTeamFormValues: TeamFormValues = {
+  name: "",
+  address: "",
+  city: "",
+  postalCode: "",
+  contactFirstName: "",
+  contactLastName: "",
+  contactEmail: "",
+  contactPhone: "",
+  coachFirstName: "",
+  coachLastName: "",
+  coachEmail: "",
+  coachPhone: "",
+  websiteUrl: "",
+  refereeFirstName: "",
+  refereeLastName: "",
+  refereeEmail: "",
+  refereePhone: "",
+  staffFirstName: "",
+  staffLastName: "",
+};
+
+function resolveEffectiveSeasonId(seasonId: string, isEdit: Team | false) {
+  return seasonId || (isEdit ? isEdit.seasonId : "");
+}
+
+async function resolvePersonnelId({
+  firstName,
+  lastName,
+  email,
+  phone,
+  initialId,
+  initialPerson,
+  seasonId,
+  endpoint,
+}: ResolvePersonnelIdParams): Promise<string | undefined> {
+  const fn = normalizeText(firstName);
+  const ln = normalizeText(lastName);
+  if (!fn || !ln) return initialId;
+
+  const normalizedEmail = normalizeText(email) || null;
+  const normalizedPhone = normalizeText(phone) || null;
+  const matchesInitial =
+    Boolean(initialId) &&
+    fn === (initialPerson?.firstName ?? "").trim() &&
+    ln === (initialPerson?.lastName ?? "").trim() &&
+    normalizedEmail === ((initialPerson?.email ?? "").trim() || null) &&
+    normalizedPhone === ((initialPerson?.phone != null ? String(initialPerson.phone) : "").trim() || null);
+
+  if (matchesInitial) {
+    return initialId;
+  }
+
+  const createdPerson = await createPersonnel(endpoint, {
+    firstName: fn,
+    lastName: ln,
+    email: normalizedEmail,
+    phone: normalizedPhone,
+    seasonId,
+  });
+
+  return createdPerson.id;
+}
+
 export default function TeamForm() {
   return (
     <QueryProvider>
@@ -203,7 +287,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
   const seasons = useMemo(() => seasonsData ?? [], [seasonsData]);
   const seasonsLoadError = seasonsQueryFailed && seasonsQueryError instanceof Error ? seasonsQueryError.message : null;
 
-  const effectiveSeasonId = seasonId || (isEdit && initialTeam ? initialTeam.seasonId : "");
+  const effectiveSeasonId = resolveEffectiveSeasonId(seasonId, isEdit);
 
   const addPlayer = () =>
     addPlayerRow({ id: crypto.randomUUID(), firstName: "", lastName: "", classification: "", number: "" });
@@ -216,29 +300,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
   const updateStaff = (id: string, field: keyof StaffRow, value: string) =>
     updateStaffRow(id, (staffMember) => ({ ...staffMember, [field]: value }));
 
-  const defaultFormValues: TeamFormValues = isEdit
-    ? toDefaultValues(initialTeam)
-    : {
-        name: "",
-        address: "",
-        city: "",
-        postalCode: "",
-        contactFirstName: "",
-        contactLastName: "",
-        contactEmail: "",
-        contactPhone: "",
-        coachFirstName: "",
-        coachLastName: "",
-        coachEmail: "",
-        coachPhone: "",
-        websiteUrl: "",
-        refereeFirstName: "",
-        refereeLastName: "",
-        refereeEmail: "",
-        refereePhone: "",
-        staffFirstName: "",
-        staffLastName: "",
-      };
+  const defaultFormValues: TeamFormValues = isEdit ? toDefaultValues(initialTeam) : emptyTeamFormValues;
 
   const {
     register,
@@ -264,69 +326,32 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
 
   const submitMutation = useMutation({
     mutationFn: async (data: TeamFormValues) => {
-      const eff = seasonId || (isEdit && initialTeam ? initialTeam.seasonId : "");
+      const eff = resolveEffectiveSeasonId(seasonId, isEdit);
       if (!eff) {
         throw new Error("Wybierz sezon przed zapisaniem drużyny.");
       }
 
-      let coachId: string | undefined = isEdit && initialTeam ? (initialTeam.coachId ?? undefined) : undefined;
-      let refereeId: string | undefined = isEdit && initialTeam ? (initialTeam.refereeId ?? undefined) : undefined;
+      const coachId = await resolvePersonnelId({
+        firstName: data.coachFirstName,
+        lastName: data.coachLastName,
+        email: data.coachEmail,
+        phone: data.coachPhone,
+        initialId: isEdit ? (initialTeam.coachId ?? undefined) : undefined,
+        initialPerson: isEdit ? initialTeam.coach : undefined,
+        seasonId: eff,
+        endpoint: "/api/coaches",
+      });
 
-      if (normalizeText(data.coachFirstName) && normalizeText(data.coachLastName)) {
-        const fn = normalizeText(data.coachFirstName);
-        const ln = normalizeText(data.coachLastName);
-        const email = normalizeText(data.coachEmail) || null;
-        const phone = normalizeText(data.coachPhone) || null;
-        const matchesInitialCoach =
-          isEdit &&
-          initialTeam &&
-          Boolean(initialTeam.coachId) &&
-          fn === (initialTeam.coach?.firstName ?? "").trim() &&
-          ln === (initialTeam.coach?.lastName ?? "").trim() &&
-          email === ((initialTeam.coach?.email ?? "").trim() || null) &&
-          phone === ((initialTeam.coach?.phone != null ? String(initialTeam.coach.phone) : "").trim() || null);
-
-        if (matchesInitialCoach) {
-          coachId = initialTeam?.coachId ?? undefined;
-        } else {
-          const createdCoach = await createPersonnel("/api/coaches", {
-            firstName: fn,
-            lastName: ln,
-            email,
-            phone,
-            seasonId: eff,
-          });
-          coachId = createdCoach.id;
-        }
-      }
-
-      if (normalizeText(data.refereeFirstName) && normalizeText(data.refereeLastName)) {
-        const fn = normalizeText(data.refereeFirstName);
-        const ln = normalizeText(data.refereeLastName);
-        const email = normalizeText(data.refereeEmail) || null;
-        const phone = normalizeText(data.refereePhone) || null;
-        const matchesInitialReferee =
-          isEdit &&
-          initialTeam &&
-          Boolean(initialTeam.refereeId) &&
-          fn === (initialTeam.referee?.firstName ?? "").trim() &&
-          ln === (initialTeam.referee?.lastName ?? "").trim() &&
-          email === ((initialTeam.referee?.email ?? "").trim() || null) &&
-          phone === ((initialTeam.referee?.phone != null ? String(initialTeam.referee.phone) : "").trim() || null);
-
-        if (matchesInitialReferee) {
-          refereeId = initialTeam?.refereeId ?? undefined;
-        } else {
-          const createdReferee = await createPersonnel("/api/referees", {
-            firstName: fn,
-            lastName: ln,
-            email,
-            phone,
-            seasonId: eff,
-          });
-          refereeId = createdReferee.id;
-        }
-      }
+      const refereeId = await resolvePersonnelId({
+        firstName: data.refereeFirstName,
+        lastName: data.refereeLastName,
+        email: data.refereeEmail,
+        phone: data.refereePhone,
+        initialId: isEdit ? (initialTeam.refereeId ?? undefined) : undefined,
+        initialPerson: isEdit ? initialTeam.referee : undefined,
+        seasonId: eff,
+        endpoint: "/api/referees",
+      });
 
       const staffPayload = staff
         .filter((s) => normalizeText(s.firstName) && normalizeText(s.lastName))
@@ -360,7 +385,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
       return createTeam(body);
     },
     onSuccess: (updated) => {
-      const eff = seasonId || (isEdit && initialTeam ? initialTeam.seasonId : "");
+      const eff = resolveEffectiveSeasonId(seasonId, isEdit);
       if (eff) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.seasons.list() });
         void queryClient.invalidateQueries({ queryKey: queryKeys.teams.bySeason(eff) });
@@ -386,7 +411,7 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
       ...field,
       onChange: (e: ChangeEvent<HTMLInputElement>) => {
         e.target.value = sanitizePhone(e.target.value);
-        field.onChange(e);
+        return field.onChange(e);
       },
     };
   };
@@ -495,243 +520,34 @@ export function TeamFormContent({ mode = "create", initialTeam = null, onSuccess
           </Grid>
         </Grid>
 
-        {/* Contact person */}
-        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
-          Osoba do kontaktu
-        </Typography>
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Imię"
-              {...register("contactFirstName")}
-              error={!!errors.contactFirstName}
-              helperText={errors.contactFirstName?.message}
-              sx={requiredFieldSx}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Nazwisko"
-              {...register("contactLastName")}
-              error={!!errors.contactLastName}
-              helperText={errors.contactLastName?.message}
-              sx={requiredFieldSx}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Email"
-              {...register("contactEmail")}
-              error={!!errors.contactEmail}
-              helperText={errors.contactEmail?.message}
-              sx={requiredFieldSx}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Telefon"
-              {...contactPhoneField}
-              placeholder="9 cyfr"
-              inputProps={{ inputMode: "numeric" }}
-              error={!!errors.contactPhone}
-              helperText={errors.contactPhone?.message}
-              sx={requiredFieldSx}
-            />
-          </Grid>
-        </Grid>
+        <TeamContactSection
+          register={register}
+          errors={errors}
+          contactPhoneField={contactPhoneField}
+          requiredFieldSx={requiredFieldSx}
+        />
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Coach: select existing or add new */}
-        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
-          Trener
-        </Typography>
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Imię"
-              {...register("coachFirstName")}
-              error={!!errors.coachFirstName}
-              helperText={errors.coachFirstName?.message}
-              sx={requiredFieldSx}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Nazwisko"
-              {...register("coachLastName")}
-              error={!!errors.coachLastName}
-              helperText={errors.coachLastName?.message}
-              sx={requiredFieldSx}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Email"
-              {...register("coachEmail")}
-              error={!!errors.coachEmail}
-              helperText={errors.coachEmail?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Telefon"
-              {...coachPhoneField}
-              placeholder="9 cyfr"
-              inputProps={{ inputMode: "numeric" }}
-              error={!!errors.coachPhone}
-              helperText={errors.coachPhone?.message}
-            />
-          </Grid>
-        </Grid>
+        <TeamCoachSection
+          register={register}
+          errors={errors}
+          coachPhoneField={coachPhoneField}
+          requiredFieldSx={requiredFieldSx}
+        />
 
-        {/* Referee: select existing or add new */}
-        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
-          Sędzia
-        </Typography>
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Imię"
-              {...register("refereeFirstName")}
-              error={!!errors.refereeFirstName}
-              helperText={errors.refereeFirstName?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Nazwisko"
-              {...register("refereeLastName")}
-              error={!!errors.refereeLastName}
-              helperText={errors.refereeLastName?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Email (opcjonalnie)"
-              {...register("refereeEmail")}
-              error={!!errors.refereeEmail}
-              helperText={errors.refereeEmail?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              fullWidth
-              label="Telefon (opcjonalnie)"
-              {...refereePhoneField}
-              placeholder="9 cyfr"
-              inputProps={{ inputMode: "numeric" }}
-              error={!!errors.refereePhone}
-              helperText={errors.refereePhone?.message}
-            />
-          </Grid>
-        </Grid>
+        <TeamRefereeSection register={register} errors={errors} refereePhoneField={refereePhoneField} />
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Staff */}
-        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
-          Staff
-        </Typography>
-        {staff.map((s) => (
-          <Grid container spacing={2} key={s.id} alignItems="center" sx={{ mb: 1 }}>
-            <Grid size={{ xs: 12, sm: 5 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Imię"
-                value={s.firstName}
-                onChange={(e) => updateStaff(s.id, "firstName", e.target.value)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 5 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Nazwisko"
-                value={s.lastName}
-                onChange={(e) => updateStaff(s.id, "lastName", e.target.value)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 2 }}>
-              <IconButton aria-label="Usuń" onClick={() => removeStaff(s.id)} color="error" size="small">
-                <DeleteOutlineIcon />
-              </IconButton>
-            </Grid>
-          </Grid>
-        ))}
-        <Button type="button" variant="outlined" startIcon={<AddIcon />} onClick={addStaff} sx={{ mb: 3 }}>
-          Dodaj osobę ze staffu
-        </Button>
-
-        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
-          Zawodnicy
-        </Typography>
-        {players.map((p) => (
-          <Grid container spacing={2} key={p.id} alignItems="center" sx={{ mb: 1 }}>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Imię"
-                value={p.firstName}
-                onChange={(e) => updatePlayer(p.id, "firstName", e.target.value)}
-                sx={requiredFieldSx}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Nazwisko"
-                value={p.lastName}
-                onChange={(e) => updatePlayer(p.id, "lastName", e.target.value)}
-                sx={requiredFieldSx}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                size="small"
-                type="number"
-                inputProps={{ inputMode: "decimal" }}
-                label="Klasyfikacja"
-                value={p.classification}
-                onChange={(e) => updatePlayer(p.id, "classification", e.target.value)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 4 }}>
-              <TextField
-                fullWidth
-                size="small"
-                type="number"
-                inputProps={{ inputMode: "numeric" }}
-                label="Numer"
-                value={p.number}
-                onChange={(e) => updatePlayer(p.id, "number", e.target.value)}
-              />
-            </Grid>
-            <Grid size={{ xs: 12, sm: 2 }}>
-              <IconButton aria-label="Usuń zawodnika" onClick={() => removePlayer(p.id)} color="error" size="small">
-                <DeleteOutlineIcon />
-              </IconButton>
-            </Grid>
-          </Grid>
-        ))}
-        <Button type="button" variant="outlined" startIcon={<AddIcon />} onClick={addPlayer} sx={{ mb: 3 }}>
-          Dodaj zawodnika
-        </Button>
+        <TeamStaffSection staff={staff} updateStaff={updateStaff} removeStaff={removeStaff} addStaff={addStaff} />
+        <TeamPlayersSection
+          players={players}
+          updatePlayer={updatePlayer}
+          removePlayer={removePlayer}
+          addPlayer={addPlayer}
+          requiredFieldSx={requiredFieldSx}
+        />
 
         <Divider sx={{ my: 2 }} />
 
