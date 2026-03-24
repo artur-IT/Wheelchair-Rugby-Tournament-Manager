@@ -69,7 +69,17 @@ export async function listTournamentsWithDetails(): Promise<Tournament[]> {
       accommodations: { orderBy: { id: "asc" } },
       mealPlans: { orderBy: { id: "asc" } },
       volunteers: true,
-      teams: { include: { team: true } },
+      teams: {
+        include: {
+          team: {
+            include: {
+              players: {
+                orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+              },
+            },
+          },
+        },
+      },
       referees: { include: { referee: true } },
       classifiers: { include: { classifier: true } },
     },
@@ -125,6 +135,14 @@ export async function listTournamentsWithDetails(): Promise<Tournament[]> {
         seasonId: tt.team.seasonId,
         coachId: tt.team.coachId ?? undefined,
         refereeId: tt.team.refereeId ?? undefined,
+        players: tt.team.players.map((player) => ({
+          id: player.id,
+          firstName: player.firstName,
+          lastName: player.lastName,
+          number: player.number ?? undefined,
+          classification: player.classification ?? undefined,
+          teamId: player.teamId,
+        })),
       })),
       referees: t.referees.map((tr) => ({
         id: tr.referee.id,

@@ -78,6 +78,7 @@ beforeEach(() => {
   }
 
   let matches: MatchStub[] = [];
+  let classifierPlanRows: { examId: string; playerId: string; scheduledAt: string; classification?: number }[] = [];
 
   vi.stubGlobal(
     "fetch",
@@ -158,6 +159,24 @@ beforeEach(() => {
 
       if (url === "/api/tournaments/t1/referee-plan" && (!init?.method || init.method === "GET")) {
         return new Response(JSON.stringify([]), { status: 200 });
+      }
+
+      if (url === "/api/tournaments/t1/classifier-plan" && (!init?.method || init.method === "GET")) {
+        return new Response(JSON.stringify(classifierPlanRows), { status: 200 });
+      }
+
+      if (url === "/api/tournaments/t1/classifier-plan" && init?.method === "POST") {
+        const body = init?.body ? JSON.parse(String(init.body)) : {};
+        classifierPlanRows = [
+          ...classifierPlanRows,
+          {
+            examId: `exam-${classifierPlanRows.length + 1}`,
+            playerId: body.playerId ?? "player-1",
+            scheduledAt: body.scheduledAt ?? new Date("2024-05-10T10:00:00.000Z").toISOString(),
+            classification: body.classification,
+          },
+        ];
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
       }
 
       if (url === "/api/tournaments/t1/matches" && init?.method === "POST") {
@@ -553,5 +572,10 @@ describe("TournamentDetails", () => {
 
     expect(await screen.findByText("Maria Lewandowska")).toBeInTheDocument();
     expect(screen.queryByText("Piotr Wiśniewski")).not.toBeInTheDocument();
+  });
+
+  it("renders classifiers plan panel", async () => {
+    render(<TournamentDetails id="t1" />);
+    expect(await screen.findByRole("heading", { name: "Plan Klasyfikatorów" })).toBeInTheDocument();
   });
 });
