@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Tournament } from "@/types";
 import {
@@ -37,6 +37,7 @@ interface AddClassifierPlanControls extends DialogControls {
   startTime: string;
   setStartTime: (value: string) => void;
   endTime: string;
+  setEndTime: (value: string) => void;
   classification: string;
   setClassification: (value: string) => void;
   search: string;
@@ -66,10 +67,20 @@ interface UseClassifierPlanManagerArgs {
 }
 
 interface ClassifierPlanManager {
-  classifierPlanRows: { examId: string; playerId: string; scheduledAt: string; classification?: number }[];
+  classifierPlanRows: {
+    examId: string;
+    playerId: string;
+    scheduledAt: string;
+    endsAt: string;
+    classification?: number;
+  }[];
   classifierPlanLoading: boolean;
   classifierPlanError: string | null;
   refreshClassifierPlan: (tournamentId: string) => Promise<void>;
+  classifierDayTimestamps: number[];
+  canCreateNewDay: boolean;
+  addEmptyDay: (timestamp: number) => void;
+  removeDay: (timestamp: number) => void;
   add: AddClassifierPlanControls;
   edit: EditClassifierPlanControls;
 }
@@ -96,6 +107,7 @@ export default function useClassifierPlanManager({
 }: UseClassifierPlanManagerArgs): ClassifierPlanManager {
   const queryClient = useQueryClient();
   const tid = tournament?.id;
+  const storageKey = tid ? `wr-classifier-plan-days:${tid}` : null;
 
   const {
     data: classifierPlanRows = [],
@@ -114,11 +126,14 @@ export default function useClassifierPlanManager({
   const classifierPlanError =
     classifierPlanQueryError && classifierPlanErr instanceof Error ? classifierPlanErr.message : null;
 
+  const [savedEmptyDays, setSavedEmptyDays] = useState<number[]>([]);
+
   const [addOpen, setAddOpen] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const [addDayTimestamp, setAddDayTimestamp] = useState<number | null>(null);
   const [addPlayerId, setAddPlayerId] = useState("");
   const [addStartTime, setAddStartTime] = useState(DEFAULT_START);
+  const [addEndTime, setAddEndTime] = useState(getEnd(DEFAULT_START));
   const [addClassification, setAddClassification] = useState("");
   const [addSearch, setAddSearch] = useState("");
   const [allowedAddDays, setAllowedAddDays] = useState<number[] | null>(null);
@@ -129,13 +144,19 @@ export default function useClassifierPlanManager({
   const [editDrafts, setEditDrafts] = useState<ClassifierPlanDraft[]>([]);
 
   const createMutation = useMutation({
-    mutationFn: (payload: { playerId: string; scheduledAt: string; classification?: number }) => {
+    mutationFn: (payload: { playerId: string; scheduledAt: string; endsAt: string; classification?: number }) => {
       if (!tid) throw new Error("Brak turnieju");
       return createTournamentClassifierPlanEntry(tid, payload);
     },
   });
   const saveMutation = useMutation({
-    mutationFn: (payload: { examId?: string; playerId: string; scheduledAt: string; classification?: number }) => {
+    mutationFn: (payload: {
+      examId?: string;
+      playerId: string;
+      scheduledAt: string;
+      endsAt: string;
+      classification?: number;
+    }) => {
       if (!tid) throw new Error("Brak turnieju");
       if (payload.examId) {
         return updateTournamentClassifierPlanEntry(tid, payload.examId, payload);
@@ -168,6 +189,55 @@ export default function useClassifierPlanManager({
     [queryClient]
   );
 
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        setSavedEmptyDays([]);
+        return;
+      }
+      const parsed = JSON.parse(raw) as unknown;
+      const arr = Array.isArray(parsed) ? parsed.filter((v) => typeof v === "number") : [];
+      setSavedEmptyDays(arr);
+    } catch {
+      setSavedEmptyDays([]);
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(savedEmptyDays));
+    } catch {
+      /* ignore */
+    }
+  }, [savedEmptyDays, storageKey]);
+
+  const classifierDayTimestamps = useMemo(() => {
+    const fromRows = classifierPlanRows.map((r) => toDayTimestamp(r.scheduledAt));
+    return Array.from(new Set([...fromRows, ...savedEmptyDays])).sort((a, b) => a - b);
+  }, [classifierPlanRows, savedEmptyDays]);
+
+  const canCreateNewDay = useMemo(() => {
+    const used = new Set(classifierDayTimestamps);
+    return matchDayOptions.some((o) => !used.has(o.timestamp));
+  }, [classifierDayTimestamps, matchDayOptions]);
+
+  const addEmptyDay = useCallback(
+    (timestamp: number) => {
+      setSavedEmptyDays((prev) => Array.from(new Set([...prev, timestamp])).sort((a, b) => a - b));
+    },
+    [setSavedEmptyDays]
+  );
+
+  const removeDay = useCallback(
+    (timestamp: number) => {
+      setSavedEmptyDays((prev) => prev.filter((t) => t !== timestamp));
+    },
+    [setSavedEmptyDays]
+  );
+
   function openAddDialog(presetDayTimestamp?: number | null, allowedDays?: number[] | null) {
     if (!tournament) return;
     setAddOpen(true);
@@ -178,6 +248,7 @@ export default function useClassifierPlanManager({
     const firstPlayer = tournament.teams.flatMap((t) => t.players ?? [])[0];
     setAddPlayerId(firstPlayer?.id ?? "");
     setAddStartTime(DEFAULT_START);
+    setAddEndTime(getEnd(DEFAULT_START));
     setAddClassification("");
     setAddSearch("");
   }
@@ -194,8 +265,10 @@ export default function useClassifierPlanManager({
     if (!addPlayerId) return setAddError("Wybierz zawodnika");
     const startMinutes = timeToMinutes(addStartTime);
     if (startMinutes == null) return setAddError("Podaj poprawną godzinę startu");
+    const endMinutes = timeToMinutes(addEndTime);
+    if (endMinutes == null) return setAddError("Podaj poprawną godzinę zakończenia");
     const day = new Date(addDayTimestamp);
-    const scheduledAt = new Date(
+    const scheduledAtDate = new Date(
       day.getFullYear(),
       day.getMonth(),
       day.getDate(),
@@ -203,14 +276,27 @@ export default function useClassifierPlanManager({
       startMinutes % 60,
       0,
       0
-    ).toISOString();
+    );
+    const endsAtDate = new Date(
+      day.getFullYear(),
+      day.getMonth(),
+      day.getDate(),
+      Math.floor(endMinutes / 60),
+      endMinutes % 60,
+      0,
+      0
+    );
+    if (endsAtDate.getTime() <= scheduledAtDate.getTime()) return setAddError("Koniec musi być po starcie");
+    const scheduledAt = scheduledAtDate.toISOString();
+    const endsAt = endsAtDate.toISOString();
     const classification = addClassification.trim() === "" ? undefined : Number(addClassification);
     if (classification != null && !Number.isFinite(classification)) return setAddError("Podaj poprawną klasyfikację");
 
     setAddError(null);
     try {
-      await createMutation.mutateAsync({ playerId: addPlayerId, scheduledAt, classification });
+      await createMutation.mutateAsync({ playerId: addPlayerId, scheduledAt, endsAt, classification });
       await refreshClassifierPlan(tournament.id);
+      addEmptyDay(addDayTimestamp);
       setAddOpen(false);
     } catch (e) {
       setAddError(e instanceof Error ? e.message : "Nie udało się utworzyć wpisu planu klasyfikatorów");
@@ -224,11 +310,13 @@ export default function useClassifierPlanManager({
       rows.map((row) => {
         const d = new Date(row.scheduledAt);
         const startTime = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        const e = new Date(row.endsAt);
+        const endTime = `${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`;
         return {
           id: row.examId,
           playerId: row.playerId,
           startTime,
-          endTime: getEnd(startTime),
+          endTime,
           classification: row.classification != null ? String(row.classification) : "",
         };
       })
@@ -260,12 +348,20 @@ export default function useClassifierPlanManager({
 
     // Validate all drafts before saving
     const day = new Date(editDayTimestamp);
-    const payloads: { examId?: string; playerId: string; scheduledAt: string; classification?: number }[] = [];
+    const payloads: {
+      examId?: string;
+      playerId: string;
+      scheduledAt: string;
+      endsAt: string;
+      classification?: number;
+    }[] = [];
     for (const draft of editDrafts) {
       const startMinutes = timeToMinutes(draft.startTime);
       if (startMinutes == null) return setEditError("Podaj poprawną godzinę startu");
+      const endMinutes = timeToMinutes(draft.endTime);
+      if (endMinutes == null) return setEditError("Podaj poprawną godzinę zakończenia");
       if (!draft.playerId) return setEditError("Wybierz zawodnika");
-      const scheduledAt = new Date(
+      const scheduledAtDate = new Date(
         day.getFullYear(),
         day.getMonth(),
         day.getDate(),
@@ -273,11 +369,23 @@ export default function useClassifierPlanManager({
         startMinutes % 60,
         0,
         0
-      ).toISOString();
+      );
+      const endsAtDate = new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate(),
+        Math.floor(endMinutes / 60),
+        endMinutes % 60,
+        0,
+        0
+      );
+      if (endsAtDate.getTime() <= scheduledAtDate.getTime()) return setEditError("Koniec musi być po starcie");
+      const scheduledAt = scheduledAtDate.toISOString();
+      const endsAt = endsAtDate.toISOString();
       const classification = draft.classification.trim() === "" ? undefined : Number(draft.classification);
       if (classification != null && !Number.isFinite(classification))
         return setEditError("Podaj poprawną klasyfikację");
-      payloads.push({ examId: draft.id, playerId: draft.playerId, scheduledAt, classification });
+      payloads.push({ examId: draft.id, playerId: draft.playerId, scheduledAt, endsAt, classification });
     }
 
     try {
@@ -285,6 +393,7 @@ export default function useClassifierPlanManager({
         await saveMutation.mutateAsync(payload);
       }
       await refreshClassifierPlan(tournament.id);
+      addEmptyDay(editDayTimestamp);
       closeEditDialog();
     } catch (e) {
       setEditError(e instanceof Error ? e.message : "Nie udało się zapisać planu klasyfikatorów");
@@ -307,6 +416,10 @@ export default function useClassifierPlanManager({
     classifierPlanLoading,
     classifierPlanError,
     refreshClassifierPlan,
+    classifierDayTimestamps,
+    canCreateNewDay,
+    addEmptyDay,
+    removeDay,
     add: {
       open: addOpen,
       loading: createMutation.isPending,
@@ -317,7 +430,8 @@ export default function useClassifierPlanManager({
       setPlayerId: setAddPlayerId,
       startTime: addStartTime,
       setStartTime: setAddStartTime,
-      endTime: getEnd(addStartTime),
+      endTime: addEndTime,
+      setEndTime: setAddEndTime,
       classification: addClassification,
       setClassification: setAddClassification,
       search: addSearch,

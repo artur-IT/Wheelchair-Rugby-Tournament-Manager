@@ -6,7 +6,12 @@ import { createClassifierPlanEntryForTournament, listClassifierPlanForTournament
 const UpsertClassifierPlanSchema = z.object({
   playerId: z.string().min(1, "Wybierz zawodnika"),
   scheduledAt: z.string().datetime("Nieprawidłowa data/godzina"),
-  classification: z.number().min(0, "Klasyfikacja nie może być ujemna").max(10, "Maksymalna klasyfikacja to 10").optional(),
+  endsAt: z.string().datetime("Nieprawidłowa data/godzina zakończenia"),
+  classification: z
+    .number()
+    .min(0, "Klasyfikacja nie może być ujemna")
+    .max(10, "Maksymalna klasyfikacja to 10")
+    .optional(),
 });
 
 export const GET: APIRoute = async ({ params }) => {
@@ -44,11 +49,15 @@ export const POST: APIRoute = async ({ params, request }) => {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "TOURNAMENT_NOT_FOUND") return json({ error: "Nie znaleziono turnieju" }, 404);
-      if (error.message === "PLAYER_NOT_IN_TOURNAMENT") return json({ error: "Wybrany zawodnik nie należy do turnieju" }, 400);
+      if (error.message === "PLAYER_NOT_IN_TOURNAMENT")
+        return json({ error: "Wybrany zawodnik nie należy do turnieju" }, 400);
       if (error.message === "NO_CLASSIFIER_IN_TOURNAMENT")
         return json({ error: "Brak klasyfikatora w turnieju. Dodaj klasyfikatora do personelu." }, 400);
       if (error.message === "INVALID_SCHEDULED_AT") return json({ error: "Nieprawidłowa data/godzina" }, 400);
       if (error.message === "INVALID_CLASSIFICATION") return json({ error: "Nieprawidłowa klasyfikacja" }, 400);
+      if (error.message === "INVALID_ENDS_AT") return json({ error: "Nieprawidłowa data/godzina zakończenia" }, 400);
+      if (error.message === "TIME_CONFLICT")
+        return json({ error: "W tym czasie jest już zaplanowane inne badanie" }, 400);
     }
     return json({ error: "Nie udało się utworzyć wpisu w planie klasyfikatorów" }, 500);
   }

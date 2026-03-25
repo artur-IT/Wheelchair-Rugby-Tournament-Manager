@@ -7,6 +7,14 @@ function normalizeClassification(value: number | undefined) {
   return value;
 }
 
+function mustBeValidDate(d: Date, code: string) {
+  if (Number.isNaN(d.getTime())) throw new Error(code);
+}
+
+function ensureStartBeforeEnd(start: Date, end: Date) {
+  if (end.getTime() <= start.getTime()) throw new Error("INVALID_ENDS_AT");
+}
+
 async function ensureTournamentExists(tournamentId: string) {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
@@ -40,6 +48,33 @@ async function ensurePlayerInTournament(tournamentId: string, playerId: string) 
   if (!exists) throw new Error("PLAYER_NOT_IN_TOURNAMENT");
 }
 
+async function ensureNoTimeConflict(args: {
+  tournamentId: string;
+  scheduledAt: Date;
+  endsAt: Date;
+  excludeExamId?: string;
+}) {
+  const exams = await prisma.classificationExam.findMany({
+    where: {
+      tournamentId: args.tournamentId,
+      scheduledAt: { not: null },
+      id: args.excludeExamId ? { not: args.excludeExamId } : undefined,
+    },
+    select: { scheduledAt: true, endsAt: true },
+  });
+
+  for (const e of exams) {
+    if (!e.scheduledAt) continue;
+    const start = e.scheduledAt;
+    const end = e.endsAt ?? new Date(start.getTime() + 30 * 60 * 1000);
+
+    // overlap if: start < otherEnd && otherStart < end
+    if (args.scheduledAt.getTime() < end.getTime() && start.getTime() < args.endsAt.getTime()) {
+      throw new Error("TIME_CONFLICT");
+    }
+  }
+}
+
 export async function listClassifierPlanForTournament(tournamentId: string): Promise<ClassifierPlanEntry[]> {
   await ensureTournamentExists(tournamentId);
 
@@ -53,18 +88,24 @@ export async function listClassifierPlanForTournament(tournamentId: string): Pro
       id: true,
       playerId: true,
       scheduledAt: true,
+      endsAt: true,
       result: true,
     },
   });
 
-  return exams
-    .filter((exam) => exam.scheduledAt != null)
-    .map((exam) => ({
+  const scheduledExams = exams.filter((exam) => exam.scheduledAt != null);
+
+  return scheduledExams.map((exam) => {
+    const start = exam.scheduledAt ?? new Date(0);
+    const end = exam.endsAt ?? new Date(start.getTime() + 30 * 60 * 1000);
+    return {
       examId: exam.id,
       playerId: exam.playerId,
-      scheduledAt: exam.scheduledAt!.toISOString(),
+      scheduledAt: start.toISOString(),
+      endsAt: end.toISOString(),
       classification: exam.result ?? undefined,
-    }));
+    };
+  });
 }
 
 export async function createClassifierPlanEntryForTournament(
@@ -75,7 +116,11 @@ export async function createClassifierPlanEntryForTournament(
   await ensurePlayerInTournament(tournamentId, input.playerId);
 
   const scheduledAt = new Date(input.scheduledAt);
-  if (Number.isNaN(scheduledAt.getTime())) throw new Error("INVALID_SCHEDULED_AT");
+  mustBeValidDate(scheduledAt, "INVALID_SCHEDULED_AT");
+  const endsAt = new Date(input.endsAt);
+  mustBeValidDate(endsAt, "INVALID_ENDS_AT");
+  ensureStartBeforeEnd(scheduledAt, endsAt);
+  await ensureNoTimeConflict({ tournamentId, scheduledAt, endsAt });
 
   const classifierId = await getDefaultClassifierId(tournamentId);
 
@@ -85,6 +130,7 @@ export async function createClassifierPlanEntryForTournament(
       playerId: input.playerId,
       classifierId,
       scheduledAt,
+      endsAt,
       result: normalizeClassification(input.classification),
     },
     select: { id: true },
@@ -108,13 +154,18 @@ export async function updateClassifierPlanEntryForTournament(
   if (!existing || existing.tournamentId !== tournamentId) throw new Error("EXAM_NOT_FOUND");
 
   const scheduledAt = new Date(input.scheduledAt);
-  if (Number.isNaN(scheduledAt.getTime())) throw new Error("INVALID_SCHEDULED_AT");
+  mustBeValidDate(scheduledAt, "INVALID_SCHEDULED_AT");
+  const endsAt = new Date(input.endsAt);
+  mustBeValidDate(endsAt, "INVALID_ENDS_AT");
+  ensureStartBeforeEnd(scheduledAt, endsAt);
+  await ensureNoTimeConflict({ tournamentId, scheduledAt, endsAt, excludeExamId: examId });
 
   await prisma.classificationExam.update({
     where: { id: examId },
     data: {
       playerId: input.playerId,
       scheduledAt,
+      endsAt,
       result: normalizeClassification(input.classification),
     },
   });

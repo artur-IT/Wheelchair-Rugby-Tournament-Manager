@@ -140,12 +140,9 @@ export default function TournamentRefereePlanPanel({
             <Button
               variant="contained"
               onClick={() => openAddRefereePlanDialog()}
-              disabled={tournament.teams.length < 2}
+              disabled={tournament.teams.length < 2 || matches.length === 0}
             >
               Dodaj
-            </Button>
-            <Button variant="outlined" onClick={openNewDayRefereePlanTable} disabled={tournament.teams.length < 2}>
-              Nowy dzień
             </Button>
           </Box>
         </Box>

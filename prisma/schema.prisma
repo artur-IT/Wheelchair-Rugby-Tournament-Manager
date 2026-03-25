@@ -299,6 +299,7 @@ model RefereeAssignment {
 model ClassificationExam {
   id           String     @id @default(cuid())
   scheduledAt  DateTime?
+  endsAt       DateTime?
   location     String?
   result       Float?
   notes        String?

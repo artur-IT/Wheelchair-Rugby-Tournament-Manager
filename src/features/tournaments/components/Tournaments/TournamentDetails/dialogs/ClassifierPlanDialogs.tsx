@@ -1,7 +1,30 @@
-import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Tooltip } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  MenuItem,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  Tooltip,
+} from "@mui/material";
 import { Trash2 } from "lucide-react";
 import type { Tournament } from "@/types";
-import type { ClassifierPlanAddState, ClassifierPlanEditState } from "@/features/tournaments/components/Tournaments/TournamentDetails/hooks/useClassifierPlanManager";
+import type {
+  ClassifierPlanAddState,
+  ClassifierPlanEditState,
+} from "@/features/tournaments/components/Tournaments/TournamentDetails/hooks/useClassifierPlanManager";
 
 interface AddClassifierPlanDialogProps {
   addClassifierPlan: ClassifierPlanAddState;
@@ -20,14 +43,16 @@ function getPlayers(tournament: Tournament) {
 export function AddClassifierPlanDialog({ addClassifierPlan, tournament }: AddClassifierPlanDialogProps) {
   const players = getPlayers(tournament);
   const q = addClassifierPlan.search.trim().toLowerCase();
-  const filteredPlayers = q
-    ? players.filter((p) => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q))
-    : players;
+  const filteredPlayers = q ? players.filter((p) => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q)) : players;
 
   return (
     <Dialog open={addClassifierPlan.open} onClose={addClassifierPlan.closeDialog} fullWidth maxWidth="md">
-      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-        <Typography component="div" variant="h6" sx={{ fontWeight: 900 }}>Tworzenie planu klasyfikatorów</Typography>
+      <DialogTitle
+        sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}
+      >
+        <Typography component="div" variant="h6" sx={{ fontWeight: 900 }}>
+          Tworzenie planu klasyfikatorów
+        </Typography>
         <TextField
           select
           label="Dzień tygodnia"
@@ -37,22 +62,54 @@ export function AddClassifierPlanDialog({ addClassifierPlan, tournament }: AddCl
           sx={{ minWidth: 220 }}
         >
           {addClassifierPlan.dayOptions.map((o) => (
-            <MenuItem key={o.timestamp} value={String(o.timestamp)}>{o.label}</MenuItem>
+            <MenuItem key={o.timestamp} value={String(o.timestamp)}>
+              {o.label}
+            </MenuItem>
           ))}
         </TextField>
       </DialogTitle>
 
       <DialogContent dividers>
-        {addClassifierPlan.error ? <Alert severity="error" sx={{ mb: 2 }}>{addClassifierPlan.error}</Alert> : null}
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 150px 150px 160px" }, gap: 1.5, alignItems: "end", mb: 2 }}>
+        {addClassifierPlan.error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {addClassifierPlan.error}
+          </Alert>
+        ) : null}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 150px 150px 160px" },
+            gap: 1.5,
+            alignItems: "end",
+            mb: 2,
+          }}
+        >
           <TextField
             label="Wybrany zawodnik"
-            value={players.find((p) => p.id === addClassifierPlan.playerId) ? `${players.find((p) => p.id === addClassifierPlan.playerId)?.firstName} ${players.find((p) => p.id === addClassifierPlan.playerId)?.lastName}` : ""}
+            value={
+              players.find((p) => p.id === addClassifierPlan.playerId)
+                ? `${players.find((p) => p.id === addClassifierPlan.playerId)?.firstName} ${players.find((p) => p.id === addClassifierPlan.playerId)?.lastName}`
+                : ""
+            }
             InputProps={{ readOnly: true }}
             size="small"
           />
-          <TextField type="time" label="Start" value={addClassifierPlan.startTime} onChange={(e) => addClassifierPlan.setStartTime(e.target.value)} InputLabelProps={{ shrink: true }} size="small" />
-          <TextField type="time" label="Koniec" value={addClassifierPlan.endTime} InputLabelProps={{ shrink: true }} InputProps={{ readOnly: true }} size="small" />
+          <TextField
+            type="time"
+            label="Start"
+            value={addClassifierPlan.startTime}
+            onChange={(e) => addClassifierPlan.setStartTime(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+          <TextField
+            type="time"
+            label="Koniec"
+            value={addClassifierPlan.endTime}
+            onChange={(e) => addClassifierPlan.setEndTime(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
           <TextField
             type="number"
             label="Klasyfikacja"
@@ -77,15 +134,23 @@ export function AddClassifierPlanDialog({ addClassifierPlan, tournament }: AddCl
             <TableHead>
               <TableRow>
                 <TableCell>Zawodnik</TableCell>
-                <TableCell align="center" sx={{ width: 120 }}>Akcja</TableCell>
+                <TableCell align="center" sx={{ width: 120 }}>
+                  Akcja
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {filteredPlayers.map((player) => (
                 <TableRow key={player.id} selected={player.id === addClassifierPlan.playerId}>
-                  <TableCell>{player.firstName} {player.lastName}</TableCell>
+                  <TableCell>
+                    {player.firstName} {player.lastName}
+                  </TableCell>
                   <TableCell align="center">
-                    <Button variant={player.id === addClassifierPlan.playerId ? "contained" : "outlined"} onClick={() => addClassifierPlan.setPlayerId(player.id)} size="small">
+                    <Button
+                      variant={player.id === addClassifierPlan.playerId ? "contained" : "outlined"}
+                      onClick={() => addClassifierPlan.setPlayerId(player.id)}
+                      size="small"
+                    >
                       Wybierz
                     </Button>
                   </TableCell>
@@ -97,8 +162,12 @@ export function AddClassifierPlanDialog({ addClassifierPlan, tournament }: AddCl
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={addClassifierPlan.closeDialog} disabled={addClassifierPlan.loading}>Anuluj</Button>
-        <Button variant="contained" onClick={addClassifierPlan.submit} disabled={addClassifierPlan.loading}>Dodaj</Button>
+        <Button onClick={addClassifierPlan.closeDialog} disabled={addClassifierPlan.loading}>
+          Anuluj
+        </Button>
+        <Button variant="contained" onClick={addClassifierPlan.submit} disabled={addClassifierPlan.loading}>
+          Dodaj
+        </Button>
       </DialogActions>
     </Dialog>
   );
@@ -109,8 +178,12 @@ export function EditClassifierPlanDialog({ editClassifierPlan, tournament }: Edi
 
   return (
     <Dialog open={editClassifierPlan.open} onClose={editClassifierPlan.closeDialog} fullWidth maxWidth="md">
-      <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-        <Typography component="div" variant="h6" sx={{ fontWeight: 900 }}>Edycja planu klasyfikatorów</Typography>
+      <DialogTitle
+        sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}
+      >
+        <Typography component="div" variant="h6" sx={{ fontWeight: 900 }}>
+          Edycja planu klasyfikatorów
+        </Typography>
         <TextField
           select
           label="Dzień tygodnia"
@@ -120,13 +193,19 @@ export function EditClassifierPlanDialog({ editClassifierPlan, tournament }: Edi
           sx={{ minWidth: 220 }}
         >
           {editClassifierPlan.dayOptions.map((o) => (
-            <MenuItem key={o.timestamp} value={String(o.timestamp)}>{o.label}</MenuItem>
+            <MenuItem key={o.timestamp} value={String(o.timestamp)}>
+              {o.label}
+            </MenuItem>
           ))}
         </TextField>
       </DialogTitle>
 
       <DialogContent dividers>
-        {editClassifierPlan.error ? <Alert severity="error" sx={{ mb: 2 }}>{editClassifierPlan.error}</Alert> : null}
+        {editClassifierPlan.error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {editClassifierPlan.error}
+          </Alert>
+        ) : null}
         <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
           <Table size="small" aria-label="Tabela planu klasyfikatorów (edycja)">
             <TableHead>
@@ -167,12 +246,18 @@ export function EditClassifierPlanDialog({ editClassifierPlan, tournament }: Edi
                       select
                       label="Zawodnik"
                       value={draft.playerId}
-                      onChange={(e) => editClassifierPlan.setDrafts((prev) => prev.map((d, i) => (i === idx ? { ...d, playerId: String(e.target.value) } : d)))}
+                      onChange={(e) =>
+                        editClassifierPlan.setDrafts((prev) =>
+                          prev.map((d, i) => (i === idx ? { ...d, playerId: String(e.target.value) } : d))
+                        )
+                      }
                       size="small"
                       fullWidth
                     >
                       {players.map((p) => (
-                        <MenuItem key={p.id} value={p.id}>{p.firstName} {p.lastName}</MenuItem>
+                        <MenuItem key={p.id} value={p.id}>
+                          {p.firstName} {p.lastName}
+                        </MenuItem>
                       ))}
                     </TextField>
                   </TableCell>
@@ -186,22 +271,42 @@ export function EditClassifierPlanDialog({ editClassifierPlan, tournament }: Edi
                         const [hRaw, mRaw] = startTime.split(":");
                         const h = Number(hRaw);
                         const m = Number(mRaw);
-                        const end = Number.isFinite(h) && Number.isFinite(m) ? `${String((h + Math.floor((m + 30) / 60)) % 24).padStart(2, "0")}:${String((m + 30) % 60).padStart(2, "0")}` : draft.endTime;
-                        editClassifierPlan.setDrafts((prev) => prev.map((d, i) => (i === idx ? { ...d, startTime, endTime: end } : d)));
+                        const end =
+                          Number.isFinite(h) && Number.isFinite(m)
+                            ? `${String((h + Math.floor((m + 30) / 60)) % 24).padStart(2, "0")}:${String((m + 30) % 60).padStart(2, "0")}`
+                            : draft.endTime;
+                        editClassifierPlan.setDrafts((prev) =>
+                          prev.map((d, i) => (i === idx ? { ...d, startTime, endTime: end } : d))
+                        );
                       }}
                       InputLabelProps={{ shrink: true }}
                       size="small"
                     />
                   </TableCell>
                   <TableCell sx={{ minWidth: 130 }}>
-                    <TextField type="time" label="Koniec" value={draft.endTime} InputLabelProps={{ shrink: true }} InputProps={{ readOnly: true }} size="small" />
+                    <TextField
+                      type="time"
+                      label="Koniec"
+                      value={draft.endTime}
+                      onChange={(e) =>
+                        editClassifierPlan.setDrafts((prev) =>
+                          prev.map((d, i) => (i === idx ? { ...d, endTime: e.target.value } : d))
+                        )
+                      }
+                      InputLabelProps={{ shrink: true }}
+                      size="small"
+                    />
                   </TableCell>
                   <TableCell sx={{ minWidth: 140 }}>
                     <TextField
                       type="number"
                       label="Klasyfikacja"
                       value={draft.classification}
-                      onChange={(e) => editClassifierPlan.setDrafts((prev) => prev.map((d, i) => (i === idx ? { ...d, classification: e.target.value } : d)))}
+                      onChange={(e) =>
+                        editClassifierPlan.setDrafts((prev) =>
+                          prev.map((d, i) => (i === idx ? { ...d, classification: e.target.value } : d))
+                        )
+                      }
                       size="small"
                       inputProps={{ step: "0.5", min: "0", max: "10" }}
                     />
@@ -213,13 +318,19 @@ export function EditClassifierPlanDialog({ editClassifierPlan, tournament }: Edi
         </TableContainer>
 
         <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-start" }}>
-          <Button variant="outlined" onClick={editClassifierPlan.addRow} disabled={editClassifierPlan.loading}>Dodaj kolejny wpis klasyfikacji</Button>
+          <Button variant="outlined" onClick={editClassifierPlan.addRow} disabled={editClassifierPlan.loading}>
+            Dodaj kolejny wpis klasyfikacji
+          </Button>
         </Box>
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={editClassifierPlan.closeDialog} disabled={editClassifierPlan.loading}>Anuluj</Button>
-        <Button variant="contained" onClick={editClassifierPlan.submit} disabled={editClassifierPlan.loading}>Zapisz</Button>
+        <Button onClick={editClassifierPlan.closeDialog} disabled={editClassifierPlan.loading}>
+          Anuluj
+        </Button>
+        <Button variant="contained" onClick={editClassifierPlan.submit} disabled={editClassifierPlan.loading}>
+          Zapisz
+        </Button>
       </DialogActions>
     </Dialog>
   );

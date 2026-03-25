@@ -224,6 +224,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
         throw new Error(`Nie udało się usunąć ${failures.length} z ${toDelete.length} wpisów`);
       }
       await classifierPlanManager.refreshClassifierPlan(tournament.id);
+      classifierPlanManager.removeDay(classifierDayToDelete);
       setClassifierDayToDelete(null);
     } catch (e) {
       setDeleteClassifierDayError(e instanceof Error ? e.message : "Nie udało się usunąć dnia planu klasyfikatorów");
@@ -243,12 +244,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
       const nextDay = freeDayOptions[0]?.timestamp ?? null;
       if (!nextDay) return;
 
-      setScheduleDayTimestamps((prev) => {
-        const merged = Array.from(new Set([...prev, nextDay]));
-        merged.sort((a, b) => a - b);
-        return merged;
-      });
-
       openDialog(
         nextDay,
         freeDayOptions.map((o) => o.timestamp)
@@ -258,7 +253,17 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
 
   const openNewDayTable = createOpenNewDayHandler(addMatch.openDialog);
   const openNewDayRefereePlanTable = createOpenNewDayHandler(addRefereePlan.openDialog);
-  const openNewDayClassifierPlanTable = createOpenNewDayHandler(addClassifierPlan.openDialog);
+  const openNewDayClassifierPlanTable = () => {
+    if (!tournament) return;
+    const used = new Set(classifierPlanManager.classifierDayTimestamps);
+    const freeDayOptions = (matchDayOptions ?? []).filter((o) => !used.has(o.timestamp));
+    const nextDay = freeDayOptions[0]?.timestamp ?? null;
+    if (!nextDay) return;
+    addClassifierPlan.openDialog(
+      nextDay,
+      freeDayOptions.map((o) => o.timestamp)
+    );
+  };
 
   const showScheduleDateAlert = showPostEditDateHint || hasMatchesOutsideTournamentRange;
 
@@ -346,10 +351,12 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
             loading={classifierPlanManager.classifierPlanLoading}
             error={classifierPlanManager.classifierPlanError}
             onRetry={() => void classifierPlanManager.refreshClassifierPlan(tournament.id)}
-            scheduleTableDayTimestamps={scheduleTableDayTimestamps}
+            scheduleTableDayTimestamps={classifierPlanManager.classifierDayTimestamps}
             getScheduleDayLabel={getScheduleDayLabel}
             openAddDialog={addClassifierPlan.openDialog}
             openNewDayTable={openNewDayClassifierPlanTable}
+            canCreateNewDay={classifierPlanManager.canCreateNewDay}
+            hasMatches={matches.length > 0}
             openEditDialog={editClassifierPlan.openDialog}
             setDayToDelete={setClassifierDayToDelete}
             deleteDayLoading={deleteClassifierDayLoading}

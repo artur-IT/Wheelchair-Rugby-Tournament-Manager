@@ -158,12 +158,14 @@ export interface ClassifierPlanEntry {
   examId: string;
   playerId: string;
   scheduledAt: string;
+  endsAt: string;
   classification?: number;
 }
 
 export interface UpsertClassifierPlanEntryDto {
   playerId: string;
   scheduledAt: string; // ISO
+  endsAt: string; // ISO
   classification?: number;
 }
 

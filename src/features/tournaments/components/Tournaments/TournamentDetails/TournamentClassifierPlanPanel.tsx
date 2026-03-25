@@ -18,7 +18,7 @@ import type { Tournament } from "@/types";
 
 interface TournamentClassifierPlanPanelProps {
   tournament: Tournament;
-  rows: { examId: string; playerId: string; scheduledAt: string; classification?: number }[];
+  rows: { examId: string; playerId: string; scheduledAt: string; endsAt: string; classification?: number }[];
   loading: boolean;
   error: string | null;
   onRetry?: () => void;
@@ -26,6 +26,8 @@ interface TournamentClassifierPlanPanelProps {
   getScheduleDayLabel: (timestamp: number) => string;
   openAddDialog: (presetDayTimestamp?: number | null, allowedDays?: number[] | null) => void;
   openNewDayTable: () => void;
+  canCreateNewDay: boolean;
+  hasMatches: boolean;
   openEditDialog: (dayTimestamp: number) => void;
   setDayToDelete: (timestamp: number) => void;
   deleteDayLoading: boolean;
@@ -47,6 +49,8 @@ export default function TournamentClassifierPlanPanel({
   getScheduleDayLabel,
   openAddDialog,
   openNewDayTable,
+  canCreateNewDay,
+  hasMatches,
   openEditDialog,
   setDayToDelete,
   deleteDayLoading,
@@ -124,9 +128,6 @@ export default function TournamentClassifierPlanPanel({
             <Button variant="contained" onClick={() => openAddDialog()} disabled={!canAddEntries}>
               Dodaj
             </Button>
-            <Button variant="outlined" onClick={openNewDayTable} disabled={!canAddEntries}>
-              Nowy dzień
-            </Button>
           </Box>
         </Box>
       ) : (
@@ -135,12 +136,16 @@ export default function TournamentClassifierPlanPanel({
             <Button variant="contained" onClick={() => openAddDialog()} disabled={!canAddEntries}>
               Dodaj
             </Button>
-            <Button variant="outlined" onClick={openNewDayTable} disabled={!canAddEntries}>
-              Nowy dzień
-            </Button>
-            <Button variant="contained" onClick={handlePrint}>
-              Wydrukuj
-            </Button>
+            {hasMatches ? null : (
+              <>
+                <Button variant="outlined" onClick={openNewDayTable} disabled={!canAddEntries || !canCreateNewDay}>
+                  Nowy dzień
+                </Button>
+                <Button variant="contained" onClick={handlePrint}>
+                  Wydrukuj
+                </Button>
+              </>
+            )}
           </Box>
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -186,7 +191,7 @@ export default function TournamentClassifierPlanPanel({
                             const player = players.find((p) => p.id === row.playerId);
                             const teamName = playerTeamNameById.get(row.playerId);
                             const startDate = new Date(row.scheduledAt);
-                            const endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
+                            const endDate = new Date(row.endsAt);
                             return (
                               <TableRow key={row.examId}>
                                 <TableCell align="center" sx={{ fontWeight: 600 }}>

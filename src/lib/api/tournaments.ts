@@ -26,6 +26,7 @@ interface TournamentRefereePlanPayload {
 interface TournamentClassifierPlanPayload {
   playerId: string;
   scheduledAt: string;
+  endsAt: string;
   classification?: number;
 }
 

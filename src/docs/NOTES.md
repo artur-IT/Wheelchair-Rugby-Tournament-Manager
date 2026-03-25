@@ -181,10 +181,11 @@ EFEKT: Dobry+ - wymaga dopracowania i poprawek
 DO POPRAWKI:
 
 - nie moge wybrać godziny zakończenia badania
-- nie mogę dodać zawodnika jesli nie ma wcześniej dodanych meczów w turnieju
+- nie mogę dodać zawodnika jesli nie ma wcześniej dodanych meczów w turnieju, a powinienem moć to zrobić
 - jeśli są dodane mecze to plan klasyfikatorów ma zawierać tylko przycisk 'dodaj badanie'
 - po kliknęciu 'usun dzień' dzień się usuwa z bazy, ale widok się nie aktualizuje
 - mogę dodać badanie w tym samym czasie co inne badanie, nie może tak być
 - niedziela zapisuje sie ale po odswieżeniu strony znika
 - jeśli wszystkie dni są już dodane to przycisk 'nowy dzień' musi byhć nie aktywny
 - po różnych operacjach na planie klasyfikatorów np. utworzeniu nowego dnia, dodaniu zawodników i odswieżeniu strony zostaje tylko piątek
+- po usunięciu planu sędziów zostaje też usunięty cały plan rozgrywek i klasyfikatorów. Każdy Plan ma działać niezależnie od siebie bez wpływu na pozostałe plany .
