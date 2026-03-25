@@ -169,4 +169,22 @@ dodaj takie same funkcjonalności tj. edycja, usuwanie, tworzenie nowych pozycji
 tworzenie i usuwanie dnia itp.
 całą sekcję wyróżnij innym kolorem tła i nagłówkiem.
 
----
+AGENT: Auto
+EFEKT: Dobry+ - wymaga dopracowania i poprawek
+
+- dokładny plan klasyfikatorów,
+- wszystkie niezbędne kolumny
+- bardzo dobry widok dodawania zawodnika + filtr wyszukiwania
+- bez błędów w konsoli DevTools!
+- wadliwy CRUD dla nowych dni planu klasyfikatorów,
+
+DO POPRAWKI:
+
+- nie moge wybrać godziny zakończenia badania
+- nie mogę dodać zawodnika jesli nie ma wcześniej dodanych meczów w turnieju
+- jeśli są dodane mecze to plan klasyfikatorów ma zawierać tylko przycisk 'dodaj badanie'
+- po kliknęciu 'usun dzień' dzień się usuwa z bazy, ale widok się nie aktualizuje
+- mogę dodać badanie w tym samym czasie co inne badanie, nie może tak być
+- niedziela zapisuje sie ale po odswieżeniu strony znika
+- jeśli wszystkie dni są już dodane to przycisk 'nowy dzień' musi byhć nie aktywny
+- po różnych operacjach na planie klasyfikatorów np. utworzeniu nowego dnia, dodaniu zawodników i odswieżeniu strony zostaje tylko piątek

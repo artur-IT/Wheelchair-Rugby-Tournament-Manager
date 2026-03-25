@@ -216,7 +216,13 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
       const toDelete = classifierPlanManager.classifierPlanRows.filter(
         (row) => getMatchDayTimestamp(row.scheduledAt) === classifierDayToDelete
       );
-      await Promise.all(toDelete.map((row) => deleteTournamentClassifierPlanEntry(tournament.id, row.examId)));
+      const results = await Promise.allSettled(
+        toDelete.map((row) => deleteTournamentClassifierPlanEntry(tournament.id, row.examId))
+      );
+      const failures = results.filter((r) => r.status === "rejected");
+      if (failures.length > 0) {
+        throw new Error(`Nie udało się usunąć ${failures.length} z ${toDelete.length} wpisów`);
+      }
       await classifierPlanManager.refreshClassifierPlan(tournament.id);
       setClassifierDayToDelete(null);
     } catch (e) {

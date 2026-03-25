@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { Tournament } from "@/types";
-import { formatDayOptionLabel, type MatchDayOption, timeToMinutes } from "@/features/tournaments/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
+import {
+  formatDayOptionLabel,
+  type MatchDayOption,
+  timeToMinutes,
+} from "@/features/tournaments/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 import {
   createTournamentClassifierPlanEntry,
   deleteTournamentClassifierPlanEntry,
@@ -100,7 +104,10 @@ export default function useClassifierPlanManager({
     error: classifierPlanErr,
   } = useQuery({
     queryKey: queryKeys.tournaments.classifierPlan(tid ?? "__none__"),
-    queryFn: ({ signal }) => fetchTournamentClassifierPlan(tid!, signal),
+    queryFn: ({ signal }) => {
+      if (!tid) throw new Error("Brak turnieju");
+      return fetchTournamentClassifierPlan(tid, signal);
+    },
     enabled: Boolean(tid),
   });
 
@@ -149,7 +156,8 @@ export default function useClassifierPlanManager({
   }, [allowedAddDays, matchDayOptions]);
 
   const editDayOptions = useMemo(() => {
-    if (editDayTimestamp == null || matchDayOptions.some((o) => o.timestamp === editDayTimestamp)) return matchDayOptions;
+    if (editDayTimestamp == null || matchDayOptions.some((o) => o.timestamp === editDayTimestamp))
+      return matchDayOptions;
     return [...matchDayOptions, { timestamp: editDayTimestamp, label: formatDayOptionLabel(editDayTimestamp) }];
   }, [editDayTimestamp, matchDayOptions]);
 
@@ -249,24 +257,32 @@ export default function useClassifierPlanManager({
   async function submitEdit() {
     if (!tournament || !editDayTimestamp) return;
     setEditError(null);
+
+    // Validate all drafts before saving
+    const day = new Date(editDayTimestamp);
+    const payloads: { examId?: string; playerId: string; scheduledAt: string; classification?: number }[] = [];
+    for (const draft of editDrafts) {
+      const startMinutes = timeToMinutes(draft.startTime);
+      if (startMinutes == null) return setEditError("Podaj poprawną godzinę startu");
+      if (!draft.playerId) return setEditError("Wybierz zawodnika");
+      const scheduledAt = new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate(),
+        Math.floor(startMinutes / 60),
+        startMinutes % 60,
+        0,
+        0
+      ).toISOString();
+      const classification = draft.classification.trim() === "" ? undefined : Number(draft.classification);
+      if (classification != null && !Number.isFinite(classification))
+        return setEditError("Podaj poprawną klasyfikację");
+      payloads.push({ examId: draft.id, playerId: draft.playerId, scheduledAt, classification });
+    }
+
     try {
-      const day = new Date(editDayTimestamp);
-      for (const draft of editDrafts) {
-        const startMinutes = timeToMinutes(draft.startTime);
-        if (startMinutes == null) throw new Error("Podaj poprawną godzinę startu");
-        if (!draft.playerId) throw new Error("Wybierz zawodnika");
-        const scheduledAt = new Date(
-          day.getFullYear(),
-          day.getMonth(),
-          day.getDate(),
-          Math.floor(startMinutes / 60),
-          startMinutes % 60,
-          0,
-          0
-        ).toISOString();
-        const classification = draft.classification.trim() === "" ? undefined : Number(draft.classification);
-        if (classification != null && !Number.isFinite(classification)) throw new Error("Podaj poprawną klasyfikację");
-        await saveMutation.mutateAsync({ examId: draft.id, playerId: draft.playerId, scheduledAt, classification });
+      for (const payload of payloads) {
+        await saveMutation.mutateAsync(payload);
       }
       await refreshClassifierPlan(tournament.id);
       closeEditDialog();
