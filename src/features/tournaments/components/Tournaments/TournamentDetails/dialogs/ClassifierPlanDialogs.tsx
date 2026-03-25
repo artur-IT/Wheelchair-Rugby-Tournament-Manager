@@ -319,7 +319,7 @@ export function EditClassifierPlanDialog({ editClassifierPlan, tournament }: Edi
 
         <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-start" }}>
           <Button variant="outlined" onClick={editClassifierPlan.addRow} disabled={editClassifierPlan.loading}>
-            Dodaj kolejny wpis klasyfikacji
+            Dodaj kolejne badanie
           </Button>
         </Box>
       </DialogContent>

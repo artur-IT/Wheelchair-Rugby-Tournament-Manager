@@ -19,7 +19,6 @@ import {
 } from "@/features/tournaments/components/Tournaments/TournamentDetails/dialogs/MatchPlanDialogs";
 import {
   AddRefereePlanDialog,
-  EditRefereePlanDialog,
 } from "@/features/tournaments/components/Tournaments/TournamentDetails/dialogs/RefereePlanDialogs";
 import {
   AddClassifierPlanDialog,
@@ -118,7 +117,7 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
     matchDayOptions,
     refreshMatches,
   });
-  const { add: addRefereePlan, edit: editRefereePlan } = refereePlanManager;
+  const { add: addRefereePlan } = refereePlanManager;
 
   const matchManager = useMatchPlanManager({
     tournament,
@@ -177,7 +176,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
     try {
       await deleteMatchMutation.mutateAsync({ tournamentId: tournament.id, matchId: matchToDelete.id });
       editMatch.setDrafts((prev) => prev.filter((d) => d.id !== deletedId));
-      editRefereePlan.setDrafts((prev) => prev.filter((d) => d.id !== deletedId));
       if (editMatch.match?.id === deletedId) editMatch.setMatch(null);
       setMatchToDelete(null);
     } catch (e) {
@@ -336,7 +334,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
             getScheduleDayLabel={getScheduleDayLabel}
             openAddRefereePlanDialog={addRefereePlan.openDialog}
             openNewDayRefereePlanTable={openNewDayRefereePlanTable}
-            openEditRefereePlanDialog={editRefereePlan.openDialog}
             personDisplayName={getPersonDisplayName}
             setMatchDayToDelete={setMatchDayToDelete}
             deleteMatchDayLoading={deleteMatchDayMutation.isPending}
@@ -401,15 +398,6 @@ function TournamentDetailsContent({ id }: TournamentDetailsProps) {
       <AddRefereePlanDialog
         addRefereePlan={addRefereePlan}
         tournament={tournament}
-        personDisplayName={getPersonDisplayName}
-      />
-      <EditRefereePlanDialog
-        editRefereePlan={editRefereePlan}
-        tournament={tournament}
-        matches={matches}
-        deleteMatchLoading={deleteMatchMutation.isPending}
-        setMatchToDelete={setMatchToDelete}
-        setDeleteMatchError={setDeleteMatchError}
         personDisplayName={getPersonDisplayName}
       />
       <AddClassifierPlanDialog addClassifierPlan={addClassifierPlan} tournament={tournament} />

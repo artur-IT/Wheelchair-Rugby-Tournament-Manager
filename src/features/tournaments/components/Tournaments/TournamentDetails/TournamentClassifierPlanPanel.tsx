@@ -171,7 +171,7 @@ export default function TournamentClassifierPlanPanel({
                     >
                       <Typography>Brak zaplanowanych badań w tym dniu.</Typography>
                       <Button variant="contained" onClick={() => openAddDialog(dayTimestamp)} sx={{ mt: 2 }}>
-                        Dodaj wpis klasyfikacji
+                        Dodaj badanie
                       </Button>
                     </Box>
                   ) : (
