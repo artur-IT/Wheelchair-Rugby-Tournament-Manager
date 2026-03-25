@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { ClassifierPlanEntry, UpsertClassifierPlanEntryDto } from "@/types";
+import type { Prisma } from "@prisma/client";
 
 function normalizeClassification(value: number | undefined) {
   if (value == null) return null;
@@ -25,8 +26,10 @@ async function ensureTournamentExists(tournamentId: string) {
   if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
 }
 
-async function getDefaultClassifierId(tournamentId: string) {
-  const classifier = await prisma.tournamentClassifier.findFirst({
+type DbClient = Prisma.TransactionClient | typeof prisma;
+
+async function getDefaultClassifierId(db: DbClient, tournamentId: string) {
+  const classifier = await db.tournamentClassifier.findFirst({
     where: { tournamentId },
     orderBy: { classifierId: "asc" },
     select: { classifierId: true },
@@ -50,13 +53,16 @@ async function ensurePlayerInTournament(tournamentId: string, playerId: string) 
   if (!exists) throw new Error("PLAYER_NOT_IN_TOURNAMENT");
 }
 
-async function ensureNoTimeConflict(args: {
-  tournamentId: string;
-  scheduledAt: Date;
-  endsAt: Date;
-  excludeExamId?: string;
-}) {
-  const exams = await prisma.classificationExam.findMany({
+async function ensureNoTimeConflict(
+  db: DbClient,
+  args: {
+    tournamentId: string;
+    scheduledAt: Date;
+    endsAt: Date;
+    excludeExamId?: string;
+  }
+) {
+  const exams = await db.classificationExam.findMany({
     where: {
       tournamentId: args.tournamentId,
       scheduledAt: { not: null },
@@ -124,24 +130,29 @@ export async function createClassifierPlanEntryForTournament(
   const endsAt = new Date(input.endsAt);
   mustBeValidDate(endsAt, "INVALID_ENDS_AT");
   ensureStartBeforeEnd(scheduledAt, endsAt);
-  await ensureNoTimeConflict({ tournamentId, scheduledAt, endsAt });
 
-  const classifierId = await getDefaultClassifierId(tournamentId);
+  return await prisma.$transaction(
+    async (tx) => {
+      await ensureNoTimeConflict(tx, { tournamentId, scheduledAt, endsAt });
+      const classifierId = await getDefaultClassifierId(tx, tournamentId);
 
-  const created = await prisma.classificationExam.create({
-    data: {
-      tournamentId,
-      playerId: input.playerId,
-      classifierId,
-      scheduledAt,
-      endsAt,
-      result: normalizeClassification(input.classification),
-      observation: input.observation ?? false,
+      const created = await tx.classificationExam.create({
+        data: {
+          tournamentId,
+          playerId: input.playerId,
+          classifierId,
+          scheduledAt,
+          endsAt,
+          result: normalizeClassification(input.classification),
+          observation: input.observation ?? false,
+        },
+        select: { id: true },
+      });
+
+      return created.id;
     },
-    select: { id: true },
-  });
-
-  return created.id;
+    { isolationLevel: "Serializable" }
+  );
 }
 
 export async function updateClassifierPlanEntryForTournament(
@@ -163,18 +174,22 @@ export async function updateClassifierPlanEntryForTournament(
   const endsAt = new Date(input.endsAt);
   mustBeValidDate(endsAt, "INVALID_ENDS_AT");
   ensureStartBeforeEnd(scheduledAt, endsAt);
-  await ensureNoTimeConflict({ tournamentId, scheduledAt, endsAt, excludeExamId: examId });
-
-  await prisma.classificationExam.update({
-    where: { id: examId },
-    data: {
-      playerId: input.playerId,
-      scheduledAt,
-      endsAt,
-      result: normalizeClassification(input.classification),
-      observation: input.observation ?? false,
+  await prisma.$transaction(
+    async (tx) => {
+      await ensureNoTimeConflict(tx, { tournamentId, scheduledAt, endsAt, excludeExamId: examId });
+      await tx.classificationExam.update({
+        where: { id: examId },
+        data: {
+          playerId: input.playerId,
+          scheduledAt,
+          endsAt,
+          result: normalizeClassification(input.classification),
+          observation: input.observation ?? false,
+        },
+      });
     },
-  });
+    { isolationLevel: "Serializable" }
+  );
 
   return examId;
 }

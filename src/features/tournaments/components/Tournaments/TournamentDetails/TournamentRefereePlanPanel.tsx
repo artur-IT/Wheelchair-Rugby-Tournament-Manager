@@ -411,7 +411,7 @@ export default function TournamentRefereePlanPanel({
                                     sx={refereeSelectSx}
                                     value={ref1 ?? ""}
                                     onChange={(e) => void setRole("REFEREE_1", String(e.target.value))}
-                                    disabled={isSaving || inlineSaveMutation.isPending}
+                                    disabled={isSaving}
                                     fullWidth
                                   >
                                     <MenuItem value="">—</MenuItem>
@@ -438,7 +438,7 @@ export default function TournamentRefereePlanPanel({
                                     sx={refereeSelectSx}
                                     value={ref2 ?? ""}
                                     onChange={(e) => void setRole("REFEREE_2", String(e.target.value))}
-                                    disabled={isSaving || inlineSaveMutation.isPending}
+                                    disabled={isSaving}
                                     fullWidth
                                   >
                                     <MenuItem value="">—</MenuItem>
@@ -465,7 +465,7 @@ export default function TournamentRefereePlanPanel({
                                     sx={refereeSelectSx}
                                     value={tablePenalty ?? ""}
                                     onChange={(e) => void setRole("TABLE_PENALTY", String(e.target.value))}
-                                    disabled={isSaving || inlineSaveMutation.isPending}
+                                    disabled={isSaving}
                                     fullWidth
                                   >
                                     <MenuItem value="">—</MenuItem>
@@ -492,7 +492,7 @@ export default function TournamentRefereePlanPanel({
                                     sx={refereeSelectSx}
                                     value={tableClock ?? ""}
                                     onChange={(e) => void setRole("TABLE_CLOCK", String(e.target.value))}
-                                    disabled={isSaving || inlineSaveMutation.isPending}
+                                    disabled={isSaving}
                                     fullWidth
                                   >
                                     <MenuItem value="">—</MenuItem>
