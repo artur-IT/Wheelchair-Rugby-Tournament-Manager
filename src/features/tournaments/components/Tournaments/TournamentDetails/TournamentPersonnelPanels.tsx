@@ -65,7 +65,16 @@ export default function TournamentPersonnelPanels({
               </Button>
             </Box>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                flexDirection: "column",
+                gap: 1,
+                width: "fit-content",
+                maxWidth: "100%",
+                alignItems: "stretch",
+              }}
+            >
               {tournament.referees.map((r) => (
                 <Box
                   key={r.id}
@@ -74,8 +83,10 @@ export default function TournamentPersonnelPanels({
                     alignItems: "center",
                     gap: 1.5,
                     p: 1.5,
+                    px: 2,
                     borderRadius: 2,
                     bgcolor: "grey.50",
+                    width: "100%",
                   }}
                 >
                   <Box
@@ -95,7 +106,7 @@ export default function TournamentPersonnelPanels({
                   >
                     {r.firstName?.[0] ?? "?"}
                   </Box>
-                  <Typography sx={{ fontWeight: 500, flex: 1 }}>{personDisplayName(r)}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>{personDisplayName(r)}</Typography>
                   <Tooltip title="Usuń sędziego z turnieju">
                     <span>
                       <IconButton
@@ -151,7 +162,16 @@ export default function TournamentPersonnelPanels({
               </Button>
             </Box>
           ) : (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Box
+              sx={{
+                display: "inline-flex",
+                flexDirection: "column",
+                gap: 1,
+                width: "fit-content",
+                maxWidth: "100%",
+                alignItems: "stretch",
+              }}
+            >
               {tournament.classifiers.map((c) => (
                 <Box
                   key={c.id}
@@ -160,8 +180,10 @@ export default function TournamentPersonnelPanels({
                     alignItems: "center",
                     gap: 1.5,
                     p: 1.5,
+                    px: 2,
                     borderRadius: 2,
                     bgcolor: "grey.50",
+                    width: "100%",
                   }}
                 >
                   <Box
@@ -181,7 +203,7 @@ export default function TournamentPersonnelPanels({
                   >
                     {c.firstName?.[0] ?? "?"}
                   </Box>
-                  <Typography sx={{ fontWeight: 500, flex: 1 }}>{personDisplayName(c)}</Typography>
+                  <Typography sx={{ fontWeight: 500 }}>{personDisplayName(c)}</Typography>
                   <Tooltip title="Usuń klasyfikatora z turnieju">
                     <span>
                       <IconButton

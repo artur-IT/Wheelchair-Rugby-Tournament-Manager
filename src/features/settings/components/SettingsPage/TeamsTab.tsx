@@ -75,8 +75,24 @@ export default function TeamsTab({ seasonId }: TeamsTabProps) {
       </Box>
       <Grid container spacing={2}>
         {teams.map((team) => (
-          <Grid size={{ xs: 12, sm: 6 }} key={team.id}>
-            <Card sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2 }}>
+          <Grid
+            size="auto"
+            key={team.id}
+            sx={{
+              width: { xs: "100%", sm: 340 },
+              maxWidth: "100%",
+            }}
+          >
+            <Card
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                p: 2,
+                px: 2.5,
+                width: "100%",
+              }}
+            >
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <Avatar sx={{ bgcolor: "primary.main" }}>{team.name[0] ?? "?"}</Avatar>
                 <Box>

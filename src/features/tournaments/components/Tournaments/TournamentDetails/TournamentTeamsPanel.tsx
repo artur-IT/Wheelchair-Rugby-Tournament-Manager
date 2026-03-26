@@ -40,7 +40,16 @@ export default function TournamentTeamsPanel({
         </Box>
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Box
+            sx={{
+              display: "inline-flex",
+              flexDirection: "column",
+              gap: 1,
+              width: "fit-content",
+              maxWidth: "100%",
+              alignItems: "stretch",
+            }}
+          >
             {tournament.teams.map((team) => (
               <Box
                 key={team.id}
@@ -49,8 +58,10 @@ export default function TournamentTeamsPanel({
                   alignItems: "center",
                   gap: 1.5,
                   p: 1.5,
+                  px: 2,
                   borderRadius: 2,
                   bgcolor: "grey.50",
+                  width: "100%",
                 }}
               >
                 <Box
@@ -70,7 +81,7 @@ export default function TournamentTeamsPanel({
                 >
                   {team.name[0] ?? "?"}
                 </Box>
-                <Typography sx={{ fontWeight: 500, flex: 1 }}>{team.name}</Typography>
+                <Typography sx={{ fontWeight: 500 }}>{team.name}</Typography>
                 <Tooltip title="Usuń drużynę z turnieju">
                   <span>
                     <IconButton
