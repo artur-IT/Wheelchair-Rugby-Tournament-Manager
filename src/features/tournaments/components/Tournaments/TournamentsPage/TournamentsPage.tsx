@@ -172,12 +172,22 @@ function TournamentsContent() {
                         </Typography>
                       </Box>
                       {t.venue && (
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
                           <MapPin size={16} />
-                          <Typography variant="body2" color="textSecondary">
-                            {t.venue.name}
-                            {t.venue.address ? `, ${formatAddressForDisplay(t.venue.address, ", ")}` : ""}
-                          </Typography>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" color="textSecondary" sx={{ fontWeight: 600 }}>
+                              {t.venue.name}
+                            </Typography>
+                            {t.venue.address ? (
+                              <Typography
+                                variant="body2"
+                                color="textSecondary"
+                                sx={{ whiteSpace: "pre-line", wordBreak: "break-word" }}
+                              >
+                                {formatAddressForDisplay(t.venue.address, "\n")}
+                              </Typography>
+                            ) : null}
+                          </Box>
                         </Box>
                       )}
                     </Box>
