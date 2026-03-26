@@ -7,5 +7,5 @@ if (!id) return Astro.redirect("/tournaments");
 ---
 
 <Layout title="Edytuj turniej">
-  <TournamentForm client:load tournamentId={id} />
+  <TournamentForm client:only="react" tournamentId={id} />
 </Layout>

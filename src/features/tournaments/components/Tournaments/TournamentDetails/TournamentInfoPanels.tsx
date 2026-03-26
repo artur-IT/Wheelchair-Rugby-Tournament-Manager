@@ -12,17 +12,28 @@ export default function TournamentInfoPanels({ tournament }: TournamentInfoPanel
   const accommodation = tournament.accommodation;
   const venueMapsHref = resolvePlaceMapsHref(venue);
   const accommodationMapsHref = resolvePlaceMapsHref(accommodation);
+  const cardSx = {
+    p: 3,
+    borderRadius: 3,
+    width: 400,
+    minWidth: 400,
+    maxWidth: 400,
+    flex: "0 0 400px",
+    boxSizing: "border-box",
+  } as const;
 
   return (
     <Box
       sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
+        display: "flex",
+        flexWrap: "wrap",
         gap: 3,
+        alignItems: "stretch",
+        overflowX: "auto",
       }}
     >
       {venue ? (
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
+        <Paper sx={cardSx}>
           <Box
             sx={{
               display: "flex",
@@ -46,7 +57,7 @@ export default function TournamentInfoPanels({ tournament }: TournamentInfoPanel
             </Typography>
           </Box>
           <Typography sx={{ fontWeight: 600 }}>{venue.name}</Typography>
-          <Typography color="textSecondary" sx={{ mb: 1, whiteSpace: "pre-line" }}>
+          <Typography color="textSecondary" sx={{ mb: 1, whiteSpace: "pre-line", overflowWrap: "anywhere" }}>
             {formatAddressForDisplay(venue.address)}
           </Typography>
           {venueMapsHref ? (
@@ -64,7 +75,7 @@ export default function TournamentInfoPanels({ tournament }: TournamentInfoPanel
       ) : null}
 
       {accommodation ? (
-        <Paper sx={{ p: 3, borderRadius: 3 }}>
+        <Paper sx={cardSx}>
           <Box
             sx={{
               display: "flex",
@@ -88,7 +99,7 @@ export default function TournamentInfoPanels({ tournament }: TournamentInfoPanel
             </Typography>
           </Box>
           <Typography sx={{ fontWeight: 600 }}>{accommodation.name}</Typography>
-          <Typography color="textSecondary" sx={{ mb: 1, whiteSpace: "pre-line" }}>
+          <Typography color="textSecondary" sx={{ mb: 1, whiteSpace: "pre-line", overflowWrap: "anywhere" }}>
             {formatAddressForDisplay(accommodation.address)}
           </Typography>
           {tournament.parking ? (
@@ -110,7 +121,7 @@ export default function TournamentInfoPanels({ tournament }: TournamentInfoPanel
         </Paper>
       ) : null}
 
-      <Paper sx={{ p: 3, borderRadius: 3 }}>
+      <Paper sx={cardSx}>
         <Box
           sx={{
             display: "flex",
@@ -134,7 +145,9 @@ export default function TournamentInfoPanels({ tournament }: TournamentInfoPanel
           </Typography>
         </Box>
         {tournament.catering ? (
-          <Typography sx={{ fontWeight: 600, whiteSpace: "pre-wrap" }}>{tournament.catering}</Typography>
+          <Typography sx={{ fontWeight: 600, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {tournament.catering}
+          </Typography>
         ) : (
           <Typography color="textSecondary">Brak danych.</Typography>
         )}

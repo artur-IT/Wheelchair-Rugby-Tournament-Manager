@@ -46,7 +46,7 @@ function TournamentFormContent({ tournamentId }: Props) {
     control,
     handleSubmit,
     setFocus,
-    formState: { errors, touchedFields },
+    formState: { errors, touchedFields, submitCount },
     reset,
   } = useForm<TournamentFormData>({
     resolver: zodResolver(tournamentFormSchema as never),
@@ -73,7 +73,7 @@ function TournamentFormContent({ tournamentId }: Props) {
 
   const {
     data: tournamentForEdit,
-    isPending: prefillLoading,
+    isPending,
     isError: loadIsError,
     error: loadErrorObj,
     refetch,
@@ -85,6 +85,10 @@ function TournamentFormContent({ tournamentId }: Props) {
     },
     enabled: Boolean(tournamentId),
   });
+
+  // TanStack Query v5: when `enabled: false`, `isPending` can still be true.
+  // For "new tournament" page we don't want to block the form with an infinite loader.
+  const prefillLoading = Boolean(tournamentId) && isPending;
 
   const loadError = loadIsError && loadErrorObj instanceof Error ? loadErrorObj.message : null;
 
@@ -128,6 +132,7 @@ function TournamentFormContent({ tournamentId }: Props) {
   };
 
   const isSubmitting = submitMutation.isPending;
+  const showAllErrors = submitCount > 0;
 
   const title = tournamentId ? "Edytuj Turniej" : "Nowy Turniej";
 
@@ -167,8 +172,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Nazwa Turnieju"
                     placeholder="np. Turniej Jesienny"
-                    error={Boolean(touchedFields.name && errors.name)}
-                    helperText={touchedFields.name ? errors.name?.message : undefined}
+                    error={Boolean((touchedFields.name || showAllErrors) && errors.name)}
+                    helperText={touchedFields.name || showAllErrors ? errors.name?.message : undefined}
                   />
                 )}
               />
@@ -189,8 +194,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                       label="Data Rozpoczęcia"
                       slotProps={{
                         textField: {
-                          error: Boolean(touchedFields.startDate && errors.startDate),
-                          helperText: touchedFields.startDate ? errors.startDate?.message : undefined,
+                          error: Boolean((touchedFields.startDate || showAllErrors) && errors.startDate),
+                          helperText: touchedFields.startDate || showAllErrors ? errors.startDate?.message : undefined,
                           fullWidth: true,
                         },
                       }}
@@ -209,8 +214,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                       label="Data Zakończenia"
                       slotProps={{
                         textField: {
-                          error: Boolean(touchedFields.endDate && errors.endDate),
-                          helperText: touchedFields.endDate ? errors.endDate?.message : undefined,
+                          error: Boolean((touchedFields.endDate || showAllErrors) && errors.endDate),
+                          helperText: touchedFields.endDate || showAllErrors ? errors.endDate?.message : undefined,
                           fullWidth: true,
                         },
                       }}
@@ -236,8 +241,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Hotel"
                     placeholder="Hotel"
-                    error={Boolean(touchedFields.hotel && errors.hotel)}
-                    helperText={touchedFields.hotel ? errors.hotel?.message : undefined}
+                    error={Boolean((touchedFields.hotel || showAllErrors) && errors.hotel)}
+                    helperText={touchedFields.hotel || showAllErrors ? errors.hotel?.message : undefined}
                   />
                 )}
               />
@@ -252,8 +257,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Miasto"
                     placeholder="Miasto"
-                    error={Boolean(touchedFields.hotelCity && errors.hotelCity)}
-                    helperText={touchedFields.hotelCity ? errors.hotelCity?.message : undefined}
+                    error={Boolean((touchedFields.hotelCity || showAllErrors) && errors.hotelCity)}
+                    helperText={touchedFields.hotelCity || showAllErrors ? errors.hotelCity?.message : undefined}
                   />
                 )}
               />
@@ -268,8 +273,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Kod pocztowy"
                     placeholder="XX-XXX"
-                    error={Boolean(touchedFields.hotelZipCode && errors.hotelZipCode)}
-                    helperText={touchedFields.hotelZipCode ? errors.hotelZipCode?.message : undefined}
+                    error={Boolean((touchedFields.hotelZipCode || showAllErrors) && errors.hotelZipCode)}
+                    helperText={touchedFields.hotelZipCode || showAllErrors ? errors.hotelZipCode?.message : undefined}
                   />
                 )}
               />
@@ -284,8 +289,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Ulica"
                     placeholder="Ulica"
-                    error={Boolean(touchedFields.hotelStreet && errors.hotelStreet)}
-                    helperText={touchedFields.hotelStreet ? errors.hotelStreet?.message : undefined}
+                    error={Boolean((touchedFields.hotelStreet || showAllErrors) && errors.hotelStreet)}
+                    helperText={touchedFields.hotelStreet || showAllErrors ? errors.hotelStreet?.message : undefined}
                   />
                 )}
               />
@@ -300,8 +305,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Link do Mapy"
                     placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
-                    error={Boolean(touchedFields.mapLink && errors.mapLink)}
-                    helperText={touchedFields.mapLink ? errors.mapLink?.message : undefined}
+                    error={Boolean((touchedFields.mapLink || showAllErrors) && errors.mapLink)}
+                    helperText={touchedFields.mapLink || showAllErrors ? errors.mapLink?.message : undefined}
                   />
                 )}
               />
@@ -316,8 +321,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Wyżywienie"
                     placeholder="np. Hotel + Catering na hali"
-                    error={Boolean(touchedFields.catering && errors.catering)}
-                    helperText={touchedFields.catering ? errors.catering?.message : undefined}
+                    error={Boolean((touchedFields.catering || showAllErrors) && errors.catering)}
+                    helperText={touchedFields.catering || showAllErrors ? errors.catering?.message : undefined}
                   />
                 )}
               />
@@ -332,8 +337,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Parking"
                     placeholder="Parking"
-                    error={Boolean(touchedFields.parking && errors.parking)}
-                    helperText={touchedFields.parking ? errors.parking?.message : undefined}
+                    error={Boolean((touchedFields.parking || showAllErrors) && errors.parking)}
+                    helperText={touchedFields.parking || showAllErrors ? errors.parking?.message : undefined}
                   />
                 )}
               />
@@ -354,8 +359,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     {...field}
                     fullWidth
                     label="Nazwa Hali"
-                    error={Boolean(touchedFields.hallName && errors.hallName)}
-                    helperText={touchedFields.hallName ? errors.hallName?.message : undefined}
+                    error={Boolean((touchedFields.hallName || showAllErrors) && errors.hallName)}
+                    helperText={touchedFields.hallName || showAllErrors ? errors.hallName?.message : undefined}
                   />
                 )}
               />
@@ -370,8 +375,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Miasto"
                     placeholder="Miasto"
-                    error={Boolean(touchedFields.city && errors.city)}
-                    helperText={touchedFields.city ? errors.city?.message : undefined}
+                    error={Boolean((touchedFields.city || showAllErrors) && errors.city)}
+                    helperText={touchedFields.city || showAllErrors ? errors.city?.message : undefined}
                   />
                 )}
               />
@@ -386,8 +391,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Kod pocztowy"
                     placeholder="XX-XXX"
-                    error={Boolean(touchedFields.zipCode && errors.zipCode)}
-                    helperText={touchedFields.zipCode ? errors.zipCode?.message : undefined}
+                    error={Boolean((touchedFields.zipCode || showAllErrors) && errors.zipCode)}
+                    helperText={touchedFields.zipCode || showAllErrors ? errors.zipCode?.message : undefined}
                   />
                 )}
               />
@@ -402,8 +407,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Ulica"
                     placeholder="Ulica"
-                    error={Boolean(touchedFields.street && errors.street)}
-                    helperText={touchedFields.street ? errors.street?.message : undefined}
+                    error={Boolean((touchedFields.street || showAllErrors) && errors.street)}
+                    helperText={touchedFields.street || showAllErrors ? errors.street?.message : undefined}
                   />
                 )}
               />
@@ -418,9 +423,9 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Link do Mapy (Hala)"
                     placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
-                    error={Boolean(touchedFields.hallMapLink && errors.hallMapLink)}
+                    error={Boolean((touchedFields.hallMapLink || showAllErrors) && errors.hallMapLink)}
                     helperText={
-                      touchedFields.hallMapLink
+                      touchedFields.hallMapLink || showAllErrors
                         ? errors.hallMapLink?.message
                         : "Zostanie wygenerowany automatycznie jeśli nie podasz"
                     }
