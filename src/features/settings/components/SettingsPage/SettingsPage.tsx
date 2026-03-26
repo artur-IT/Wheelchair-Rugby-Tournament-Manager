@@ -1,5 +1,5 @@
 import { forwardRef, useState } from "react";
-import { CardContent, Paper, Tab, Tabs, Typography, Box } from "@mui/material";
+import { CardContent, Paper, Tab, Tabs, Typography, Box, useMediaQuery } from "@mui/material";
 import type { TabProps } from "@mui/material";
 import { UserCircle, Users } from "lucide-react";
 import AppShell from "@/components/AppShell/AppShell";
@@ -20,9 +20,10 @@ StyledTab.displayName = "StyledTab";
 function SettingsContent() {
   const [activeTab, setActiveTab] = useState<TabValue>("teams");
   const [selectedSeasonId, setSelectedSeasonId] = useState("");
+  const isWide = useMediaQuery("(min-width:1000px)");
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 1100, mx: "auto" }}>
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: "bold", mb: 0.5 }}>
           Ustawienia Sezonu
@@ -33,7 +34,24 @@ function SettingsContent() {
       <SeasonsManager onSeasonChange={setSelectedSeasonId} />
 
       <Paper sx={{ borderRadius: 3 }}>
-        <Tabs value={activeTab} onChange={(_, value: TabValue) => setActiveTab(value)} variant="fullWidth">
+        <Tabs
+          value={activeTab}
+          onChange={(_, value: TabValue) => setActiveTab(value)}
+          variant={isWide ? "standard" : "fullWidth"}
+          sx={
+            isWide
+              ? {
+                  "& .MuiTab-root": {
+                    minWidth: "auto",
+                    px: 2.5,
+                  },
+                  "& .MuiTabs-flexContainer": {
+                    width: "fit-content",
+                  },
+                }
+              : undefined
+          }
+        >
           <StyledTab label="Drużyny" value="teams" icon={<Users size={18} />} />
           <StyledTab label="Sędziowie" value="referees" icon={<UserCircle size={18} />} />
           <StyledTab label="Klasyfikatorzy" value="classifiers" icon={<UserCircle size={18} />} />
