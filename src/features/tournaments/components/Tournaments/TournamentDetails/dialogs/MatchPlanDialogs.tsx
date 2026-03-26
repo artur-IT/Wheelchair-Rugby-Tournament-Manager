@@ -309,10 +309,10 @@ export function EditMatchDialog({
         ) : null}
 
         <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-          <Table size="small" aria-label="Tabela meczów">
+          <Table size="small" aria-label="Tabela meczów" sx={{ tableLayout: "auto" }}>
             <TableHead>
               <TableRow>
-                <TableCell align="center" sx={{ width: 48 }} />
+                <TableCell align="center" />
                 <TableCell align="center">Drużyna A</TableCell>
                 <TableCell align="center">Wynik A</TableCell>
                 <TableCell align="center">Start</TableCell>
@@ -326,10 +326,7 @@ export function EditMatchDialog({
             <TableBody>
               {editMatch.drafts.map((draft, idx) => (
                 <TableRow key={draft.id ?? `row-${idx}`}>
-                  <TableCell
-                    align="center"
-                    sx={{ width: 48, paddingLeft: 1, paddingRight: 1, verticalAlign: "middle" }}
-                  >
+                  <TableCell align="center" sx={{ paddingLeft: 1, paddingRight: 1, verticalAlign: "middle" }}>
                     {(() => {
                       const teamAName = tournament.teams.find((t) => t.id === draft.teamAId)?.name ?? draft.teamAId;
                       const teamBName = tournament.teams.find((t) => t.id === draft.teamBId)?.name ?? draft.teamBId;
@@ -375,7 +372,7 @@ export function EditMatchDialog({
                       );
                     })()}
                   </TableCell>
-                  <TableCell sx={{ minWidth: 180 }}>
+                  <TableCell>
                     <TextField
                       select
                       label="Drużyna A"
@@ -404,7 +401,7 @@ export function EditMatchDialog({
                     </TextField>
                   </TableCell>
 
-                  <TableCell sx={{ minWidth: 140 }}>
+                  <TableCell>
                     <TextField
                       type="number"
                       label="Wynik A"
@@ -419,7 +416,7 @@ export function EditMatchDialog({
                     />
                   </TableCell>
 
-                  <TableCell sx={{ minWidth: 120 }}>
+                  <TableCell>
                     <TextField
                       type="time"
                       label="Start"
@@ -436,7 +433,7 @@ export function EditMatchDialog({
                     />
                   </TableCell>
 
-                  <TableCell sx={{ minWidth: 120 }}>
+                  <TableCell>
                     <TextField
                       type="time"
                       label="Koniec"
@@ -447,7 +444,7 @@ export function EditMatchDialog({
                     />
                   </TableCell>
 
-                  <TableCell sx={{ minWidth: 140 }}>
+                  <TableCell>
                     <TextField
                       type="number"
                       label="Wynik B"
@@ -462,7 +459,7 @@ export function EditMatchDialog({
                     />
                   </TableCell>
 
-                  <TableCell sx={{ minWidth: 180 }}>
+                  <TableCell>
                     <TextField
                       select
                       label="Drużyna B"
@@ -483,7 +480,7 @@ export function EditMatchDialog({
                     </TextField>
                   </TableCell>
 
-                  <TableCell sx={{ minWidth: 120 }}>
+                  <TableCell>
                     <TextField
                       select
                       label="Boisko"
@@ -501,7 +498,7 @@ export function EditMatchDialog({
                     </TextField>
                   </TableCell>
 
-                  <TableCell sx={{ minWidth: 230, verticalAlign: "middle" }}>
+                  <TableCell sx={{ verticalAlign: "middle" }}>
                     <Box
                       sx={{
                         display: "grid",
