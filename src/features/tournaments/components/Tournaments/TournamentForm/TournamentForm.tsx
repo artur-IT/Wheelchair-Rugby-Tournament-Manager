@@ -1,5 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box, Button, Grid, TextField, Typography, Paper, Divider, CircularProgress, Alert } from "@mui/material";
+import {
+  Box,
+  Button,
+  Grid,
+  TextField,
+  Typography,
+  Paper,
+  Divider,
+  CircularProgress,
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText,
+} from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
 import QueryProvider from "@/components/QueryProvider/QueryProvider";
@@ -46,7 +61,9 @@ function TournamentFormContent({ tournamentId }: Props) {
     control,
     handleSubmit,
     setFocus,
-    formState: { errors, touchedFields },
+    setValue,
+    watch,
+    formState: { errors, touchedFields, submitCount },
     reset,
   } = useForm<TournamentFormData>({
     resolver: zodResolver(tournamentFormSchema as never),
@@ -68,12 +85,46 @@ function TournamentFormContent({ tournamentId }: Props) {
       zipCode: "",
       street: "",
       hallMapLink: "",
+      breakfastServingTime: "",
+      breakfastLocation: "hotel",
+      lunchServingTime: "",
+      lunchLocation: "hotel",
+      dinnerServingTime: "",
+      dinnerLocation: "hotel",
+      cateringNotes: "",
     },
   });
 
+  const breakfastServingTimeValue = watch("breakfastServingTime");
+  const breakfastLocationValue = watch("breakfastLocation");
+  const lunchServingTimeValue = watch("lunchServingTime");
+  const lunchLocationValue = watch("lunchLocation");
+  const dinnerServingTimeValue = watch("dinnerServingTime");
+  const dinnerLocationValue = watch("dinnerLocation");
+  const cateringNotesValue = watch("cateringNotes");
+
+  useEffect(() => {
+    const mealDescription = [
+      `Śniadanie: ${breakfastServingTimeValue} | Miejsce: ${breakfastLocationValue}`,
+      `Obiad: ${lunchServingTimeValue} | Miejsce: ${lunchLocationValue}`,
+      `Kolacja: ${dinnerServingTimeValue} | Miejsce: ${dinnerLocationValue}`,
+      `Uwagi: ${cateringNotesValue}`,
+    ].join("\n");
+    setValue("catering", mealDescription, { shouldValidate: true });
+  }, [
+    breakfastServingTimeValue,
+    breakfastLocationValue,
+    lunchServingTimeValue,
+    lunchLocationValue,
+    dinnerServingTimeValue,
+    dinnerLocationValue,
+    cateringNotesValue,
+    setValue,
+  ]);
+
   const {
     data: tournamentForEdit,
-    isPending: prefillLoading,
+    isPending,
     isError: loadIsError,
     error: loadErrorObj,
     refetch,
@@ -85,6 +136,10 @@ function TournamentFormContent({ tournamentId }: Props) {
     },
     enabled: Boolean(tournamentId),
   });
+
+  // TanStack Query v5: when `enabled: false`, `isPending` can still be true.
+  // For "new tournament" page we don't want to block the form with an infinite loader.
+  const prefillLoading = Boolean(tournamentId) && isPending;
 
   const loadError = loadIsError && loadErrorObj instanceof Error ? loadErrorObj.message : null;
 
@@ -128,6 +183,7 @@ function TournamentFormContent({ tournamentId }: Props) {
   };
 
   const isSubmitting = submitMutation.isPending;
+  const showAllErrors = submitCount > 0;
 
   const title = tournamentId ? "Edytuj Turniej" : "Nowy Turniej";
 
@@ -167,8 +223,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Nazwa Turnieju"
                     placeholder="np. Turniej Jesienny"
-                    error={Boolean(touchedFields.name && errors.name)}
-                    helperText={touchedFields.name ? errors.name?.message : undefined}
+                    error={Boolean((touchedFields.name || showAllErrors) && errors.name)}
+                    helperText={touchedFields.name || showAllErrors ? errors.name?.message : undefined}
                   />
                 )}
               />
@@ -189,8 +245,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                       label="Data Rozpoczęcia"
                       slotProps={{
                         textField: {
-                          error: Boolean(touchedFields.startDate && errors.startDate),
-                          helperText: touchedFields.startDate ? errors.startDate?.message : undefined,
+                          error: Boolean((touchedFields.startDate || showAllErrors) && errors.startDate),
+                          helperText: touchedFields.startDate || showAllErrors ? errors.startDate?.message : undefined,
                           fullWidth: true,
                         },
                       }}
@@ -209,8 +265,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                       label="Data Zakończenia"
                       slotProps={{
                         textField: {
-                          error: Boolean(touchedFields.endDate && errors.endDate),
-                          helperText: touchedFields.endDate ? errors.endDate?.message : undefined,
+                          error: Boolean((touchedFields.endDate || showAllErrors) && errors.endDate),
+                          helperText: touchedFields.endDate || showAllErrors ? errors.endDate?.message : undefined,
                           fullWidth: true,
                         },
                       }}
@@ -236,8 +292,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Hotel"
                     placeholder="Hotel"
-                    error={Boolean(touchedFields.hotel && errors.hotel)}
-                    helperText={touchedFields.hotel ? errors.hotel?.message : undefined}
+                    error={Boolean((touchedFields.hotel || showAllErrors) && errors.hotel)}
+                    helperText={touchedFields.hotel || showAllErrors ? errors.hotel?.message : undefined}
                   />
                 )}
               />
@@ -252,8 +308,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Miasto"
                     placeholder="Miasto"
-                    error={Boolean(touchedFields.hotelCity && errors.hotelCity)}
-                    helperText={touchedFields.hotelCity ? errors.hotelCity?.message : undefined}
+                    error={Boolean((touchedFields.hotelCity || showAllErrors) && errors.hotelCity)}
+                    helperText={touchedFields.hotelCity || showAllErrors ? errors.hotelCity?.message : undefined}
                   />
                 )}
               />
@@ -268,8 +324,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Kod pocztowy"
                     placeholder="XX-XXX"
-                    error={Boolean(touchedFields.hotelZipCode && errors.hotelZipCode)}
-                    helperText={touchedFields.hotelZipCode ? errors.hotelZipCode?.message : undefined}
+                    error={Boolean((touchedFields.hotelZipCode || showAllErrors) && errors.hotelZipCode)}
+                    helperText={touchedFields.hotelZipCode || showAllErrors ? errors.hotelZipCode?.message : undefined}
                   />
                 )}
               />
@@ -284,40 +340,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Ulica"
                     placeholder="Ulica"
-                    error={Boolean(touchedFields.hotelStreet && errors.hotelStreet)}
-                    helperText={touchedFields.hotelStreet ? errors.hotelStreet?.message : undefined}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Controller
-                name="mapLink"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    label="Link do Mapy"
-                    placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
-                    error={Boolean(touchedFields.mapLink && errors.mapLink)}
-                    helperText={touchedFields.mapLink ? errors.mapLink?.message : undefined}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Controller
-                name="catering"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    label="Wyżywienie"
-                    placeholder="np. Hotel + Catering na hali"
-                    error={Boolean(touchedFields.catering && errors.catering)}
-                    helperText={touchedFields.catering ? errors.catering?.message : undefined}
+                    error={Boolean((touchedFields.hotelStreet || showAllErrors) && errors.hotelStreet)}
+                    helperText={touchedFields.hotelStreet || showAllErrors ? errors.hotelStreet?.message : undefined}
                   />
                 )}
               />
@@ -332,11 +356,191 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Parking"
                     placeholder="Parking"
-                    error={Boolean(touchedFields.parking && errors.parking)}
-                    helperText={touchedFields.parking ? errors.parking?.message : undefined}
+                    error={Boolean((touchedFields.parking || showAllErrors) && errors.parking)}
+                    helperText={touchedFields.parking || showAllErrors ? errors.parking?.message : undefined}
                   />
                 )}
               />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <Controller
+                name="mapLink"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label="Link do Mapy"
+                    placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
+                    error={Boolean((touchedFields.mapLink || showAllErrors) && errors.mapLink)}
+                    helperText={touchedFields.mapLink || showAllErrors ? errors.mapLink?.message : undefined}
+                  />
+                )}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
+                Wyżywienie
+              </Typography>
+              <Grid container columnSpacing={2} rowSpacing={1}>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
+                    Śniadania
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="breakfastServingTime"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Godziny wydawania"
+                        placeholder="np. 07:00 - 09:00"
+                        error={Boolean(
+                          (touchedFields.breakfastServingTime || showAllErrors) && errors.breakfastServingTime
+                        )}
+                        helperText={
+                          touchedFields.breakfastServingTime || showAllErrors
+                            ? errors.breakfastServingTime?.message
+                            : undefined
+                        }
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="breakfastLocation"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl
+                        fullWidth
+                        error={Boolean((touchedFields.breakfastLocation || showAllErrors) && errors.breakfastLocation)}
+                      >
+                        <InputLabel id="breakfast-location-label">Miejsce posiłku</InputLabel>
+                        <Select {...field} labelId="breakfast-location-label" label="Miejsce posiłku">
+                          <MenuItem value="hotel">Hotel</MenuItem>
+                          <MenuItem value="hala">Hala</MenuItem>
+                        </Select>
+                        {(touchedFields.breakfastLocation || showAllErrors) && errors.breakfastLocation ? (
+                          <FormHelperText>{errors.breakfastLocation.message}</FormHelperText>
+                        ) : null}
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
+                    Obiady
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="lunchServingTime"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Godziny wydawania"
+                        placeholder="np. 12:00 - 14:00"
+                        error={Boolean((touchedFields.lunchServingTime || showAllErrors) && errors.lunchServingTime)}
+                        helperText={
+                          touchedFields.lunchServingTime || showAllErrors ? errors.lunchServingTime?.message : undefined
+                        }
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="lunchLocation"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl
+                        fullWidth
+                        error={Boolean((touchedFields.lunchLocation || showAllErrors) && errors.lunchLocation)}
+                      >
+                        <InputLabel id="lunch-location-label">Miejsce posiłku</InputLabel>
+                        <Select {...field} labelId="lunch-location-label" label="Miejsce posiłku">
+                          <MenuItem value="hotel">Hotel</MenuItem>
+                          <MenuItem value="hala">Hala</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
+                    Kolacje
+                  </Typography>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="dinnerServingTime"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        label="Godziny wydawania"
+                        placeholder="np. 18:00 - 20:00"
+                        error={Boolean((touchedFields.dinnerServingTime || showAllErrors) && errors.dinnerServingTime)}
+                        helperText={
+                          touchedFields.dinnerServingTime || showAllErrors
+                            ? errors.dinnerServingTime?.message
+                            : undefined
+                        }
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Controller
+                    name="dinnerLocation"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl
+                        fullWidth
+                        error={Boolean((touchedFields.dinnerLocation || showAllErrors) && errors.dinnerLocation)}
+                      >
+                        <InputLabel id="dinner-location-label">Miejsce posiłku</InputLabel>
+                        <Select {...field} labelId="dinner-location-label" label="Miejsce posiłku">
+                          <MenuItem value="hotel">Hotel</MenuItem>
+                          <MenuItem value="hala">Hala</MenuItem>
+                        </Select>
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Controller
+                    name="cateringNotes"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        label="Uwagi"
+                        placeholder="Dodatkowe informacje o wyżywieniu"
+                        error={Boolean((touchedFields.cateringNotes || showAllErrors) && errors.cateringNotes)}
+                        helperText={
+                          touchedFields.cateringNotes || showAllErrors ? errors.cateringNotes?.message : undefined
+                        }
+                      />
+                    )}
+                  />
+                </Grid>
+              </Grid>
+              {(touchedFields.catering || showAllErrors) && errors.catering ? (
+                <Typography sx={{ mt: 1, color: "error.main", fontSize: "0.75rem" }}>
+                  {errors.catering.message}
+                </Typography>
+              ) : null}
             </Grid>
           </Grid>
 
@@ -354,8 +558,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     {...field}
                     fullWidth
                     label="Nazwa Hali"
-                    error={Boolean(touchedFields.hallName && errors.hallName)}
-                    helperText={touchedFields.hallName ? errors.hallName?.message : undefined}
+                    error={Boolean((touchedFields.hallName || showAllErrors) && errors.hallName)}
+                    helperText={touchedFields.hallName || showAllErrors ? errors.hallName?.message : undefined}
                   />
                 )}
               />
@@ -370,8 +574,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Miasto"
                     placeholder="Miasto"
-                    error={Boolean(touchedFields.city && errors.city)}
-                    helperText={touchedFields.city ? errors.city?.message : undefined}
+                    error={Boolean((touchedFields.city || showAllErrors) && errors.city)}
+                    helperText={touchedFields.city || showAllErrors ? errors.city?.message : undefined}
                   />
                 )}
               />
@@ -386,8 +590,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Kod pocztowy"
                     placeholder="XX-XXX"
-                    error={Boolean(touchedFields.zipCode && errors.zipCode)}
-                    helperText={touchedFields.zipCode ? errors.zipCode?.message : undefined}
+                    error={Boolean((touchedFields.zipCode || showAllErrors) && errors.zipCode)}
+                    helperText={touchedFields.zipCode || showAllErrors ? errors.zipCode?.message : undefined}
                   />
                 )}
               />
@@ -402,8 +606,8 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Ulica"
                     placeholder="Ulica"
-                    error={Boolean(touchedFields.street && errors.street)}
-                    helperText={touchedFields.street ? errors.street?.message : undefined}
+                    error={Boolean((touchedFields.street || showAllErrors) && errors.street)}
+                    helperText={touchedFields.street || showAllErrors ? errors.street?.message : undefined}
                   />
                 )}
               />
@@ -418,9 +622,9 @@ function TournamentFormContent({ tournamentId }: Props) {
                     fullWidth
                     label="Link do Mapy (Hala)"
                     placeholder="Jeśli nie podasz to zostanie wygenerowany automatycznie"
-                    error={Boolean(touchedFields.hallMapLink && errors.hallMapLink)}
+                    error={Boolean((touchedFields.hallMapLink || showAllErrors) && errors.hallMapLink)}
                     helperText={
-                      touchedFields.hallMapLink
+                      touchedFields.hallMapLink || showAllErrors
                         ? errors.hallMapLink?.message
                         : "Zostanie wygenerowany automatycznie jeśli nie podasz"
                     }
