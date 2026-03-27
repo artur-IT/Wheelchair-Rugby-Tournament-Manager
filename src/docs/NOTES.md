@@ -194,7 +194,8 @@ DO POPRAWKI:
 
 ---
 
-Playwright tests:
+### Playwright tests:
+
 Są kosztowne i czasochłonne. Stworzyć tylko kilka takich testów dla kluczowych elementów systemu (np. Logowanie).
 
 ---
