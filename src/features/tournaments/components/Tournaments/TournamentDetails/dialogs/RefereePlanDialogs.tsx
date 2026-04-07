@@ -26,6 +26,7 @@ import { muiSelectTextFieldAccessibilityProps } from "@/lib/muiSelectTextFieldAc
 import type { Match, Person, Tournament } from "@/types";
 import {
   MATCH_DURATION_MINUTES,
+  matchHasRecordedResult,
   minutesToTime,
   timeToMinutes,
 } from "@/features/tournaments/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
@@ -377,6 +378,11 @@ export function EditRefereePlanDialog({
               {editRefereePlan.drafts.map((draft, idx) => {
                 const teamAName = tournament.teams.find((t) => t.id === draft.teamAId)?.name ?? draft.teamAId;
                 const teamBName = tournament.teams.find((t) => t.id === draft.teamBId)?.name ?? draft.teamBId;
+                const linkedMatch = draft.id ? matches.find((x) => x.id === draft.id) : undefined;
+                const refereesLocked = linkedMatch != null && matchHasRecordedResult(linkedMatch);
+                const refereeLockTooltip = refereesLocked
+                  ? "Wynik meczu jest wpisany. Usuń wynik w planie meczów, aby zmienić sędziów."
+                  : "";
 
                 return (
                   <TableRow key={draft.id ?? `ref-row-${idx}`}>
@@ -517,123 +523,143 @@ export function EditRefereePlanDialog({
                     </TableCell>
 
                     <TableCell>
-                      <TextField
-                        select
-                        label="Sędzia 1"
-                        {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-ref1-${idx}`)}
-                        value={draft.referee1Id}
-                        onChange={(e) =>
-                          editRefereePlan.setDrafts((prev) =>
-                            prev.map((d, i) => (i === idx ? { ...d, referee1Id: String(e.target.value) } : d))
-                          )
-                        }
-                        size="small"
-                        fullWidth
-                      >
-                        <MenuItem value="">—</MenuItem>
-                        {tournament.referees.map((r) => (
-                          <MenuItem
-                            key={r.id}
-                            value={r.id}
-                            disabled={
-                              r.id !== draft.referee1Id &&
-                              [draft.referee2Id, draft.tablePenaltyId, draft.tableClockId].includes(r.id)
+                      <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                        <span style={{ display: "block", width: "100%" }}>
+                          <TextField
+                            select
+                            label="Sędzia 1"
+                            {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-ref1-${idx}`)}
+                            value={draft.referee1Id}
+                            onChange={(e) =>
+                              editRefereePlan.setDrafts((prev) =>
+                                prev.map((d, i) => (i === idx ? { ...d, referee1Id: String(e.target.value) } : d))
+                              )
                             }
+                            size="small"
+                            fullWidth
+                            disabled={refereesLocked || editRefereePlan.loading}
                           >
-                            {personDisplayName(r)}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                            <MenuItem value="">—</MenuItem>
+                            {tournament.referees.map((r) => (
+                              <MenuItem
+                                key={r.id}
+                                value={r.id}
+                                disabled={
+                                  r.id !== draft.referee1Id &&
+                                  [draft.referee2Id, draft.tablePenaltyId, draft.tableClockId].includes(r.id)
+                                }
+                              >
+                                {personDisplayName(r)}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </span>
+                      </Tooltip>
                     </TableCell>
 
                     <TableCell>
-                      <TextField
-                        select
-                        label="Sędzia 2"
-                        {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-ref2-${idx}`)}
-                        value={draft.referee2Id}
-                        onChange={(e) =>
-                          editRefereePlan.setDrafts((prev) =>
-                            prev.map((d, i) => (i === idx ? { ...d, referee2Id: String(e.target.value) } : d))
-                          )
-                        }
-                        size="small"
-                        fullWidth
-                      >
-                        <MenuItem value="">—</MenuItem>
-                        {tournament.referees.map((r) => (
-                          <MenuItem
-                            key={r.id}
-                            value={r.id}
-                            disabled={
-                              r.id !== draft.referee2Id &&
-                              [draft.referee1Id, draft.tablePenaltyId, draft.tableClockId].includes(r.id)
+                      <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                        <span style={{ display: "block", width: "100%" }}>
+                          <TextField
+                            select
+                            label="Sędzia 2"
+                            {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-ref2-${idx}`)}
+                            value={draft.referee2Id}
+                            onChange={(e) =>
+                              editRefereePlan.setDrafts((prev) =>
+                                prev.map((d, i) => (i === idx ? { ...d, referee2Id: String(e.target.value) } : d))
+                              )
                             }
+                            size="small"
+                            fullWidth
+                            disabled={refereesLocked || editRefereePlan.loading}
                           >
-                            {personDisplayName(r)}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                            <MenuItem value="">—</MenuItem>
+                            {tournament.referees.map((r) => (
+                              <MenuItem
+                                key={r.id}
+                                value={r.id}
+                                disabled={
+                                  r.id !== draft.referee2Id &&
+                                  [draft.referee1Id, draft.tablePenaltyId, draft.tableClockId].includes(r.id)
+                                }
+                              >
+                                {personDisplayName(r)}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </span>
+                      </Tooltip>
                     </TableCell>
 
                     <TableCell>
-                      <TextField
-                        select
-                        label="Stolik kar"
-                        {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-penalty-${idx}`)}
-                        value={draft.tablePenaltyId}
-                        onChange={(e) =>
-                          editRefereePlan.setDrafts((prev) =>
-                            prev.map((d, i) => (i === idx ? { ...d, tablePenaltyId: String(e.target.value) } : d))
-                          )
-                        }
-                        size="small"
-                        fullWidth
-                      >
-                        <MenuItem value="">—</MenuItem>
-                        {tournament.referees.map((r) => (
-                          <MenuItem
-                            key={r.id}
-                            value={r.id}
-                            disabled={
-                              r.id !== draft.tablePenaltyId &&
-                              [draft.referee1Id, draft.referee2Id, draft.tableClockId].includes(r.id)
+                      <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                        <span style={{ display: "block", width: "100%" }}>
+                          <TextField
+                            select
+                            label="Stolik kar"
+                            {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-penalty-${idx}`)}
+                            value={draft.tablePenaltyId}
+                            onChange={(e) =>
+                              editRefereePlan.setDrafts((prev) =>
+                                prev.map((d, i) => (i === idx ? { ...d, tablePenaltyId: String(e.target.value) } : d))
+                              )
                             }
+                            size="small"
+                            fullWidth
+                            disabled={refereesLocked || editRefereePlan.loading}
                           >
-                            {personDisplayName(r)}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                            <MenuItem value="">—</MenuItem>
+                            {tournament.referees.map((r) => (
+                              <MenuItem
+                                key={r.id}
+                                value={r.id}
+                                disabled={
+                                  r.id !== draft.tablePenaltyId &&
+                                  [draft.referee1Id, draft.referee2Id, draft.tableClockId].includes(r.id)
+                                }
+                              >
+                                {personDisplayName(r)}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </span>
+                      </Tooltip>
                     </TableCell>
 
                     <TableCell>
-                      <TextField
-                        select
-                        label="Zagary"
-                        {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-clock-${idx}`)}
-                        value={draft.tableClockId}
-                        onChange={(e) =>
-                          editRefereePlan.setDrafts((prev) =>
-                            prev.map((d, i) => (i === idx ? { ...d, tableClockId: String(e.target.value) } : d))
-                          )
-                        }
-                        size="small"
-                        fullWidth
-                      >
-                        <MenuItem value="">—</MenuItem>
-                        {tournament.referees.map((r) => (
-                          <MenuItem
-                            key={r.id}
-                            value={r.id}
-                            disabled={
-                              r.id !== draft.tableClockId &&
-                              [draft.referee1Id, draft.referee2Id, draft.tablePenaltyId].includes(r.id)
+                      <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                        <span style={{ display: "block", width: "100%" }}>
+                          <TextField
+                            select
+                            label="Zagary"
+                            {...muiSelectTextFieldAccessibilityProps(`${refereePlanSelectId}-clock-${idx}`)}
+                            value={draft.tableClockId}
+                            onChange={(e) =>
+                              editRefereePlan.setDrafts((prev) =>
+                                prev.map((d, i) => (i === idx ? { ...d, tableClockId: String(e.target.value) } : d))
+                              )
                             }
+                            size="small"
+                            fullWidth
+                            disabled={refereesLocked || editRefereePlan.loading}
                           >
-                            {personDisplayName(r)}
-                          </MenuItem>
-                        ))}
-                      </TextField>
+                            <MenuItem value="">—</MenuItem>
+                            {tournament.referees.map((r) => (
+                              <MenuItem
+                                key={r.id}
+                                value={r.id}
+                                disabled={
+                                  r.id !== draft.tableClockId &&
+                                  [draft.referee1Id, draft.referee2Id, draft.tablePenaltyId].includes(r.id)
+                                }
+                              >
+                                {personDisplayName(r)}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </span>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 );

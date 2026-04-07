@@ -12,13 +12,17 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import type { Match, Person, RefereeRole, Tournament } from "@/types";
-import { MATCH_DURATION_MS } from "@/features/tournaments/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
+import {
+  MATCH_DURATION_MS,
+  matchHasRecordedResult,
+} from "@/features/tournaments/components/Tournaments/TournamentDetails/hooks/matchPlanHelpers";
 import { updateTournamentRefereePlanEntry } from "@/lib/api/tournaments";
 import { formatDateRangePl } from "@/lib/dateFormat";
 import { printElementAsPdf } from "@/lib/print";
@@ -392,9 +396,13 @@ export default function TournamentRefereePlanPanel({
                             const tableClock = assignments.TABLE_CLOCK;
 
                             const isSaving = savingMatchIds.has(m.id);
+                            const refereesLocked = matchHasRecordedResult(m);
+                            const refereeLockTooltip = refereesLocked
+                              ? "Wynik meczu jest wpisany. Usuń wynik w planie meczów, aby zmienić sędziów."
+                              : "";
 
                             const setRole = async (role: RefereeRole, refereeId: string) => {
-                              if (isSaving) return;
+                              if (isSaving || refereesLocked) return;
                               setInlineSaveError(null);
 
                               savingMatchIds.add(m.id);
@@ -443,111 +451,127 @@ export default function TournamentRefereePlanPanel({
                                 <TableCell align="center">{m.court ?? "—"}</TableCell>
 
                                 <TableCell align="center">
-                                  <TextField
-                                    select
-                                    size="small"
-                                    sx={refereeSelectSx}
-                                    value={ref1 ?? ""}
-                                    onChange={(e) => void setRole("REFEREE_1", String(e.target.value))}
-                                    disabled={isSaving}
-                                    fullWidth
-                                  >
-                                    <MenuItem value="">—</MenuItem>
-                                    {tournament.referees.map((r) => (
-                                      <MenuItem
-                                        key={r.id}
-                                        value={r.id}
-                                        disabled={optionDisabled(r.id, ref1, [
-                                          ref2 ?? "",
-                                          tablePenalty ?? "",
-                                          tableClock ?? "",
-                                        ])}
+                                  <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                                    <span style={{ display: "block", width: "100%" }}>
+                                      <TextField
+                                        select
+                                        size="small"
+                                        sx={refereeSelectSx}
+                                        value={ref1 ?? ""}
+                                        onChange={(e) => void setRole("REFEREE_1", String(e.target.value))}
+                                        disabled={isSaving || refereesLocked}
+                                        fullWidth
                                       >
-                                        {personDisplayName(r)}
-                                      </MenuItem>
-                                    ))}
-                                  </TextField>
+                                        <MenuItem value="">—</MenuItem>
+                                        {tournament.referees.map((r) => (
+                                          <MenuItem
+                                            key={r.id}
+                                            value={r.id}
+                                            disabled={optionDisabled(r.id, ref1, [
+                                              ref2 ?? "",
+                                              tablePenalty ?? "",
+                                              tableClock ?? "",
+                                            ])}
+                                          >
+                                            {personDisplayName(r)}
+                                          </MenuItem>
+                                        ))}
+                                      </TextField>
+                                    </span>
+                                  </Tooltip>
                                 </TableCell>
 
                                 <TableCell align="center">
-                                  <TextField
-                                    select
-                                    size="small"
-                                    sx={refereeSelectSx}
-                                    value={ref2 ?? ""}
-                                    onChange={(e) => void setRole("REFEREE_2", String(e.target.value))}
-                                    disabled={isSaving}
-                                    fullWidth
-                                  >
-                                    <MenuItem value="">—</MenuItem>
-                                    {tournament.referees.map((r) => (
-                                      <MenuItem
-                                        key={r.id}
-                                        value={r.id}
-                                        disabled={optionDisabled(r.id, ref2, [
-                                          ref1 ?? "",
-                                          tablePenalty ?? "",
-                                          tableClock ?? "",
-                                        ])}
+                                  <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                                    <span style={{ display: "block", width: "100%" }}>
+                                      <TextField
+                                        select
+                                        size="small"
+                                        sx={refereeSelectSx}
+                                        value={ref2 ?? ""}
+                                        onChange={(e) => void setRole("REFEREE_2", String(e.target.value))}
+                                        disabled={isSaving || refereesLocked}
+                                        fullWidth
                                       >
-                                        {personDisplayName(r)}
-                                      </MenuItem>
-                                    ))}
-                                  </TextField>
+                                        <MenuItem value="">—</MenuItem>
+                                        {tournament.referees.map((r) => (
+                                          <MenuItem
+                                            key={r.id}
+                                            value={r.id}
+                                            disabled={optionDisabled(r.id, ref2, [
+                                              ref1 ?? "",
+                                              tablePenalty ?? "",
+                                              tableClock ?? "",
+                                            ])}
+                                          >
+                                            {personDisplayName(r)}
+                                          </MenuItem>
+                                        ))}
+                                      </TextField>
+                                    </span>
+                                  </Tooltip>
                                 </TableCell>
 
                                 <TableCell align="center">
-                                  <TextField
-                                    select
-                                    size="small"
-                                    sx={refereeSelectSx}
-                                    value={tablePenalty ?? ""}
-                                    onChange={(e) => void setRole("TABLE_PENALTY", String(e.target.value))}
-                                    disabled={isSaving}
-                                    fullWidth
-                                  >
-                                    <MenuItem value="">—</MenuItem>
-                                    {tournament.referees.map((r) => (
-                                      <MenuItem
-                                        key={r.id}
-                                        value={r.id}
-                                        disabled={optionDisabled(r.id, tablePenalty, [
-                                          ref1 ?? "",
-                                          ref2 ?? "",
-                                          tableClock ?? "",
-                                        ])}
+                                  <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                                    <span style={{ display: "block", width: "100%" }}>
+                                      <TextField
+                                        select
+                                        size="small"
+                                        sx={refereeSelectSx}
+                                        value={tablePenalty ?? ""}
+                                        onChange={(e) => void setRole("TABLE_PENALTY", String(e.target.value))}
+                                        disabled={isSaving || refereesLocked}
+                                        fullWidth
                                       >
-                                        {personDisplayName(r)}
-                                      </MenuItem>
-                                    ))}
-                                  </TextField>
+                                        <MenuItem value="">—</MenuItem>
+                                        {tournament.referees.map((r) => (
+                                          <MenuItem
+                                            key={r.id}
+                                            value={r.id}
+                                            disabled={optionDisabled(r.id, tablePenalty, [
+                                              ref1 ?? "",
+                                              ref2 ?? "",
+                                              tableClock ?? "",
+                                            ])}
+                                          >
+                                            {personDisplayName(r)}
+                                          </MenuItem>
+                                        ))}
+                                      </TextField>
+                                    </span>
+                                  </Tooltip>
                                 </TableCell>
 
                                 <TableCell align="center">
-                                  <TextField
-                                    select
-                                    size="small"
-                                    sx={refereeSelectSx}
-                                    value={tableClock ?? ""}
-                                    onChange={(e) => void setRole("TABLE_CLOCK", String(e.target.value))}
-                                    disabled={isSaving}
-                                    fullWidth
-                                  >
-                                    <MenuItem value="">—</MenuItem>
-                                    {tournament.referees.map((r) => (
-                                      <MenuItem
-                                        key={r.id}
-                                        value={r.id}
-                                        disabled={optionDisabled(r.id, tableClock, [
-                                          ref1 ?? "",
-                                          ref2 ?? "",
-                                          tablePenalty ?? "",
-                                        ])}
+                                  <Tooltip title={refereeLockTooltip} disableHoverListener={!refereesLocked}>
+                                    <span style={{ display: "block", width: "100%" }}>
+                                      <TextField
+                                        select
+                                        size="small"
+                                        sx={refereeSelectSx}
+                                        value={tableClock ?? ""}
+                                        onChange={(e) => void setRole("TABLE_CLOCK", String(e.target.value))}
+                                        disabled={isSaving || refereesLocked}
+                                        fullWidth
                                       >
-                                        {personDisplayName(r)}
-                                      </MenuItem>
-                                    ))}
-                                  </TextField>
+                                        <MenuItem value="">—</MenuItem>
+                                        {tournament.referees.map((r) => (
+                                          <MenuItem
+                                            key={r.id}
+                                            value={r.id}
+                                            disabled={optionDisabled(r.id, tableClock, [
+                                              ref1 ?? "",
+                                              ref2 ?? "",
+                                              tablePenalty ?? "",
+                                            ])}
+                                          >
+                                            {personDisplayName(r)}
+                                          </MenuItem>
+                                        ))}
+                                      </TextField>
+                                    </span>
+                                  </Tooltip>
                                 </TableCell>
                               </TableRow>
                             );

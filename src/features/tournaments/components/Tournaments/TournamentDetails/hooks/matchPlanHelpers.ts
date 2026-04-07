@@ -1,6 +1,13 @@
+import type { Match } from "@/types";
+
 export interface MatchDayOption {
   timestamp: number;
   label: string;
+}
+
+/** Both scores set — same rule as match table coloring (finished match). */
+export function matchHasRecordedResult(m: Pick<Match, "scoreA" | "scoreB">): boolean {
+  return typeof m.scoreA === "number" && typeof m.scoreB === "number";
 }
 
 export const MATCH_DURATION_MINUTES = 90;

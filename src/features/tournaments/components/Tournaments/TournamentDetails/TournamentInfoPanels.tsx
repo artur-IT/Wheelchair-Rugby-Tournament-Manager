@@ -24,34 +24,37 @@ export default function TournamentInfoPanels({ tournament }: TournamentInfoPanel
   const accommodation = tournament.accommodation;
   const venueMapsHref = resolvePlaceMapsHref(venue);
   const accommodationMapsHref = resolvePlaceMapsHref(accommodation);
+  // Full-width cards on narrow viewports avoid horizontal scroll; fixed 350px from md up matches desktop layout.
   const cardSx = {
     p: 3,
     borderRadius: 3,
     bgcolor: "background.paper",
     border: 1,
     borderColor: "divider",
-    width: 350,
-    minWidth: 350,
-    maxWidth: 350,
-    boxSizing: "border-box",
-  } as const;
+    boxSizing: "border-box" as const,
+    width: "100%",
+    minWidth: 0,
+    maxWidth: { xs: "100%", md: 350 },
+    justifySelf: { xs: "stretch", md: "center" },
+  };
 
   return (
     <Box
       sx={{
         display: "grid",
+        width: "100%",
+        minWidth: 0,
         gridTemplateColumns: {
-          xs: "repeat(auto-fit, 350px)",
-          sm: "repeat(auto-fit, 350px)",
-          md: "repeat(auto-fit, 350px)",
-          lg: "repeat(3, 350px)",
-          xl: "repeat(3, 350px)",
+          xs: "minmax(0, 1fr)",
+          sm: "minmax(0, 1fr)",
+          md: "repeat(auto-fit, minmax(280px, 1fr))",
+          lg: "repeat(3, minmax(0, 350px))",
+          xl: "repeat(3, minmax(0, 350px))",
         },
         gap: 3,
         alignItems: "stretch",
         justifyContent: "center",
-        // Narrow viewports: 350px columns may overflow; lg+ uses full Container width from parent layout.
-        overflowX: { xs: "auto", lg: "visible" },
+        overflowX: "visible",
       }}
     >
       {venue ? (

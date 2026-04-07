@@ -280,9 +280,9 @@ model Match {
   tournamentId       String
   tournament         Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   teamAId            String
-  teamA              Team                @relation("TeamA", fields: [teamAId], references: [id])
+  teamA              Team                @relation("TeamA", fields: [teamAId], references: [id], onDelete: Cascade)
   teamBId            String
-  teamB              Team                @relation("TeamB", fields: [teamBId], references: [id])
+  teamB              Team                @relation("TeamB", fields: [teamBId], references: [id], onDelete: Cascade)
   refereeAssignments RefereeAssignment[]
 }
 
@@ -299,7 +299,7 @@ model RefereeAssignment {
   matchId   String
   match     Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
   refereeId String
-  referee   Referee     @relation(fields: [refereeId], references: [id])
+  referee   Referee     @relation(fields: [refereeId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, refereeId])
   @@unique([matchId, role])
@@ -319,9 +319,9 @@ model ClassificationExam {
   tournamentId String
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   classifierId String
-  classifier   Classifier @relation(fields: [classifierId], references: [id])
+  classifier   Classifier @relation(fields: [classifierId], references: [id], onDelete: Cascade)
   playerId     String
-  player       Player     @relation(fields: [playerId], references: [id])
+  player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }
 
 model Volunteer {

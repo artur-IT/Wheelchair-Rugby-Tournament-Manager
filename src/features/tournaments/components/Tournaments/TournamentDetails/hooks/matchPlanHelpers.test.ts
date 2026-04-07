@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isDayTimestampOutsideTournamentRange, isScheduledDayOutsideTournamentRange } from "./matchPlanHelpers";
+import {
+  isDayTimestampOutsideTournamentRange,
+  isScheduledDayOutsideTournamentRange,
+  matchHasRecordedResult,
+} from "./matchPlanHelpers";
 
 describe("matchPlanHelpers tournament range", () => {
   it("isScheduledDayOutsideTournamentRange is false inside inclusive bounds", () => {
@@ -27,5 +31,18 @@ describe("matchPlanHelpers tournament range", () => {
     const ts = Date.UTC(2024, 4, 9);
     expect(isDayTimestampOutsideTournamentRange(ts, start, end)).toBe(true);
     expect(isScheduledDayOutsideTournamentRange(new Date(ts).toISOString(), start, end)).toBe(true);
+  });
+});
+
+describe("matchHasRecordedResult", () => {
+  it("is true only when both scores are numbers", () => {
+    expect(matchHasRecordedResult({ scoreA: 10, scoreB: 12 })).toBe(true);
+    expect(matchHasRecordedResult({ scoreA: 0, scoreB: 0 })).toBe(true);
+  });
+
+  it("is false when either score is missing", () => {
+    expect(matchHasRecordedResult({ scoreA: 10, scoreB: undefined })).toBe(false);
+    expect(matchHasRecordedResult({ scoreA: undefined, scoreB: 12 })).toBe(false);
+    expect(matchHasRecordedResult({ scoreA: undefined, scoreB: undefined })).toBe(false);
   });
 });

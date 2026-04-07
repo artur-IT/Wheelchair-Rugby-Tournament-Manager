@@ -49,6 +49,14 @@ export const PUT: APIRoute = async ({ params, request }) => {
         return json({ error: "Wybrany sędzia nie należy do turnieju" }, 400);
       if (error.message === "DUPLICATE_REFEREE_IN_MATCH")
         return json({ error: "Ten sam sędzia nie może pełnić kilku ról w jednym meczu" }, 400);
+      if (error.message === "REFEREES_LOCKED_MATCH_HAS_RESULT")
+        return json(
+          {
+            error:
+              "Nie można zmienić sędziów, gdy wynik meczu jest już wpisany. Usuń wynik w planie meczów, aby edytować obsadę.",
+          },
+          409
+        );
     }
 
     return json({ error: "Nie udało się zaktualizować wpisu w planie sędziów" }, 500);

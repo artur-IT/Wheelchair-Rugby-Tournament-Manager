@@ -281,7 +281,19 @@ export function EditMatchDialog({
   const matchPlanSelectId = useId().replace(/:/g, "");
 
   return (
-    <Dialog open={editMatch.open} onClose={editMatch.closeDialog} fullWidth maxWidth="md" disableRestoreFocus>
+    <Dialog
+      open={editMatch.open}
+      onClose={editMatch.closeDialog}
+      fullWidth
+      maxWidth={false}
+      disableRestoreFocus
+      sx={{
+        "& .MuiDialog-paper": {
+          width: "100%",
+          maxWidth: { xs: "calc(100vw - 32px)", md: 1200 },
+        },
+      }}
+    >
       <DialogTitle
         sx={{
           display: "flex",

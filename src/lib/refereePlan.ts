@@ -53,6 +53,19 @@ function dedupeAndValidateRefereesPerMatch(input: UpsertRefereePlanMatchDto) {
   return ids;
 }
 
+/** True when incoming referee slots match stored assignments (empty slots match missing rows). */
+function refereeAssignmentsMatchInput(
+  stored: Partial<Record<RefereeRole, string>>,
+  input: UpsertRefereePlanMatchDto
+): boolean {
+  for (const role of Object.keys(roleToDtoKey) as RefereeRole[]) {
+    const incoming = pickRefereeIdForRole(input, role) ?? "";
+    const existing = stored[role] ?? "";
+    if (incoming !== existing) return false;
+  }
+  return true;
+}
+
 export async function listRefereePlanForTournament(tournamentId: string): Promise<RefereePlanMatch[]> {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
@@ -158,9 +171,20 @@ export async function updateRefereePlanMatchForTournament(
 ): Promise<string> {
   const match = await prisma.match.findUnique({
     where: { id: matchId },
-    select: { id: true, tournamentId: true },
+    select: {
+      id: true,
+      tournamentId: true,
+      scoreA: true,
+      scoreB: true,
+      refereeAssignments: { select: { role: true, refereeId: true } },
+    },
   });
   if (!match || match.tournamentId !== tournamentId) throw new Error("MATCH_NOT_FOUND");
+
+  const storedReferees: Partial<Record<RefereeRole, string>> = {};
+  for (const a of match.refereeAssignments) {
+    storedReferees[a.role] = a.refereeId;
+  }
 
   const [teamAId, teamBId] = [input.teamAId, input.teamBId];
   if (!teamAId || !teamBId) throw new Error("TEAM_IDS_REQUIRED");
@@ -171,6 +195,11 @@ export async function updateRefereePlanMatchForTournament(
     select: { teamId: true },
   });
   if (teams.length !== 2) throw new Error("TEAM_NOT_IN_TOURNAMENT");
+
+  const scoresLocked = match.scoreA != null && match.scoreB != null;
+  if (scoresLocked && !refereeAssignmentsMatchInput(storedReferees, input)) {
+    throw new Error("REFEREES_LOCKED_MATCH_HAS_RESULT");
+  }
 
   const refereeIds = dedupeAndValidateRefereesPerMatch(input);
   await validateTournamentAndRoles(tournamentId, refereeIds);

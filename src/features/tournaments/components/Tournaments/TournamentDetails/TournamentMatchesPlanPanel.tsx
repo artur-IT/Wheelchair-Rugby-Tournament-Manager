@@ -232,6 +232,7 @@ export default function TournamentMatchesPlanPanel({
                           width: "100%",
                           "& .MuiTableCell-root": {
                             px: 1,
+                            py: 0.5,
                             borderBottom: "none",
                           },
                         }}
@@ -243,7 +244,7 @@ export default function TournamentMatchesPlanPanel({
                               whiteSpace: "nowrap",
                               fontWeight: 700,
                               color: "text.primary",
-                              py: 1.25,
+                              py: 0.5,
                             },
                           }}
                         >
