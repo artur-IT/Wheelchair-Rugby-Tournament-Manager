@@ -141,7 +141,7 @@ export default function useTournamentPersonnelManager({ tournament }: UseTournam
     isError: selectedTeamPlayersQueryError,
     error: selectedTeamPlayersErr,
   } = useQuery({
-    queryKey: queryKeys.teams.detail(selectedTeamForPlayers?.id ?? "__none__"),
+    queryKey: queryKeys.teams.players(selectedTeamForPlayers?.id ?? "__none__"),
     queryFn: async ({ signal }) => {
       if (!selectedTeamForPlayers) return [];
       const team = await fetchTeamById(selectedTeamForPlayers.id, signal);

@@ -94,6 +94,7 @@ export default function TournamentTeamsPanel({
                 <Button
                   variant="text"
                   onClick={() => openEditTeamPlayersDialog(team)}
+                  aria-label={`Edytuj zawodników drużyny ${team.name}`}
                   sx={{
                     fontWeight: 500,
                     flex: 1,
