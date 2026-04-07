@@ -19,6 +19,7 @@ export const queryKeys = {
     all: ["teams"] as const,
     detail: (id: string) => [...queryKeys.teams.all, "detail", id] as const,
     bySeason: (seasonId: string) => [...queryKeys.teams.all, "list", seasonId] as const,
+    players: (teamId: string) => [...queryKeys.teams.all, "players", teamId] as const,
   },
   referees: {
     all: ["referees"] as const,
