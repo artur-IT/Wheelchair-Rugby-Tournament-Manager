@@ -184,12 +184,12 @@ function ClubPageContent() {
 
   const createTeamMutation = useMutation({
     mutationFn: createTeam,
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
       setTeamName("");
       setTeamFormula("WR4");
       setTeamCoachId("");
       setTeamPlayerIds([]);
-      await queryClient.invalidateQueries({ queryKey: ["club", "teams", selectedClubId] });
+      await queryClient.invalidateQueries({ queryKey: ["club", "teams", variables.clubId] });
     },
   });
 
@@ -277,11 +277,13 @@ function ClubPageContent() {
               Klub sportowy (header)
             </Typography>
             <Stack gap={2}>
-              <TextField
-                label="Nazwa klubu"
-                value={clubForm.name}
-                onChange={(e) => setClubForm((prev) => (prev ? { ...prev, name: e.target.value } : prev))}
-              />
+              <Button
+                variant="contained"
+                disabled={updateClubMutation.isPending || !clubForm.name.trim()}
+                onClick={() => updateClubMutation.mutate(clubForm)}
+              >
+                Zapisz dane klubu
+              </Button>
               <Stack direction={{ xs: "column", md: "row" }} gap={2}>
                 <TextField
                   label="Email kontaktowy"

@@ -37,10 +37,7 @@ function getRequesterIdentity(cookies: AstroCookies): AuthResult {
   return { ok: true, identity: { role, userId } };
 }
 
-export async function authorizeClubAccess(
-  cookies: AstroCookies,
-  resourceClubId: string
-): Promise<AuthResult> {
+export async function authorizeClubAccess(cookies: AstroCookies, resourceClubId: string): Promise<AuthResult> {
   const auth = getRequesterIdentity(cookies);
   if (!auth.ok) return auth;
 
