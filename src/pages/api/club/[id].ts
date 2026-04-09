@@ -29,7 +29,7 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
 
   const bodyResult = await parseRequestJson(request);
   if (!bodyResult.ok) return bodyResult.response;
-  const parsed = parseWithSchema(ClubUpsertSchema, bodyResult.data);
+  const parsed = parseWithSchema(ClubUpsertSchema, { ...bodyResult.data, ownerUserId: existing.ownerUserId });
   if (!parsed.ok) return parsed.response;
 
   try {

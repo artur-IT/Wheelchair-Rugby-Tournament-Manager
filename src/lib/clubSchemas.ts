@@ -1,8 +1,32 @@
 import { z } from "@/lib/zodPl";
 import { LOOSE_URL_REGEX, POSTAL_CODE_REGEX, toTitleCase } from "@/lib/validateInputs";
 
+const DATA_IMAGE_URL_REGEX = /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i;
+const MAX_LOGO_DATA_URL_LENGTH = 3_000_000;
+
 const optionalUrlSchema = z
-  .union([z.literal(""), z.string().refine((v) => LOOSE_URL_REGEX.test(v), "Nieprawidłowy adres URL")])
+  .union([
+    z.literal(""),
+    z
+      .string()
+      .refine(
+        (v) => LOOSE_URL_REGEX.test(v) || DATA_IMAGE_URL_REGEX.test(v),
+        "Nieprawidłowy adres URL (dozwolone także data:image/*)"
+      ),
+  ])
+  .optional();
+
+const optionalLogoSchema = z
+  .union([
+    z.literal(""),
+    z
+      .string()
+      .refine(
+        (v) => LOOSE_URL_REGEX.test(v) || DATA_IMAGE_URL_REGEX.test(v),
+        "Nieprawidłowe logo. Dozwolone: URL http(s) albo data:image/png|jpeg|jpg|webp"
+      )
+      .refine((v) => !v.startsWith("data:image/") || v.length <= MAX_LOGO_DATA_URL_LENGTH, "Logo jest za duże"),
+  ])
   .optional();
 
 const optionalPostalCodeSchema = z
@@ -19,7 +43,7 @@ export const ClubUpsertSchema = z
     contactEmail: z.union([z.literal(""), z.string().email("Nieprawidłowy email")]).optional(),
     contactPhone: z.string().optional(),
     websiteUrl: optionalUrlSchema,
-    logoUrl: optionalUrlSchema,
+    logoUrl: optionalLogoSchema,
     contactFirstName: z.string().optional(),
     contactLastName: z.string().optional(),
     hallName: z.string().optional(),
