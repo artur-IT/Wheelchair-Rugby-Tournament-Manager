@@ -5,15 +5,7 @@ const DATA_IMAGE_URL_REGEX = /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9
 const MAX_LOGO_DATA_URL_LENGTH = 3_000_000;
 
 const optionalUrlSchema = z
-  .union([
-    z.literal(""),
-    z
-      .string()
-      .refine(
-        (v) => LOOSE_URL_REGEX.test(v) || DATA_IMAGE_URL_REGEX.test(v),
-        "Nieprawidłowy adres URL (dozwolone także data:image/*)"
-      ),
-  ])
+  .union([z.literal(""), z.string().regex(LOOSE_URL_REGEX, "Nieprawidłowy adres URL")])
   .optional();
 
 const optionalLogoSchema = z
@@ -32,6 +24,16 @@ const optionalLogoSchema = z
 const optionalPostalCodeSchema = z
   .union([z.literal(""), z.string().regex(POSTAL_CODE_REGEX, "Kod pocztowy musi być w formacie XX-XXX")])
   .optional();
+
+const optionalTitleCaseOrNull = (value: string | undefined): string | null | undefined => {
+  if (value === undefined) return undefined;
+  return value.trim() ? toTitleCase(value) : null;
+};
+
+const optionalTrimmedOrNull = (value: string | undefined): string | null | undefined => {
+  if (value === undefined) return undefined;
+  return value.trim() || null;
+};
 
 export const ClubUpsertSchema = z
   .object({
@@ -55,20 +57,20 @@ export const ClubUpsertSchema = z
   .transform((o) => ({
     ownerUserId: o.ownerUserId,
     name: toTitleCase(o.name),
-    contactAddress: o.contactAddress ? toTitleCase(o.contactAddress) : null,
-    contactCity: o.contactCity ? toTitleCase(o.contactCity) : null,
-    contactPostalCode: o.contactPostalCode?.trim() || null,
-    contactEmail: o.contactEmail?.trim() || null,
-    contactPhone: o.contactPhone?.trim() || null,
-    websiteUrl: o.websiteUrl?.trim() || null,
-    logoUrl: o.logoUrl?.trim() || null,
-    contactFirstName: o.contactFirstName ? toTitleCase(o.contactFirstName) : null,
-    contactLastName: o.contactLastName ? toTitleCase(o.contactLastName) : null,
-    hallName: o.hallName ? toTitleCase(o.hallName) : null,
-    hallAddress: o.hallAddress ? toTitleCase(o.hallAddress) : null,
-    hallCity: o.hallCity ? toTitleCase(o.hallCity) : null,
-    hallPostalCode: o.hallPostalCode?.trim() || null,
-    hallMapUrl: o.hallMapUrl?.trim() || null,
+    contactAddress: optionalTitleCaseOrNull(o.contactAddress),
+    contactCity: optionalTitleCaseOrNull(o.contactCity),
+    contactPostalCode: optionalTrimmedOrNull(o.contactPostalCode),
+    contactEmail: optionalTrimmedOrNull(o.contactEmail),
+    contactPhone: optionalTrimmedOrNull(o.contactPhone),
+    websiteUrl: optionalTrimmedOrNull(o.websiteUrl),
+    logoUrl: optionalTrimmedOrNull(o.logoUrl),
+    contactFirstName: optionalTitleCaseOrNull(o.contactFirstName),
+    contactLastName: optionalTitleCaseOrNull(o.contactLastName),
+    hallName: optionalTitleCaseOrNull(o.hallName),
+    hallAddress: optionalTitleCaseOrNull(o.hallAddress),
+    hallCity: optionalTitleCaseOrNull(o.hallCity),
+    hallPostalCode: optionalTrimmedOrNull(o.hallPostalCode),
+    hallMapUrl: optionalTrimmedOrNull(o.hallMapUrl),
   }));
 
 export const ClubTeamSchema = z

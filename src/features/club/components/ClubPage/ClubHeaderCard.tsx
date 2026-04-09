@@ -49,7 +49,7 @@ export default function ClubHeaderCard({
         {isLoading ? <CircularProgress size={22} /> : null}
         {errorMessage ? <Typography color="error.main">{errorMessage}</Typography> : null}
 
-        {!isLoading && selectedClub ? (
+        {!isLoading && selectedClub && !showClubForm ? (
           <Stack gap={1} sx={{ mt: 2 }}>
             <Stack direction="row" alignItems="center" gap={1}>
               {selectedClub.logoUrl ? (
@@ -66,8 +66,8 @@ export default function ClubHeaderCard({
             </Stack>
             {clubContactItems.length > 0 ? (
               <Stack gap={0.5}>
-                {clubContactItems.map((item) => (
-                  <Typography key={item} color="text.secondary" variant="body2">
+                {clubContactItems.map((item, index) => (
+                  <Typography key={index} color="text.secondary" variant="body2">
                     {item}
                   </Typography>
                 ))}

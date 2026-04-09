@@ -336,11 +336,6 @@ function ClubPageContent() {
           const payload = {
             name: clubName.trim(),
             logoUrl: clubLogoUrl.trim(),
-            hallName: selectedClub?.hallName ?? "",
-            hallAddress: selectedClub?.hallAddress ?? "",
-            hallCity: selectedClub?.hallCity ?? "",
-            hallPostalCode: selectedClub?.hallPostalCode ?? "",
-            hallMapUrl: selectedClub?.hallMapUrl ?? "",
           };
 
           if (isClubEditMode && selectedClub) {

@@ -21,12 +21,7 @@ export interface ClubDto {
 
 export interface ClubCreatePayload {
   name: string;
-  logoUrl?: string;
-  hallName?: string;
-  hallAddress?: string;
-  hallCity?: string;
-  hallPostalCode?: string;
-  hallMapUrl?: string;
+  logoUrl?: string | null;
 }
 
 export interface ClubCoachDto {

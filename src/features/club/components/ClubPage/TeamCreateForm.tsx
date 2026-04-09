@@ -37,11 +37,23 @@ export default function TeamCreateForm({
     <Stack gap={2} sx={{ mb: 3 }}>
       <TextField label="Nazwa drużyny" value={teamName} onChange={(e) => onTeamNameChange(e.target.value)} />
       <Stack direction={{ xs: "column", md: "row" }} gap={2}>
-        <TextField select label="Formuła" value={teamFormula} onChange={(e) => onTeamFormulaChange(e.target.value as "WR4" | "WR5")} fullWidth>
+        <TextField
+          select
+          label="Formuła"
+          value={teamFormula}
+          onChange={(e) => onTeamFormulaChange(e.target.value as "WR4" | "WR5")}
+          fullWidth
+        >
           <MenuItem value="WR4">WR&apos;4</MenuItem>
           <MenuItem value="WR5">WR&apos;5</MenuItem>
         </TextField>
-        <TextField select label="Trener" value={teamCoachId} onChange={(e) => onTeamCoachChange(e.target.value)} fullWidth>
+        <TextField
+          select
+          label="Trener"
+          value={teamCoachId}
+          onChange={(e) => onTeamCoachChange(e.target.value)}
+          fullWidth
+        >
           <MenuItem value="">Bez trenera</MenuItem>
           {coaches.map((coach) => (
             <MenuItem key={coach.id} value={coach.id}>
@@ -54,7 +66,10 @@ export default function TeamCreateForm({
         select
         label="Zawodnicy (możesz wybrać wielu)"
         value={teamPlayerIds}
-        onChange={(e) => onTeamPlayersChange(typeof e.target.value === "string" ? [] : e.target.value)}
+        onChange={(e) => {
+          const value = e.target.value;
+          onTeamPlayersChange(typeof value === "string" ? value.split(",").filter(Boolean) : value);
+        }}
         SelectProps={{ multiple: true }}
       >
         {players.map((player) => (
