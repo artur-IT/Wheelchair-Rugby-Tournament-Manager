@@ -28,12 +28,49 @@ export interface ClubCoachDto {
   id: string;
   firstName: string;
   lastName: string;
+  email?: string | null;
+  phone?: string | null;
 }
 
 export interface ClubPlayerDto {
   id: string;
   firstName: string;
   lastName: string;
+  classification?: number | null;
+  number?: number | null;
+  status?: "ACTIVE" | "INACTIVE" | "GUEST";
+  birthDate?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  contactAddress?: string | null;
+  contactCity?: string | null;
+  contactPostalCode?: string | null;
+  contactMapUrl?: string | null;
+}
+
+export interface ClubVolunteerDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+}
+
+export interface ClubRefereeDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+}
+
+export interface ClubStaffDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: "VOLUNTEER" | "REFEREE" | "OTHER";
+  email?: string | null;
+  phone?: string | null;
 }
 
 export interface ClubTeamDto {

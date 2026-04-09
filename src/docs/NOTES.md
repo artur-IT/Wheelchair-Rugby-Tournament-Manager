@@ -225,54 +225,51 @@ Nasz Personel:
 1. Zawodnicy:
 
 - lista zawodników
+- nowy zawodnik
   - imię
   - nazwisko
-  - klasyfikacja
-  - numer
+  - klasyfikacja (wymagane, zakres 0.5 - 3.5, skok co 0.5)
+  - numer (wymagane, zakres 1 - 99 lub znak '-')
   - status (aktywny, nieaktywny, gość)
-  - data urodzenia
+  - data urodzenia (opcjonalnie)
   - wiek (obliczany automatycznie na podstawie daty urodzenia)
-  - dane kontaktowe (email, telefon, adres, miasto, kod pocztowy, link do mapy)
-  - cechy
-    - funkcja: obrona, atak
-    - szybkość: 1-5
-    - siła: 1-5
-    - wytrzymałość: 1-5
-    - technika: 1-5
-    - mentalność: 1-5
-    - wzrost: 1-5
-    - taktyka: 1-5
-- dodawanie zawodnika
-- edytowanie zawodnika
-- usuwanie zawodnika
+  - dane kontaktowe (email, telefon, adres, miasto, kod pocztowy, link do mapy generowany automatycznie)
+- pełny CRUD zawodnika
 
 2. Wolontariusze:
 
 - lista wolontariuszy
-- dodaj wolontariusza
-- edytowanie wolontariusza
-- usuwanie wolontariusza
+- imię (wymagane)
+- nazwisko (opcjonalnie)
+- telefon (opcjonalnie)
+- funkcje: pełny CRUD wolontariusza
 
 3. Trenerzy:
 
 - lista trenerów
-- dodaj trenera
-- edytowanie trenera
-- usuwanie trenera
+- nowy trener
+  - imię (wymagane)
+  - nazwisko (wymagane)
+  - telefon (opcjonalnie)
+  - funkcje: pełny CRUD trenera
 
 4. Sędziowie:
 
 - lista sędziów
-- dodaj sędziego
-- edytowanie sędziego
-- usuwanie sędziego
+- nowy sędzia
+  - imię (wymagane)
+  - nazwisko (wymagane)
+  - telefon (opcjonalnie)
+  - funkcje: pełny CRUD sędziego
 
 5. Pozostali:
 
 - lista pozostałych osób
-- dodaj pozostałą osobę
-- edytowanie pozostałej osoby
-- usuwanie pozostałej osoby
+- nowa pozostała osoba
+  - imię (wymagane)
+  - nazwisko (opcjonalnie)
+  - telefon (opcjonalnie)
+  - funkcje: pełny CRUD pozostałej osoby
 
 ---
 

@@ -2,20 +2,23 @@ import type { APIRoute } from "astro";
 import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { z } from "@/lib/zodPl";
-import { ClubPersonSchema } from "@/lib/clubSchemas";
-import { ensureClubExists, parseRequestJson, parseWithSchema, requiredId } from "@/lib/clubApiHelpers";
+import { ClubStaffPersonSchema } from "@/lib/clubSchemas";
+import { ensureClubAccess, ensureClubExists, parseRequestJson, parseWithSchema, requiredId } from "@/lib/clubApiHelpers";
 
 const ClubStaffRoleSchema = z.object({
   role: z.enum(["VOLUNTEER", "REFEREE", "OTHER"]).default("OTHER"),
 });
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, cookies }) => {
   const clubIdResult = requiredId(params.id, "Brak id klubu");
   if (!clubIdResult.ok) return clubIdResult.response;
   const clubId = clubIdResult.data;
 
   const clubGuard = await ensureClubExists(clubId);
   if (!clubGuard.ok) return clubGuard.response;
+
+  const authz = await ensureClubAccess(cookies, clubId);
+  if (!authz.ok) return authz.response;
 
   const staff = await prisma.clubStaff.findMany({
     where: { clubId },
@@ -24,7 +27,7 @@ export const GET: APIRoute = async ({ params }) => {
   return json(staff);
 };
 
-export const POST: APIRoute = async ({ params, request }) => {
+export const POST: APIRoute = async ({ params, request, cookies }) => {
   const clubIdResult = requiredId(params.id, "Brak id klubu");
   if (!clubIdResult.ok) return clubIdResult.response;
   const clubId = clubIdResult.data;
@@ -32,10 +35,13 @@ export const POST: APIRoute = async ({ params, request }) => {
   const clubGuard = await ensureClubExists(clubId);
   if (!clubGuard.ok) return clubGuard.response;
 
+  const authz = await ensureClubAccess(cookies, clubId);
+  if (!authz.ok) return authz.response;
+
   const bodyResult = await parseRequestJson(request);
   if (!bodyResult.ok) return bodyResult.response;
 
-  const personParsed = parseWithSchema(ClubPersonSchema, { ...bodyResult.data, clubId });
+  const personParsed = parseWithSchema(ClubStaffPersonSchema, { ...bodyResult.data, clubId });
   if (!personParsed.ok) return personParsed.response;
 
   const roleParsed = parseWithSchema(ClubStaffRoleSchema, bodyResult.data);

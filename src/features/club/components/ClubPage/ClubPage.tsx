@@ -5,13 +5,17 @@ import AppShell from "@/components/AppShell/AppShell";
 import QueryProvider from "@/components/QueryProvider/QueryProvider";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import ClubHeaderCard from "@/features/club/components/ClubPage/ClubHeaderCard";
+import ClubPersonnelTabsSection from "@/features/club/components/ClubPage/ClubPersonnelTabsSection";
 import TeamsSectionCard from "@/features/club/components/ClubPage/TeamsSectionCard";
 import type {
   ClubCoachDto,
   ClubCreatePayload,
   ClubDto,
   ClubPlayerDto,
+  ClubRefereeDto,
+  ClubStaffDto,
   ClubTeamDto,
+  ClubVolunteerDto,
 } from "@/features/club/components/ClubPage/types";
 
 interface ApiValidationErrorShape {
@@ -91,6 +95,24 @@ const fetchPlayers = async (clubId: string): Promise<ClubPlayerDto[]> => {
 const fetchTeams = async (clubId: string): Promise<ClubTeamDto[]> => {
   const res = await fetch(`/api/club/${clubId}/teams`);
   if (!res.ok) throw new Error("Nie udało się pobrać drużyn");
+  return res.json();
+};
+
+const fetchVolunteers = async (clubId: string): Promise<ClubVolunteerDto[]> => {
+  const res = await fetch(`/api/club/${clubId}/volunteers`);
+  if (!res.ok) throw new Error("Nie udało się pobrać wolontariuszy");
+  return res.json();
+};
+
+const fetchReferees = async (clubId: string): Promise<ClubRefereeDto[]> => {
+  const res = await fetch(`/api/club/${clubId}/referees`);
+  if (!res.ok) throw new Error("Nie udało się pobrać sędziów");
+  return res.json();
+};
+
+const fetchStaff = async (clubId: string): Promise<ClubStaffDto[]> => {
+  const res = await fetch(`/api/club/${clubId}/staff`);
+  if (!res.ok) throw new Error("Nie udało się pobrać pozostałego personelu");
   return res.json();
 };
 
@@ -198,6 +220,24 @@ function ClubPageContent() {
   const teamsQuery = useQuery({
     queryKey: ["club", "teams", selectedClubId],
     queryFn: () => fetchTeams(selectedClubId),
+    enabled: selectedClubId.length > 0,
+  });
+
+  const volunteersQuery = useQuery({
+    queryKey: ["club", "volunteers", selectedClubId],
+    queryFn: () => fetchVolunteers(selectedClubId),
+    enabled: selectedClubId.length > 0,
+  });
+
+  const refereesQuery = useQuery({
+    queryKey: ["club", "referees", selectedClubId],
+    queryFn: () => fetchReferees(selectedClubId),
+    enabled: selectedClubId.length > 0,
+  });
+
+  const staffQuery = useQuery({
+    queryKey: ["club", "staff", selectedClubId],
+    queryFn: () => fetchStaff(selectedClubId),
     enabled: selectedClubId.length > 0,
   });
 
@@ -373,6 +413,32 @@ function ClubPageContent() {
               playerIds: teamPlayerIds,
             })
           }
+        />
+      ) : null}
+
+      {selectedClubId ? (
+        <ClubPersonnelTabsSection
+          clubId={selectedClubId}
+          players={playersQuery.data ?? []}
+          playersLoading={playersQuery.isPending}
+          playersError={playersQuery.error instanceof Error ? playersQuery.error.message : null}
+          onRetryPlayers={() => void playersQuery.refetch()}
+          volunteers={volunteersQuery.data ?? []}
+          volunteersLoading={volunteersQuery.isPending}
+          volunteersError={volunteersQuery.error instanceof Error ? volunteersQuery.error.message : null}
+          onRetryVolunteers={() => void volunteersQuery.refetch()}
+          coaches={coachesQuery.data ?? []}
+          coachesLoading={coachesQuery.isPending}
+          coachesError={coachesQuery.error instanceof Error ? coachesQuery.error.message : null}
+          onRetryCoaches={() => void coachesQuery.refetch()}
+          referees={refereesQuery.data ?? []}
+          refereesLoading={refereesQuery.isPending}
+          refereesError={refereesQuery.error instanceof Error ? refereesQuery.error.message : null}
+          onRetryReferees={() => void refereesQuery.refetch()}
+          others={(staffQuery.data ?? []).filter((person) => person.role === "OTHER")}
+          othersLoading={staffQuery.isPending}
+          othersError={staffQuery.error instanceof Error ? staffQuery.error.message : null}
+          onRetryOthers={() => void staffQuery.refetch()}
         />
       ) : null}
     </Box>

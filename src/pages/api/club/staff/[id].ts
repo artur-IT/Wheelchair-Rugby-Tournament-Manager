@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { z } from "@/lib/zodPl";
-import { ClubPersonSchema } from "@/lib/clubSchemas";
+import { ClubStaffPersonSchema } from "@/lib/clubSchemas";
 import { ensureEntityAccess, parseRequestJson, parseWithSchema, requiredId } from "@/lib/clubApiHelpers";
 
 const ClubStaffRoleSchema = z.object({
@@ -42,7 +42,7 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
   const bodyResult = await parseRequestJson(request);
   if (!bodyResult.ok) return bodyResult.response;
 
-  const personParsed = parseWithSchema(ClubPersonSchema, { ...bodyResult.data, clubId: existing.clubId });
+  const personParsed = parseWithSchema(ClubStaffPersonSchema, { ...bodyResult.data, clubId: existing.clubId });
   if (!personParsed.ok) return personParsed.response;
 
   const roleParsed = parseWithSchema(ClubStaffRoleSchema, bodyResult.data);
