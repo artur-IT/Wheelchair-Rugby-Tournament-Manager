@@ -12,7 +12,7 @@ export interface PersonFormPayload {
 export interface PersonnelTableProps {
   title: string;
   data: Person[];
-  onAddClick: () => void;
+  onAddClick?: () => void;
   onEdit?: (person: Person) => void;
   onDelete?: (person: Person) => void;
   deletingId?: string | null;

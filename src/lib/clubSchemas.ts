@@ -1,5 +1,12 @@
 import { z } from "@/lib/zodPl";
-import { LOOSE_URL_REGEX, POSTAL_CODE_REGEX, toTitleCase } from "@/lib/validateInputs";
+import {
+  LOOSE_URL_REGEX,
+  MAX_SHORT_TEXT,
+  POSTAL_CODE_REGEX,
+  requiredFirstNameSchema,
+  requiredLastNameSchema,
+  toTitleCase,
+} from "@/lib/validateInputs";
 
 const DATA_IMAGE_URL_REGEX = /^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/i;
 const MAX_LOGO_DATA_URL_LENGTH = 3_000_000;
@@ -24,6 +31,8 @@ const optionalLogoSchema = z
 const optionalPostalCodeSchema = z
   .union([z.literal(""), z.string().regex(POSTAL_CODE_REGEX, "Kod pocztowy musi być w formacie XX-XXX")])
   .optional();
+
+const MAX_LONG_TEXT_FOR_ADDRESS = 150;
 
 const optionalTitleCaseOrNull = (value: string | undefined): string | null | undefined => {
   if (value === undefined) return undefined;
@@ -89,55 +98,151 @@ export const ClubTeamSchema = z
     playerIds: o.playerIds ?? [],
   }));
 
-export const ClubPlayerSchema = z
-  .object({
-    clubId: z.string().min(1, "Id klubu jest wymagane"),
-    firstName: z.string().min(1, "Imię jest wymagane"),
-    lastName: z.string().min(1, "Nazwisko jest wymagane"),
-    classification: z.number().min(0).max(3.5).optional(),
-    number: z.number().int().min(1).max(99).optional(),
-    status: z.enum(["ACTIVE", "INACTIVE", "GUEST"]).default("ACTIVE"),
-    birthDate: z.string().datetime().optional(),
-    contactEmail: z.union([z.literal(""), z.string().email("Nieprawidłowy email")]).optional(),
-    contactPhone: z.string().optional(),
-    contactAddress: z.string().optional(),
-    contactCity: z.string().optional(),
-    contactPostalCode: optionalPostalCodeSchema,
-    contactMapUrl: optionalUrlSchema,
-    playerFunction: z.enum(["DEFENSE", "ATTACK"]).optional(),
-    speed: z.number().int().min(1).max(5).optional(),
-    strength: z.number().int().min(1).max(5).optional(),
-    endurance: z.number().int().min(1).max(5).optional(),
-    technique: z.number().int().min(1).max(5).optional(),
-    mentality: z.number().int().min(1).max(5).optional(),
-    height: z.number().int().min(1).max(5).optional(),
-    tactics: z.number().int().min(1).max(5).optional(),
-  })
-  .transform((o) => ({
-    ...o,
-    firstName: toTitleCase(o.firstName),
-    lastName: toTitleCase(o.lastName),
-    birthDate: o.birthDate ? new Date(o.birthDate) : null,
-    contactEmail: o.contactEmail?.trim() || null,
-    contactPhone: o.contactPhone?.trim() || null,
-    contactAddress: o.contactAddress ? toTitleCase(o.contactAddress) : null,
-    contactCity: o.contactCity ? toTitleCase(o.contactCity) : null,
-    contactPostalCode: o.contactPostalCode?.trim() || null,
-    contactMapUrl: o.contactMapUrl?.trim() || null,
-  }));
+/** Allowed sport class values for club players (step 0.5). */
+export const CLUB_PLAYER_CLASSIFICATION_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5] as const;
 
-export const ClubPersonSchema = z
-  .object({
-    clubId: z.string().min(1, "Id klubu jest wymagane"),
-    firstName: z.string().min(1, "Imię jest wymagane"),
-    lastName: z.string().min(1, "Nazwisko jest wymagane"),
-    email: z.union([z.literal(""), z.string().email("Nieprawidłowy email")]).optional(),
-    phone: z.string().optional(),
+const clubPlayerClassificationSchema = z
+  .number({ message: "Wybierz klasyfikację" })
+  .refine((n) => CLUB_PLAYER_CLASSIFICATION_VALUES.some((v) => Math.abs(v - n) < 1e-9), {
+    message: "Klasyfikacja musi być od 0.5 do 3.5 (co 0.5)",
+  });
+
+const clubPlayerJerseyNumberSchema = z
+  .preprocess(
+    (val) => {
+      if (val === null || val === undefined || val === "") return "-";
+      if (typeof val === "number" && Number.isInteger(val)) return val;
+      const t = String(val).trim();
+      if (t === "-" || t === "–") return "-";
+      if (/^\d+$/.test(t)) return Number(t);
+      return val;
+    },
+    z.union([z.literal("-"), z.number().int().min(1, "Numer musi być od 1 do 99").max(99, "Numer musi być od 1 do 99")])
+  )
+  .transform((v) => (v === "-" ? null : v));
+
+const optionalBirthDateSchema = z
+  .preprocess(
+    (val) => {
+      if (val === null || val === undefined || val === "") return null;
+      if (val instanceof Date) return val.toISOString().slice(0, 10);
+      const s = String(val);
+      const day = /^(\d{4}-\d{2}-\d{2})/.exec(s)?.[1];
+      return day ?? s;
+    },
+    z.union([z.null(), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data urodzenia musi być w formacie RRRR-MM-DD")])
+  )
+  .transform((v) => {
+    if (v === null) return null;
+    const d = new Date(`${v}T12:00:00.000Z`);
+    if (Number.isNaN(d.getTime())) throw new Error("Nieprawidłowa data");
+    return d;
+  });
+
+/** Polish mobile: empty or exactly 9 digits (stored without country prefix). */
+const optionalClubNineDigitPhone = z
+  .preprocess((val) => (val === null || val === undefined ? "" : String(val)), z.string())
+  .transform((s) => s.replace(/\D/g, "").slice(0, 9))
+  .refine((digits) => digits.length === 0 || digits.length === 9, {
+    message: "Telefon musi mieć dokładnie 9 cyfr albo pozostaw puste",
   })
-  .transform((o) => ({
-    clubId: o.clubId,
-    firstName: toTitleCase(o.firstName),
-    lastName: toTitleCase(o.lastName),
-    email: o.email?.trim() || null,
-    phone: o.phone?.trim() || null,
-  }));
+  .transform((digits) => (digits.length === 0 ? null : digits));
+
+const optionalClubEmailNullable = z
+  .preprocess((v) => (v === null || v === undefined ? "" : String(v).trim()), z.string().max(MAX_SHORT_TEXT))
+  .refine((s) => s.length === 0 || z.string().email().safeParse(s).success, {
+    message: "Nieprawidłowy email",
+  })
+  .transform((s) => (s.length === 0 ? null : s));
+
+/** Raw player payload (shared by API + form resolver). Title-case applied in `ClubPlayerSchema`. */
+export const ClubPlayerFieldsSchema = z.object({
+  clubId: z.string().min(1, "Id klubu jest wymagane"),
+  firstName: requiredFirstNameSchema,
+  lastName: requiredLastNameSchema,
+  classification: clubPlayerClassificationSchema,
+  number: clubPlayerJerseyNumberSchema,
+  status: z.enum(["ACTIVE", "INACTIVE", "GUEST"]).default("ACTIVE"),
+  birthDate: optionalBirthDateSchema,
+  contactEmail: optionalClubEmailNullable,
+  contactPhone: optionalClubNineDigitPhone,
+  // Accept JSON null from clients (treated as "not provided").
+  contactAddress: z.preprocess(
+    (v) => (v === null ? undefined : v),
+    z.string().max(MAX_LONG_TEXT_FOR_ADDRESS).optional()
+  ),
+  contactCity: z.preprocess((v) => (v === null ? undefined : v), z.string().max(MAX_SHORT_TEXT).optional()),
+  contactPostalCode: z.preprocess((v) => (v === null || v === undefined ? undefined : v), optionalPostalCodeSchema),
+  contactMapUrl: z.preprocess((v) => (v === null ? undefined : v), optionalUrlSchema),
+  playerFunction: z.enum(["DEFENSE", "ATTACK"]).optional(),
+  speed: z.number().int().min(1).max(5).optional(),
+  strength: z.number().int().min(1).max(5).optional(),
+  endurance: z.number().int().min(1).max(5).optional(),
+  technique: z.number().int().min(1).max(5).optional(),
+  mentality: z.number().int().min(1).max(5).optional(),
+  height: z.number().int().min(1).max(5).optional(),
+  tactics: z.number().int().min(1).max(5).optional(),
+});
+
+export const ClubPlayerSchema = ClubPlayerFieldsSchema.transform((o) => ({
+  ...o,
+  firstName: toTitleCase(o.firstName.trim()),
+  lastName: toTitleCase(o.lastName.trim()),
+  contactAddress: o.contactAddress?.trim() ? toTitleCase(o.contactAddress.trim()) : null,
+  contactCity: o.contactCity?.trim() ? toTitleCase(o.contactCity.trim()) : null,
+  contactPostalCode: o.contactPostalCode?.trim() ? o.contactPostalCode.trim() : null,
+  contactMapUrl: o.contactMapUrl?.trim() ? o.contactMapUrl.trim() : null,
+}));
+
+export const ClubCoachRefereeFieldsSchema = z.object({
+  clubId: z.string().min(1, "Id klubu jest wymagane"),
+  firstName: requiredFirstNameSchema,
+  lastName: requiredLastNameSchema,
+  email: optionalClubEmailNullable,
+  phone: optionalClubNineDigitPhone,
+});
+
+export const ClubCoachRefereePersonSchema = ClubCoachRefereeFieldsSchema.transform((o) => ({
+  clubId: o.clubId,
+  firstName: toTitleCase(o.firstName.trim()),
+  lastName: toTitleCase(o.lastName.trim()),
+  email: o.email,
+  phone: o.phone,
+}));
+
+/** Wolontariusz: nazwisko opcjonalne (puste zapisujemy jako ""). */
+export const ClubVolunteerFieldsSchema = z.object({
+  clubId: z.string().min(1, "Id klubu jest wymagane"),
+  firstName: requiredFirstNameSchema,
+  lastName: z.preprocess((v) => (v === null || v === undefined ? "" : String(v)), z.string().max(MAX_SHORT_TEXT)),
+  email: optionalClubEmailNullable,
+  phone: optionalClubNineDigitPhone,
+});
+
+export const ClubVolunteerPersonSchema = ClubVolunteerFieldsSchema.transform((o) => ({
+  clubId: o.clubId,
+  firstName: toTitleCase(o.firstName.trim()),
+  lastName: o.lastName.trim() ? toTitleCase(o.lastName.trim()) : "",
+  email: o.email,
+  phone: o.phone,
+}));
+
+/** Pozostali (ClubStaff z rolą OTHER): nazwisko opcjonalne. */
+export const ClubStaffFieldsSchema = z.object({
+  clubId: z.string().min(1, "Id klubu jest wymagane"),
+  firstName: requiredFirstNameSchema,
+  lastName: z.preprocess((v) => (v === null || v === undefined ? "" : String(v)), z.string().max(MAX_SHORT_TEXT)),
+  email: optionalClubEmailNullable,
+  phone: optionalClubNineDigitPhone,
+});
+
+export const ClubStaffPersonSchema = ClubStaffFieldsSchema.transform((o) => ({
+  clubId: o.clubId,
+  firstName: toTitleCase(o.firstName.trim()),
+  lastName: o.lastName.trim() ? toTitleCase(o.lastName.trim()) : "",
+  email: o.email,
+  phone: o.phone,
+}));
+
+/** @deprecated Używaj ClubCoachRefereePersonSchema — alias dla tras trener/sędzia. */
+export const ClubPersonSchema = ClubCoachRefereePersonSchema;

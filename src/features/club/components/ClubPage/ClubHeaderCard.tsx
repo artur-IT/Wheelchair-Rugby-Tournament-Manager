@@ -123,7 +123,10 @@ export default function ClubHeaderCard({
                   value=""
                   type="file"
                   inputProps={{ accept: "image/png,image/jpeg,image/webp" }}
-                  onChange={(e) => onClubLogoFileChange(e.target.files?.[0] ?? null)}
+                  onChange={(e) => {
+                    const input = e.target as HTMLInputElement;
+                    onClubLogoFileChange(input.files?.[0] ?? null);
+                  }}
                   error={Boolean(logoErrorMessage)}
                   helperText={logoErrorMessage ?? "Dozwolone: PNG, JPG, WEBP. Maks. 2MB."}
                   fullWidth

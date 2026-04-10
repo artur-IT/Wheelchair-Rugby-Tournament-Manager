@@ -74,7 +74,14 @@ describe("ClubPage", () => {
             { status: 200 }
           );
         }
-        if (url === "/api/club/c1/coaches" || url === "/api/club/c1/players" || url === "/api/club/c1/teams") {
+        if (
+          url === "/api/club/c1/coaches" ||
+          url === "/api/club/c1/players" ||
+          url === "/api/club/c1/teams" ||
+          url === "/api/club/c1/volunteers" ||
+          url === "/api/club/c1/referees" ||
+          url === "/api/club/c1/staff"
+        ) {
           return new Response(JSON.stringify([]), { status: 200 });
         }
         return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
@@ -102,7 +109,14 @@ describe("ClubPage", () => {
             }
           );
         }
-        if (url === "/api/club/c1/coaches" || url === "/api/club/c1/players" || url === "/api/club/c1/teams") {
+        if (
+          url === "/api/club/c1/coaches" ||
+          url === "/api/club/c1/players" ||
+          url === "/api/club/c1/teams" ||
+          url === "/api/club/c1/volunteers" ||
+          url === "/api/club/c1/referees" ||
+          url === "/api/club/c1/staff"
+        ) {
           return new Response(JSON.stringify([]), { status: 200 });
         }
         return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
@@ -128,7 +142,13 @@ describe("ClubPage", () => {
             }
           );
         }
-        if (url === "/api/club/c1/coaches" || url === "/api/club/c1/players") {
+        if (
+          url === "/api/club/c1/coaches" ||
+          url === "/api/club/c1/players" ||
+          url === "/api/club/c1/volunteers" ||
+          url === "/api/club/c1/referees" ||
+          url === "/api/club/c1/staff"
+        ) {
           return new Response(JSON.stringify([]), { status: 200 });
         }
         if (url === "/api/club/c1/teams") {

@@ -18,9 +18,11 @@ export default function PersonnelTable({ title, data, onAddClick, onEdit, onDele
         <Typography variant="h6" sx={{ fontWeight: "bold" }}>
           {title}
         </Typography>
-        <Button variant="contained" size="small" onClick={onAddClick}>
-          + Dodaj Osobę
-        </Button>
+        {onAddClick ? (
+          <Button variant="contained" size="small" onClick={onAddClick}>
+            + Dodaj Osobę
+          </Button>
+        ) : null}
       </Box>
       <TableContainer>
         <Table>

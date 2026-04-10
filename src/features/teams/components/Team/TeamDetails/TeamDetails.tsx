@@ -136,7 +136,10 @@ function TeamDetailsContent({ id }: TeamDetailsProps) {
       }[]
     ) => {
       if (!team) throw new Error("Nie znaleziono drużyny");
-      return updateTeamById(team.id, buildTeamUpdateBody(team, playersPayload));
+      return updateTeamById(
+        team.id,
+        buildTeamUpdateBody(team, playersPayload) as Parameters<typeof updateTeamById>[1]
+      );
     },
   });
 

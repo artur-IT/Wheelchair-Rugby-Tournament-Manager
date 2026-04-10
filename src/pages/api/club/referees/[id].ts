@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
-import { ClubPersonSchema } from "@/lib/clubSchemas";
+import { ClubCoachRefereePersonSchema } from "@/lib/clubSchemas";
 import { ensureEntityAccess, parseRequestJson, parseWithSchema, requiredId } from "@/lib/clubApiHelpers";
 
 export const GET: APIRoute = async ({ params, cookies }) => {
@@ -35,7 +35,7 @@ export const PUT: APIRoute = async ({ params, request, cookies }) => {
 
   const bodyResult = await parseRequestJson(request);
   if (!bodyResult.ok) return bodyResult.response;
-  const parsed = parseWithSchema(ClubPersonSchema, { ...bodyResult.data, clubId: existing.clubId });
+  const parsed = parseWithSchema(ClubCoachRefereePersonSchema, { ...bodyResult.data, clubId: existing.clubId });
   if (!parsed.ok) return parsed.response;
 
   const updated = await prisma.clubReferee.update({ where: { id }, data: parsed.data });
