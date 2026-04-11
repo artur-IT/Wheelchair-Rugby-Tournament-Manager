@@ -96,7 +96,7 @@ describe("ClubPage", () => {
     );
   });
 
-  it("shows create team button when club has no teams", async () => {
+  it("shows add team button when club has no teams", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
@@ -126,7 +126,7 @@ describe("ClubPage", () => {
     renderWithQuery(<ClubPage />);
 
     expect(await screen.findByText("Tygrysy")).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "Utwórz drużynę" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Dodaj drużynę" })).toBeInTheDocument();
   });
 
   it("renders team tile with required data", async () => {
@@ -159,7 +159,9 @@ describe("ClubPage", () => {
                 name: "Tygrysy A",
                 formula: "WR4",
                 coach: { id: "co1", firstName: "Jan", lastName: "Nowak" },
-                players: [{ player: { id: "p1", firstName: "Adam", lastName: "Kowalski" } }],
+                players: [
+                  { player: { id: "p1", firstName: "Adam", lastName: "Kowalski", classification: 2.5 } },
+                ],
               },
             ]),
             { status: 200 }
@@ -169,11 +171,19 @@ describe("ClubPage", () => {
       })
     );
 
+    const user = userEvent.setup();
     renderWithQuery(<ClubPage />);
 
     expect(await screen.findByText("Tygrysy A")).toBeInTheDocument();
-    expect(await screen.findByText("Formuła: WR'4")).toBeInTheDocument();
-    expect(await screen.findByText("Liczba zawodników: 1")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Dodaj drużynę" })).toBeInTheDocument();
+    expect(await screen.findByText("WR'4")).toBeInTheDocument();
+    expect(await screen.findByText("Zawodników: 1")).toBeInTheDocument();
     expect(await screen.findByText("Trener: Jan Nowak")).toBeInTheDocument();
+
+    await user.click(screen.getByText("Tygrysy A"));
+    expect(await screen.findByText("Imię")).toBeInTheDocument();
+    expect(screen.getByText("Adam")).toBeInTheDocument();
+    expect(screen.getByText("Kowalski")).toBeInTheDocument();
+    expect(screen.getByText("2.5")).toBeInTheDocument();
   });
 });

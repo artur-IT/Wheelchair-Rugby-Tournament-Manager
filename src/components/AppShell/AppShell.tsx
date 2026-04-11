@@ -18,6 +18,7 @@ import {
   Container,
 } from "@mui/material";
 import type { ContainerProps } from "@mui/material/Container";
+import type { Theme } from "@mui/material/styles";
 
 interface AppShellProps {
   children: ReactNode;
@@ -138,6 +139,19 @@ export default function AppShell({ children, currentPath, containerMaxWidth = "l
     window.location.href = "/";
   };
 
+  /** Tighter but non-zero side padding on club page (mobile portrait) so content still breathes. */
+  const clubMobilePortraitCompactHorizontalPaddingSx = (theme: Theme) =>
+    currentPath === "/club"
+      ? {
+          [theme.breakpoints.down("md")]: {
+            "@media (orientation: portrait)": {
+              paddingLeft: theme.spacing(1),
+              paddingRight: theme.spacing(1),
+            },
+          },
+        }
+      : {};
+
   return (
     <Box
       sx={{
@@ -200,15 +214,21 @@ export default function AppShell({ children, currentPath, containerMaxWidth = "l
 
         <Box
           component="main"
-          sx={{
+          sx={(theme) => ({
             flex: 1,
             p: { xs: 2, md: 3 },
             pt: { xs: 3, md: 2 },
             maxWidth: "100%",
             overflowX: "auto",
-          }}
+            ...clubMobilePortraitCompactHorizontalPaddingSx(theme),
+          })}
         >
-          <Container maxWidth={containerMaxWidth}>{children}</Container>
+          <Container
+            maxWidth={containerMaxWidth}
+            sx={(theme) => clubMobilePortraitCompactHorizontalPaddingSx(theme)}
+          >
+            {children}
+          </Container>
         </Box>
       </Box>
     </Box>
