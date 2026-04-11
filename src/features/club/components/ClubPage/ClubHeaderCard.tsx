@@ -71,7 +71,17 @@ export default function ClubHeaderCard({
                   sx={{ width: "4em", height: "4em", objectFit: "contain", flexShrink: 0 }}
                 />
               ) : null}
-              <Typography variant="h5" sx={{ fontWeight: 700, flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 700,
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {selectedClub.name}
               </Typography>
             </Stack>
