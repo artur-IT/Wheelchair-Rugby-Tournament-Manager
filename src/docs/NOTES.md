@@ -289,3 +289,6 @@ Są kosztowne i czasochłonne. Stworzyć tylko kilka takich testów dla kluczowy
 React 19.2 - najpierw (przed innymi bibl.) stosować jego rozwiązania w projektach! (np. Actions, useAction, Suspend Boundary)
 
 ---
+
+SUMMARY PROMPT for PR#: <span style="color: orange;">PROMPT</span>
+Na podstawie dzisiejszych zmian w zmienionych plikach wygeneruj krótkie podsumowanie zmian dla PR #<numer_PR> pomiń w podsumowaniu nazwy plików, nazwy funkcji, API itp. to podsumowanie ma być czytelne i zrozumiałe dla każdego zwykłego człowieka.

@@ -159,7 +159,7 @@ const updateClubTeam = async (payload: {
   return data;
 };
 
-const deleteClubTeam = async (teamId: string): Promise<void> => {
+const deleteClubTeam = async ({ teamId }: { clubId: string; teamId: string }): Promise<void> => {
   const res = await fetch(`/api/club/teams/${teamId}`, { method: "DELETE" });
   const data: unknown = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -308,9 +308,9 @@ function ClubPageContent() {
 
   const deleteTeamMutation = useMutation({
     mutationFn: deleteClubTeam,
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
       setTeamPendingDelete(null);
-      await queryClient.invalidateQueries({ queryKey: ["club", "teams", selectedClubId] });
+      await queryClient.invalidateQueries({ queryKey: ["club", "teams", variables.clubId] });
     },
   });
 
@@ -512,7 +512,9 @@ function ClubPageContent() {
             if (team === null) deleteTeamMutation.reset();
           }}
           onConfirmDeleteTeam={() => {
-            if (teamPendingDelete) deleteTeamMutation.mutate(teamPendingDelete.id);
+            if (teamPendingDelete) {
+              deleteTeamMutation.mutate({ clubId: selectedClubId, teamId: teamPendingDelete.id });
+            }
           }}
         />
       ) : null}
