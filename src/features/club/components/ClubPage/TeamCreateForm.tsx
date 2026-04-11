@@ -1,8 +1,19 @@
-import { Button, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  FormGroup,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 
 import type { ClubCoachDto, ClubPlayerDto } from "./types";
 
 interface TeamCreateFormProps {
+  isEditing?: boolean;
   teamName: string;
   teamFormula: "WR4" | "WR5";
   teamCoachId: string;
@@ -19,6 +30,7 @@ interface TeamCreateFormProps {
 }
 
 export default function TeamCreateForm({
+  isEditing = false,
   teamName,
   teamFormula,
   teamCoachId,
@@ -33,53 +45,112 @@ export default function TeamCreateForm({
   onTeamPlayersChange,
   onCreateTeam,
 }: TeamCreateFormProps) {
+  const formulaField = (
+    <TextField
+      select
+      label="Formuła"
+      value={teamFormula}
+      onChange={(e) => onTeamFormulaChange(e.target.value as "WR4" | "WR5")}
+      fullWidth
+      sx={isEditing ? { flex: { md: "0 0 160px" }, minWidth: 0 } : undefined}
+    >
+      <MenuItem value="WR4">WR&apos;4</MenuItem>
+      <MenuItem value="WR5">WR&apos;5</MenuItem>
+    </TextField>
+  );
+
+  const coachField = (
+    <TextField
+      select
+      label="Trener"
+      value={teamCoachId}
+      onChange={(e) => onTeamCoachChange(e.target.value)}
+      fullWidth
+      sx={isEditing ? { flex: { md: "1 1 0" }, minWidth: 0 } : undefined}
+    >
+      <MenuItem value="">Bez trenera</MenuItem>
+      {coaches.map((coach) => (
+        <MenuItem key={coach.id} value={coach.id}>
+          {coach.firstName} {coach.lastName}
+        </MenuItem>
+      ))}
+    </TextField>
+  );
+
   return (
     <Stack gap={2} sx={{ mb: 3 }}>
-      <TextField label="Nazwa drużyny" value={teamName} onChange={(e) => onTeamNameChange(e.target.value)} />
-      <Stack direction={{ xs: "column", md: "row" }} gap={2}>
-        <TextField
-          select
-          label="Formuła"
-          value={teamFormula}
-          onChange={(e) => onTeamFormulaChange(e.target.value as "WR4" | "WR5")}
-          fullWidth
-        >
-          <MenuItem value="WR4">WR&apos;4</MenuItem>
-          <MenuItem value="WR5">WR&apos;5</MenuItem>
-        </TextField>
-        <TextField
-          select
-          label="Trener"
-          value={teamCoachId}
-          onChange={(e) => onTeamCoachChange(e.target.value)}
-          fullWidth
-        >
-          <MenuItem value="">Bez trenera</MenuItem>
-          {coaches.map((coach) => (
-            <MenuItem key={coach.id} value={coach.id}>
-              {coach.firstName} {coach.lastName}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Stack>
-      <TextField
-        select
-        label="Zawodnicy (możesz wybrać wielu)"
-        value={teamPlayerIds}
-        onChange={(e) => {
-          const value = e.target.value;
-          onTeamPlayersChange(typeof value === "string" ? value.split(",").filter(Boolean) : value);
-        }}
-        SelectProps={{ multiple: true }}
-      >
-        {players.map((player) => (
-          <MenuItem key={player.id} value={player.id}>
-            {player.firstName} {player.lastName}
-          </MenuItem>
-        ))}
-      </TextField>
+      {isEditing ? (
+        <Stack direction={{ xs: "column", md: "row" }} gap={2} sx={{ alignItems: { md: "flex-start" } }}>
+          <TextField
+            label="Nazwa drużyny"
+            value={teamName}
+            onChange={(e) => onTeamNameChange(e.target.value)}
+            fullWidth
+            sx={{ flex: { md: "1 1 0" }, minWidth: 0 }}
+          />
+          {formulaField}
+          {coachField}
+        </Stack>
+      ) : (
+        <>
+          <TextField label="Nazwa drużyny" value={teamName} onChange={(e) => onTeamNameChange(e.target.value)} />
+          <Stack direction={{ xs: "column", md: "row" }} gap={2}>
+            {formulaField}
+            {coachField}
+          </Stack>
+        </>
+      )}
+      <Box>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+          Zawodnicy w drużynie
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          Zaznacz checkbox przy osobach, które mają być w składzie.
+        </Typography>
+        {players.length === 0 ? (
+          <Typography variant="body2" color="text.disabled">
+            Brak zawodników w klubie — dodaj ich w zakładce Zawodnicy.
+          </Typography>
+        ) : (
+          <FormGroup
+            sx={{
+              maxHeight: 280,
+              overflow: "auto",
+              pr: 0.5,
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 1,
+              p: 1,
+              bgcolor: (theme) => (theme.palette.mode === "dark" ? "action.hover" : theme.palette.grey[50]),
+            }}
+          >
+            {players.map((player) => {
+              const label = `${player.firstName} ${player.lastName}`;
+              const checked = teamPlayerIds.includes(player.id);
+              return (
+                <FormControlLabel
+                  key={player.id}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={checked}
+                      onChange={() => {
+                        onTeamPlayersChange(
+                          checked ? teamPlayerIds.filter((id) => id !== player.id) : [...teamPlayerIds, player.id]
+                        );
+                      }}
+                    />
+                  }
+                  label={label}
+                  sx={{ mr: 0, alignItems: "center", py: 0.25 }}
+                />
+              );
+            })}
+          </FormGroup>
+        )}
+      </Box>
       <Button variant="contained" disabled={!teamName.trim() || isPending} onClick={onCreateTeam}>
-        Zapisz drużynę
+        {isEditing ? "Zapisz zmiany" : "Zapisz drużynę"}
       </Button>
       {errorMessage ? <Typography color="error.main">{errorMessage}</Typography> : null}
     </Stack>

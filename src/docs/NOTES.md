@@ -234,6 +234,13 @@ Nasz Personel:
   - data urodzenia (opcjonalnie)
   - wiek (obliczany automatycznie na podstawie daty urodzenia)
   - dane kontaktowe (email, telefon, adres, miasto, kod pocztowy, link do mapy generowany automatycznie)
+  - umiejętności:
+    - szybkość (zakres 1 - 5)
+    - siła (zakres 1 - 5)
+    - wytrzymałość (zakres 1 - 5)
+    - technika (zakres 1 - 5)
+    - mentalność (zakres 1 - 5)
+    - taktyka (zakres 1 - 5)
 - pełny CRUD zawodnika
 
 2. Wolontariusze:
@@ -282,3 +289,6 @@ Są kosztowne i czasochłonne. Stworzyć tylko kilka takich testów dla kluczowy
 React 19.2 - najpierw (przed innymi bibl.) stosować jego rozwiązania w projektach! (np. Actions, useAction, Suspend Boundary)
 
 ---
+
+SUMMARY PROMPT for PR#: <span style="color: orange;">PROMPT</span>
+Na podstawie dzisiejszych zmian w zmienionych plikach wygeneruj krótkie podsumowanie zmian dla PR #<numer_PR> pomiń w podsumowaniu nazwy plików, nazwy funkcji, API itp. to podsumowanie ma być czytelne i zrozumiałe dla każdego zwykłego człowieka.

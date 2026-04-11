@@ -134,6 +134,43 @@ const createTeam = async (payload: {
   return data;
 };
 
+const updateClubTeam = async (payload: {
+  teamId: string;
+  clubId: string;
+  name: string;
+  formula: "WR4" | "WR5";
+  coachId?: string;
+  playerIds: string[];
+}): Promise<ClubTeamDto> => {
+  const { teamId, clubId, name, formula, coachId, playerIds } = payload;
+  const res = await fetch(`/api/club/teams/${teamId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      clubId,
+      name,
+      formula,
+      ...(coachId?.trim() ? { coachId: coachId.trim() } : {}),
+      playerIds,
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(typeof data?.error === "string" ? data.error : "Nie udało się zaktualizować drużyny");
+  return data;
+};
+
+const deleteClubTeam = async ({ teamId }: { clubId: string; teamId: string }): Promise<void> => {
+  const res = await fetch(`/api/club/teams/${teamId}`, { method: "DELETE" });
+  const data: unknown = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      data && typeof data === "object" && typeof (data as { error?: unknown }).error === "string"
+        ? (data as { error: string }).error
+        : "Nie udało się usunąć drużyny"
+    );
+  }
+};
+
 const readFileAsDataUrl = async (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -170,6 +207,8 @@ function ClubPageContent() {
   const [teamCoachId, setTeamCoachId] = useState("");
   const [teamPlayerIds, setTeamPlayerIds] = useState<string[]>([]);
   const [showTeamForm, setShowTeamForm] = useState(false);
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [teamPendingDelete, setTeamPendingDelete] = useState<ClubTeamDto | null>(null);
 
   const clubsQuery = useQuery({
     queryKey: ["club", "list"],
@@ -248,7 +287,29 @@ function ClubPageContent() {
       setTeamFormula("WR4");
       setTeamCoachId("");
       setTeamPlayerIds([]);
+      setEditingTeamId(null);
       setShowTeamForm(false);
+      await queryClient.invalidateQueries({ queryKey: ["club", "teams", variables.clubId] });
+    },
+  });
+
+  const updateTeamMutation = useMutation({
+    mutationFn: updateClubTeam,
+    onSuccess: async (_data, variables) => {
+      setTeamName("");
+      setTeamFormula("WR4");
+      setTeamCoachId("");
+      setTeamPlayerIds([]);
+      setEditingTeamId(null);
+      setShowTeamForm(false);
+      await queryClient.invalidateQueries({ queryKey: ["club", "teams", variables.clubId] });
+    },
+  });
+
+  const deleteTeamMutation = useMutation({
+    mutationFn: deleteClubTeam,
+    onSuccess: async (_data, variables) => {
+      setTeamPendingDelete(null);
       await queryClient.invalidateQueries({ queryKey: ["club", "teams", variables.clubId] });
     },
   });
@@ -295,7 +356,7 @@ function ClubPageContent() {
         <Typography variant="h4" sx={{ fontWeight: "bold" }}>
           Klub Sportowy
         </Typography>
-        <Typography color="text.secondary">Nasze drużyny w jednym miejscu.</Typography>
+        <Typography color="text.secondary">Nasze drużyny.</Typography>
       </Box>
 
       <ClubHeaderCard
@@ -391,28 +452,70 @@ function ClubPageContent() {
           teams={teamsQuery.data ?? []}
           isTeamsLoading={teamsQuery.isPending}
           showTeamForm={showTeamForm}
+          isEditingTeam={editingTeamId !== null}
           coaches={coachesQuery.data ?? []}
           players={playersQuery.data ?? []}
           teamName={teamName}
           teamFormula={teamFormula}
           teamCoachId={teamCoachId}
           teamPlayerIds={teamPlayerIds}
-          createTeamErrorMessage={createTeamMutation.error instanceof Error ? createTeamMutation.error.message : null}
-          isCreateTeamPending={createTeamMutation.isPending}
-          onShowTeamForm={() => setShowTeamForm(true)}
+          teamFormErrorMessage={
+            (createTeamMutation.error instanceof Error ? createTeamMutation.error.message : null) ??
+            (updateTeamMutation.error instanceof Error ? updateTeamMutation.error.message : null)
+          }
+          isTeamFormPending={createTeamMutation.isPending || updateTeamMutation.isPending}
+          teamPendingDelete={teamPendingDelete}
+          deleteTeamErrorMessage={deleteTeamMutation.error instanceof Error ? deleteTeamMutation.error.message : null}
+          isDeleteTeamPending={deleteTeamMutation.isPending}
+          onShowTeamForm={() => {
+            setEditingTeamId(null);
+            setTeamName("");
+            setTeamFormula("WR4");
+            setTeamCoachId("");
+            setTeamPlayerIds([]);
+            setShowTeamForm(true);
+          }}
           onTeamNameChange={setTeamName}
           onTeamFormulaChange={setTeamFormula}
           onTeamCoachChange={setTeamCoachId}
           onTeamPlayersChange={setTeamPlayerIds}
-          onCreateTeam={() =>
+          onSubmitTeamForm={() => {
+            if (editingTeamId) {
+              updateTeamMutation.mutate({
+                teamId: editingTeamId,
+                clubId: selectedClubId,
+                name: teamName.trim(),
+                formula: teamFormula,
+                coachId: teamCoachId || undefined,
+                playerIds: teamPlayerIds,
+              });
+              return;
+            }
             createTeamMutation.mutate({
               clubId: selectedClubId,
               name: teamName.trim(),
               formula: teamFormula,
               coachId: teamCoachId || undefined,
               playerIds: teamPlayerIds,
-            })
-          }
+            });
+          }}
+          onEditTeam={(team) => {
+            setEditingTeamId(team.id);
+            setTeamName(team.name);
+            setTeamFormula(team.formula);
+            setTeamCoachId(team.coach?.id ?? "");
+            setTeamPlayerIds(team.players.map((row) => row.player.id));
+            setShowTeamForm(true);
+          }}
+          onTeamPendingDeleteChange={(team) => {
+            setTeamPendingDelete(team);
+            if (team === null) deleteTeamMutation.reset();
+          }}
+          onConfirmDeleteTeam={() => {
+            if (teamPendingDelete) {
+              deleteTeamMutation.mutate({ clubId: selectedClubId, teamId: teamPendingDelete.id });
+            }
+          }}
         />
       ) : null}
 
