@@ -129,7 +129,7 @@ export default function ClubSimpleMemberPersonnelSection({
         lastName: values.lastName,
         email: values.email || null,
         phone: values.phone || null,
-        notes: (values.notes && values.notes.trim()) ? values.notes.trim() : null,
+        notes: values.notes || null,
       };
       if (editing) {
         const res = await fetch(config.putUrl(editing.id), {

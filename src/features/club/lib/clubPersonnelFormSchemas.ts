@@ -65,5 +65,5 @@ export interface ClubSimplePersonFormValues {
   lastName: string;
   email: string;
   phone: string;
-  notes?: string;
+  notes: string;
 }

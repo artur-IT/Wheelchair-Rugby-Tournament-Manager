@@ -31,7 +31,7 @@ export default function PersonnelTable({ title, data, onAddClick, onEdit, onDele
               <TableCell sx={{ fontWeight: "bold" }}>Imię i Nazwisko</TableCell>
               <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Email</TableCell>
               <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Telefon</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Uwagi</TableCell>
+              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Uwagi</TableCell>
               <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Operacje</TableCell>
             </TableRow>
           </TableHead>

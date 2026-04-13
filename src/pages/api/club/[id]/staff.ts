@@ -3,7 +3,13 @@ import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { z } from "@/lib/zodPl";
 import { ClubStaffPersonSchema } from "@/lib/clubSchemas";
-import { ensureClubAccess, ensureClubExists, parseRequestJson, parseWithSchema, requiredId } from "@/lib/clubApiHelpers";
+import {
+  ensureClubAccess,
+  ensureClubExists,
+  parseRequestJson,
+  parseWithSchema,
+  requiredId,
+} from "@/lib/clubApiHelpers";
 
 const ClubStaffRoleSchema = z.object({
   role: z.enum(["VOLUNTEER", "REFEREE", "OTHER"]).default("OTHER"),
