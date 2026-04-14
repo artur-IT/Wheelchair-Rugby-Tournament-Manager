@@ -12,4 +12,18 @@ export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
+  vite: {
+    // Pre-bundle heavy club route deps at dev server start to avoid parallel lazy-optimize + "504 Outdated Optimize Dep".
+    optimizeDeps: {
+      include: [
+        "@emotion/react",
+        "@emotion/styled",
+        "@mui/icons-material/ExpandMore",
+        "@mui/material",
+        "@tanstack/react-query",
+        "date-fns",
+        "react-hook-form",
+      ],
+    },
+  },
 });

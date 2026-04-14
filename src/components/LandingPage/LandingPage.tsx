@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Trophy } from "lucide-react";
 import { motion } from "motion/react";
 import { Button, Grid, Card, CardContent, Box, Typography, Stack } from "@mui/material";
-import { navigate } from "astro:transitions/client";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import LoginModal from "@/components/LoginModal/LoginModal";
+import { assignLocation } from "@/lib/navigation/assignLocation";
 
 const FEATURES = [
   {
@@ -77,9 +77,9 @@ export default function LandingPage() {
   const [loginOpen, setLoginOpen] = useState(false);
   const openLogin = () => setLoginOpen(true);
   const closeLogin = () => setLoginOpen(false);
-  // Client-side route swap (needs <ClientRouter /> in layout); avoids full document reload.
+  // Full navigation keeps Astro + React islands consistent (soft SPA transitions break MUI hydration).
   const goRegister = () => {
-    void navigate("/register");
+    assignLocation("/register");
   };
 
   useEffect(() => {

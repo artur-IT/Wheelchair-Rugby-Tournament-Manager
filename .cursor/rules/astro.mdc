@@ -6,7 +6,7 @@ alwaysApply: false
 
 ### Guidelines for Astro
 
-- Leverage View Transitions API for smooth page transitions (use ClientRouter)
+- Avoid `<ClientRouter />` (view transitions) with MUI React islands — soft navigations often break hydration; use normal `<a href>` / `location.assign` navigation instead
 - Use content collections with type safety for blog posts, documentation, etc.
 - Leverage Server Endpoints for API routes
 - Use POST, GET - uppercase format for endpoint handlers

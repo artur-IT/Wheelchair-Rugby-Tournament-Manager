@@ -1,0 +1,2 @@
+-- Repair drift: some databases were missing this column while migration history was applied.
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "mustResetPassword" BOOLEAN NOT NULL DEFAULT false;

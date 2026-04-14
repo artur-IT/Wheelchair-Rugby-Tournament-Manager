@@ -4,6 +4,8 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "vite:clear-cache": "node scripts/clearViteCache.mjs",
+    "dev:fresh": "node scripts/clearViteCache.mjs && astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
