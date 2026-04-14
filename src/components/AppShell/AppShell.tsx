@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { CurrentUserProvider, useCurrentUser } from "@/components/AppShell/CurrentUserContext";
 import { LayoutDashboard, Trophy, Settings, Building2, LogOut, Menu, X, UserCircle } from "lucide-react";
 import {
   Box,
@@ -39,6 +40,60 @@ const APP_TITLE = "Wheelchair Rugby Manager";
 
 const isPathActive = (currentPath: string, path: string) =>
   currentPath === path || (path !== "/" && currentPath.startsWith(path));
+
+/** Shown above the app version in the drawer and main footer so the signed-in account is always visible. */
+function SessionAccountSummary() {
+  const { status, user } = useCurrentUser();
+
+  return (
+    <Box sx={{ mt: "auto", pt: 2 }}>
+      {status === "loading" ? (
+        <Typography variant="caption" color="text.secondary" display="block" textAlign="center" sx={{ mb: 1 }}>
+          Ładowanie konta…
+        </Typography>
+      ) : null}
+      {status === "ready" && user ? (
+        <Box sx={{ mb: 1.5, px: 0.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, textAlign: "center" }}>
+            {user.name}
+          </Typography>
+          {user.localLogin ? (
+            <Typography variant="caption" color="text.secondary" display="block" textAlign="center">
+              Nick: {user.localLogin}
+            </Typography>
+          ) : (
+            <Typography variant="caption" color="text.secondary" display="block" textAlign="center">
+              Konto Google
+            </Typography>
+          )}
+          {user.email ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              textAlign="center"
+              sx={{ wordBreak: "break-word" }}
+            >
+              {user.email}
+            </Typography>
+          ) : (
+            <Typography variant="caption" color="text.secondary" display="block" textAlign="center">
+              Brak adresu e-mail
+            </Typography>
+          )}
+        </Box>
+      ) : null}
+      {status === "error" ? (
+        <Typography variant="caption" color="text.secondary" display="block" textAlign="center" sx={{ mb: 1 }}>
+          Nie udało się wczytać danych konta
+        </Typography>
+      ) : null}
+      <Typography variant="body2" sx={{ textAlign: "center" }}>
+        v.2.0
+      </Typography>
+    </Box>
+  );
+}
 
 const SELECTED_ITEM_SX = {
   borderRadius: 1.5,
@@ -84,7 +139,7 @@ function DrawerContent({
 }) {
   return (
     <Box sx={{ width: "100%", p: 2, display: "flex", flexDirection: "column", minHeight: "100%" }}>
-      <Box>
+      <Box sx={{ flex: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
           <Avatar sx={{ bgcolor: "primary.main", width: 40, height: 40 }}>
             <Trophy size={24} />
@@ -128,15 +183,7 @@ function DrawerContent({
           </ListItem>
         </List>
       </Box>
-      <Typography
-        variant="body2"
-        sx={{
-          textAlign: "center",
-          mt: "auto",
-        }}
-      >
-        v.2.0
-      </Typography>
+      <SessionAccountSummary />
     </Box>
   );
 }
@@ -164,84 +211,86 @@ export default function AppShell({ children, currentPath, containerMaxWidth = "l
       : {};
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        width: "100%",
-        minHeight: "100vh",
-        bgcolor: "background.default",
-      }}
-    >
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: "none", md: "block" },
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            boxSizing: "border-box",
-            width: DRAWER_WIDTH,
-            bgcolor: "background.paper",
-          },
-        }}
-      >
-        <DrawerContent currentPath={currentPath} onCloseMobile={closeMobileDrawer} onLogout={handleLogout} />
-      </Drawer>
-
+    <CurrentUserProvider>
       <Box
         sx={{
           display: "flex",
-          flexDirection: "column",
-          flex: 1,
-          minWidth: 0,
+          width: "100%",
+          minHeight: "100vh",
+          bgcolor: "background.default",
         }}
       >
-        <AppBar
-          position="sticky"
-          sx={{
-            display: { xs: "block", md: "none" },
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-          }}
-        >
-          <Toolbar>
-            <Trophy size={24} style={{ marginRight: 8 }} />
-            <Typography variant="h6" sx={{ flex: 1, fontWeight: "bold" }}>
-              {APP_TITLE}
-            </Typography>
-            <IconButton color="inherit" onClick={toggleMobileDrawer}>
-              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-
         <Drawer
-          anchor="left"
-          open={mobileOpen}
-          onClose={closeMobileDrawer}
-          sx={{ display: { xs: "block", md: "none" } }}
+          variant="permanent"
+          sx={{
+            display: { xs: "none", md: "block" },
+            width: DRAWER_WIDTH,
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              boxSizing: "border-box",
+              width: DRAWER_WIDTH,
+              bgcolor: "background.paper",
+            },
+          }}
         >
           <DrawerContent currentPath={currentPath} onCloseMobile={closeMobileDrawer} onLogout={handleLogout} />
         </Drawer>
 
         <Box
-          component="main"
-          sx={(theme) => ({
+          sx={{
+            display: "flex",
+            flexDirection: "column",
             flex: 1,
-            p: { xs: 2, md: 3 },
-            pt: { xs: 3, md: 2 },
-            maxWidth: "100%",
-            overflowX: "auto",
-            ...clubMobilePortraitCompactHorizontalPaddingSx(theme),
-          })}
+            minWidth: 0,
+          }}
         >
-          <Container maxWidth={containerMaxWidth} sx={(theme) => clubMobilePortraitCompactHorizontalPaddingSx(theme)}>
-            {children}
-          </Container>
+          <AppBar
+            position="sticky"
+            sx={{
+              display: { xs: "block", md: "none" },
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+            }}
+          >
+            <Toolbar>
+              <Trophy size={24} style={{ marginRight: 8 }} />
+              <Typography variant="h6" sx={{ flex: 1, fontWeight: "bold" }}>
+                {APP_TITLE}
+              </Typography>
+              <IconButton color="inherit" onClick={toggleMobileDrawer}>
+                {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+              </IconButton>
+            </Toolbar>
+          </AppBar>
+
+          <Drawer
+            anchor="left"
+            open={mobileOpen}
+            onClose={closeMobileDrawer}
+            sx={{ display: { xs: "block", md: "none" } }}
+          >
+            <DrawerContent currentPath={currentPath} onCloseMobile={closeMobileDrawer} onLogout={handleLogout} />
+          </Drawer>
+
+          <Box
+            component="main"
+            sx={(theme) => ({
+              flex: 1,
+              p: { xs: 2, md: 3 },
+              pt: { xs: 3, md: 2 },
+              maxWidth: "100%",
+              overflowX: "auto",
+              ...clubMobilePortraitCompactHorizontalPaddingSx(theme),
+            })}
+          >
+            <Container maxWidth={containerMaxWidth} sx={(theme) => clubMobilePortraitCompactHorizontalPaddingSx(theme)}>
+              {children}
+            </Container>
+          </Box>
+          <Typography variant="body2" sx={{ textAlign: "center", mt: 2 }}>
+            v.2.0
+          </Typography>
         </Box>
-        <Typography variant="body2" sx={{ textAlign: "center", mt: 2 }}>
-          v.2.0
-        </Typography>
       </Box>
-    </Box>
+    </CurrentUserProvider>
   );
 }

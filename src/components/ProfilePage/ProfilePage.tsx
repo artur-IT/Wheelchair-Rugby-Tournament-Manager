@@ -1,7 +1,9 @@
 import { UserCircle } from "lucide-react";
-import { Box, Button, Grid, TextField, Typography, Paper, Avatar } from "@mui/material";
+import { Box, Button, Grid, TextField, Typography, Paper, Avatar, CircularProgress, Alert } from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
+import { useCurrentUser } from "@/components/AppShell/CurrentUserContext";
+import { splitDisplayName } from "@/lib/auth/splitDisplayName";
 
 export default function ProfilePage() {
   return (
@@ -14,6 +16,26 @@ export default function ProfilePage() {
 }
 
 function ProfileContent() {
+  const { status, user } = useCurrentUser();
+
+  if (status === "loading") {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (status === "error" || !user) {
+    return (
+      <Alert severity="error" sx={{ maxWidth: 500, mx: "auto" }}>
+        Nie udało się wczytać danych profilu. Odśwież stronę lub zaloguj się ponownie.
+      </Alert>
+    );
+  }
+
+  const { firstName, lastName } = splitDisplayName(user.name);
+
   return (
     <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", borderRadius: 3 }}>
       <Typography variant="h5" sx={{ fontWeight: "bold", mb: 3 }}>
@@ -34,26 +56,36 @@ function ProfileContent() {
         </Avatar>
         <Box>
           <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            Administrator Systemu
+            {user.name}
           </Typography>
+          {user.localLogin ? (
+            <Typography variant="body2" color="textSecondary">
+              Nick: {user.localLogin}
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="textSecondary">
+              Logowanie przez Google
+            </Typography>
+          )}
           <Typography variant="body2" color="textSecondary">
-            inz.matys@gmail.com
+            {user.email ?? "Brak adresu e-mail w koncie"}
           </Typography>
         </Box>
       </Box>
-      <form>
-        <Grid container spacing={2} sx={{ mt: 1 }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Imię" defaultValue="Admin" />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField fullWidth label="Nazwisko" defaultValue="Systemu" />
-          </Grid>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1, mt: 2 }}>
+        Imię i nazwisko (z konta — edycja wkrótce)
+      </Typography>
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField fullWidth label="Imię" value={firstName} disabled />
         </Grid>
-        <Button variant="contained" fullWidth sx={{ mt: 3 }}>
-          Zapisz Zmiany
-        </Button>
-      </form>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <TextField fullWidth label="Nazwisko" value={lastName} disabled />
+        </Grid>
+      </Grid>
+      <Button variant="contained" fullWidth sx={{ mt: 3 }} disabled>
+        Zapisz Zmiany
+      </Button>
     </Paper>
   );
 }

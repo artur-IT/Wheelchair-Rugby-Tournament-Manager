@@ -11,6 +11,8 @@ import { fetchDashboardSeasonData } from "@/lib/api/dashboard";
 import { fetchSeasonById } from "@/lib/api/seasons";
 import { queryKeys } from "@/lib/queryKeys";
 import { formatTournamentDateRange } from "@/lib/dashboardSeason";
+import { splitDisplayName } from "@/lib/auth/splitDisplayName";
+import { useCurrentUser } from "@/components/AppShell/CurrentUserContext";
 import type { Tournament } from "@/types";
 
 const DEFAULT_STATS = { tournaments: 0, teams: 0, referees: 0, volunteers: 0 } as const;
@@ -58,6 +60,7 @@ function useDashboardSeasonData(seasonId?: string) {
 function DashboardContent() {
   const { defaultSeasonId } = useDefaultSeason();
   const { dashboardQuery, seasonMetaQuery } = useDashboardSeasonData(defaultSeasonId);
+  const { status: userLoadStatus, user: currentUser } = useCurrentUser();
 
   const {
     data: seasonData,
@@ -90,11 +93,18 @@ function DashboardContent() {
     }));
   }, [seasonData]);
 
+  const welcomeHeading =
+    userLoadStatus === "ready" && currentUser
+      ? `Witaj, ${splitDisplayName(currentUser.name).firstName || currentUser.name}!`
+      : userLoadStatus === "loading"
+        ? "Witaj!"
+        : "Witaj, Organizatorze!";
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <Box>
         <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-          Witaj, Organizatorze!
+          {welcomeHeading}
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
           <Typography color="textSecondary">Oto podsumowanie sezonu:</Typography>

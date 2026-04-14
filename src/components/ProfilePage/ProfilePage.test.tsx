@@ -7,7 +7,33 @@ import ProfilePage from "./ProfilePage";
 describe("ProfilePage SSR hydration", () => {
   afterEach(() => {
     document.body.innerHTML = "";
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
+  });
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url === "/api/me") {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              user: {
+                id: "u1",
+                name: "Profil User",
+                email: "profile@example.com",
+                localLogin: "prof",
+                authProvider: "LOCAL",
+              },
+            }),
+          });
+        }
+        return Promise.resolve({ ok: false, json: async () => ({}) });
+      })
+    );
   });
 
   it("hydrates without throwing (server HTML matches client)", () => {

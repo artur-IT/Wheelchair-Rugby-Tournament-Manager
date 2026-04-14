@@ -6,22 +6,59 @@ import Dashboard from "./Dashboard";
 describe("Dashboard", () => {
   beforeEach(() => {
     localStorage.removeItem("defaultSeasonId");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url === "/api/me") {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              user: {
+                id: "u1",
+                name: "Organizator Testowy",
+                email: "org@example.com",
+                localLogin: "org",
+                authProvider: "LOCAL",
+              },
+            }),
+          });
+        }
+        return Promise.resolve({ ok: false, json: async () => null });
+      })
+    );
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("shows helper link when default season is not set", () => {
+  it("shows helper link when default season is not set", async () => {
     render(<Dashboard />);
 
-    expect(screen.getByRole("heading", { name: "Witaj, Organizatorze!" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Witaj, Organizator!" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Brak domyślnego sezonu/i })).toHaveAttribute("href", "/settings");
   });
 
   it("loads and displays default season chip from API", async () => {
     localStorage.setItem("defaultSeasonId", "s1");
     const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/me") {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            user: {
+              id: "u1",
+              name: "Organizator Testowy",
+              email: "org@example.com",
+              localLogin: "org",
+              authProvider: "LOCAL",
+            },
+          }),
+        });
+      }
       if (url === "/api/seasons/s1") {
         return Promise.resolve({
           ok: true,
