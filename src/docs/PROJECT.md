@@ -290,6 +290,8 @@ To jest profesjonalizm. **Max. 2 taski w Progress**.
 
 ### 🔐 Authentication
 
+**Zmienne środowiskowe (Google OAuth):** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (klient OAuth w Google Cloud Console). Opcjonalnie `PUBLIC_SITE_URL` — kanoniczny publiczny adres aplikacji (np. `http://localhost:4321`); gdy brak, używany jest `Origin` z żądania. W konsoli Google ustaw **Authorized redirect URI** na `{PUBLIC_SITE_URL lub origin}/api/auth/google/callback` dla środowiska dev i osobno dla produkcji.
+
 <details style="margin-left: 1.5em">
 <summary><h3 style="display:inline; margin:0">US1: Logowanie (email + hasło)</h3></summary>
 

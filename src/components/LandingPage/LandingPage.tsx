@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Trophy } from "lucide-react";
 import { motion } from "motion/react";
-import { Button, Grid, Card, CardContent, Box, Typography } from "@mui/material";
+import { Button, Grid, Card, CardContent, Box, Typography, Stack } from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import LoginModal from "@/components/LoginModal/LoginModal";
 
@@ -93,9 +93,14 @@ export default function LandingPage() {
               Wheelchair Rugby Manager
             </Typography>
           </Box>
-          <Button variant="contained" onClick={openLogin}>
-            Zaloguj się
-          </Button>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button component="a" href="/register" variant="outlined" color="inherit">
+              Załóż konto
+            </Button>
+            <Button variant="contained" onClick={openLogin}>
+              Zaloguj się
+            </Button>
+          </Stack>
         </Box>
 
         <Box sx={HERO_SX}>

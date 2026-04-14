@@ -90,9 +90,10 @@ describe("ClubPage", () => {
 
     renderWithQuery(<ClubPage />);
     expect(await screen.findByRole("button", { name: "Edytuj" })).toBeInTheDocument();
-    expect(await screen.findByRole("link", { name: "Otwórz mapę" })).toHaveAttribute(
-      "href",
-      "https://maps.example.com/hala"
+    expect(await screen.findByText("Tygrysy")).toBeInTheDocument();
+    expect(await screen.findByRole("img", { name: "Logo klubu Tygrysy" })).toHaveAttribute(
+      "src",
+      "https://example.com/logo.png"
     );
   });
 
@@ -177,8 +178,9 @@ describe("ClubPage", () => {
     expect(await screen.findByText("Tygrysy A")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Dodaj drużynę" })).toBeInTheDocument();
     expect(await screen.findByText("WR'4")).toBeInTheDocument();
-    expect(await screen.findByText("Zawodników: 1")).toBeInTheDocument();
-    expect(await screen.findByText("Trener: Jan Nowak")).toBeInTheDocument();
+    const teamTile = (await screen.findByText("Tygrysy A")).closest(".MuiAccordion-root");
+    expect(teamTile?.textContent).toMatch(/Zawodników:\s*1/);
+    expect(teamTile?.textContent).toMatch(/Trener:\s*Jan Nowak/);
 
     await user.click(screen.getByText("Tygrysy A"));
     expect(await screen.findByText("Imię")).toBeInTheDocument();

@@ -1,4 +1,7 @@
 import type { APIRoute } from "astro";
+import { LoginBodySchema } from "@/lib/auth/schemas";
+import { verifyPassword } from "@/lib/auth/password";
+import { setAuthSessionCookies } from "@/lib/auth/sessionCookies";
 import { prisma } from "@/lib/prisma";
 
 const json = (body: object, status = 200) =>
@@ -7,46 +10,54 @@ const json = (body: object, status = 200) =>
     headers: { "Content-Type": "application/json" },
   });
 
-export const POST: APIRoute = async ({ request, cookies, redirect, url }) => {
+async function parseLoginPayload(request: Request): Promise<unknown> {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    try {
+      return await request.json();
+    } catch {
+      return null;
+    }
+  }
   const form = await request.formData();
-  const email = String(form.get("email") ?? "").trim().toLowerCase();
-  const password = String(form.get("password") ?? "");
-  const wantsJson = request.headers.get("Accept") === "application/json";
-  if (!email || !password) return wantsJson ? json({ ok: false }, 401) : redirect("/?login=1&error=1");
+  return {
+    localLogin: String(form.get("localLogin") ?? ""),
+    password: String(form.get("password") ?? ""),
+  };
+}
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, role: true, password: true },
+export const POST: APIRoute = async ({ request, cookies, redirect, url }) => {
+  const wantsJson = request.headers.get("Accept") === "application/json";
+  const raw = await parseLoginPayload(request);
+  if (raw === null) {
+    return wantsJson ? json({ ok: false }, 400) : redirect("/?login=1&error=1");
+  }
+
+  const parsed = LoginBodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return wantsJson ? json({ ok: false, error: "Walidacja" }, 400) : redirect("/?login=1&error=1");
+  }
+
+  const { localLogin, password } = parsed.data;
+  const user = await prisma.user.findFirst({
+    where: { authProvider: "LOCAL", localLogin },
+    select: { id: true, role: true, passwordHash: true },
   });
-  if (!user || user.password !== password) {
+
+  if (!user?.passwordHash) {
+    const delay = () => new Promise((r) => setTimeout(r, 400));
+    await delay();
     return wantsJson ? json({ ok: false }, 401) : redirect("/?login=1&error=1");
   }
 
-  // In dev you often run on http://localhost, so secure cookies would not be stored.
-  // In prod (https) secure cookies should be enabled.
-  const isSecure = url.protocol === "https:" || import.meta.env.PROD;
+  const valid = await verifyPassword(user.passwordHash, password);
+  if (!valid) {
+    const delay = () => new Promise((r) => setTimeout(r, 400));
+    await delay();
+    return wantsJson ? json({ ok: false }, 401) : redirect("/?login=1&error=1");
+  }
 
-  cookies.set("session", "ok", {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isSecure,
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
-  cookies.set("sessionUserId", user.id, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isSecure,
-    maxAge: 60 * 60 * 24 * 7,
-  });
-  cookies.set("sessionUserRole", user.role, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isSecure,
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  setAuthSessionCookies(cookies, { userId: user.id, role: user.role, requestUrl: url });
 
   return wantsJson ? json({ ok: true }) : redirect("/dashboard");
 };

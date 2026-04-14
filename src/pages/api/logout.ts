@@ -4,5 +4,7 @@ export const POST: APIRoute = async ({ cookies, redirect }) => {
   cookies.delete("session", { path: "/" });
   cookies.delete("sessionUserId", { path: "/" });
   cookies.delete("sessionUserRole", { path: "/" });
+  cookies.delete("google_oauth_state", { path: "/" });
+  cookies.delete("google_oauth_verifier", { path: "/" });
   return redirect("/");
 };

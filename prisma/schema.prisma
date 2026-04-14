@@ -9,19 +9,29 @@ datasource db {
 // ─── Phase 1: MVP ────────────────────────────────────────────────────────────
 
 model User {
-  id          String       @id @default(cuid())
-  name        String
-  email       String       @unique
-  password    String
-  role        UserRole
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  clubs       Club[]
+  id           String        @id @default(cuid())
+  name         String
+  /// Null allowed for GOOGLE when email scope missing; required for LOCAL (enforced in app).
+  email        String?       @unique
+  passwordHash String?
+  authProvider AuthProvider
+  /// Canonical lowercase nick for LOCAL login (1–6 chars); null for GOOGLE-only accounts.
+  localLogin   String?       @unique
+  /// Google OIDC subject (`sub` claim); null for LOCAL accounts.
+  googleSub    String?       @unique
+  role         UserRole
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  clubs        Club[]
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
 }
 
 enum UserRole {
-  COACH
-  ORGANIZER
+  ADMIN
 }
 
 enum ClubTeamFormula {

@@ -1,6 +1,14 @@
 import { defineMiddleware } from "astro:middleware";
 
-const PUBLIC_PATHS = new Set(["/", "/api/login", "/api/logout"]);
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/register",
+  "/api/login",
+  "/api/logout",
+  "/api/register",
+  "/api/auth/google/start",
+  "/api/auth/google/callback",
+]);
 
 function isLikelyAssetPath(pathname: string) {
   return (

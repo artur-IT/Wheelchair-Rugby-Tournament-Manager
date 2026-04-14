@@ -52,7 +52,7 @@ describe("TeamForm", () => {
     await screen.findByRole("button", { name: "Zapisz Drużynę" });
 
     await user.type(screen.getByLabelText("Nazwa Drużyny"), "Test Team");
-    await user.type(screen.getByLabelText("Adres"), "Test Address");
+    await user.type(screen.getByLabelText("Ulica"), "Test Address");
     await user.type(screen.getByLabelText("Miasto"), "Warszawa");
     await user.type(screen.getByLabelText("Kod pocztowy"), "00-001");
     await user.type(screen.getAllByLabelText(/^Imię/)[0], "Jan");
@@ -106,7 +106,7 @@ describe("TeamForm", () => {
     await screen.findByRole("button", { name: "Zapisz Drużynę" });
 
     await user.type(screen.getByLabelText("Nazwa Drużyny"), "Test Team");
-    await user.type(screen.getByLabelText("Adres"), "Test Address");
+    await user.type(screen.getByLabelText("Ulica"), "Test Address");
     await user.type(screen.getByLabelText("Miasto"), "Warszawa");
     await user.type(screen.getByLabelText("Kod pocztowy"), "00-001");
     await user.type(screen.getAllByLabelText(/^Imię/)[0], "Jan");
@@ -133,7 +133,7 @@ describe("TeamForm", () => {
     await screen.findByRole("button", { name: "Zapisz Drużynę" });
 
     await user.type(screen.getByLabelText("Nazwa Drużyny"), "Test Team");
-    await user.type(screen.getByLabelText("Adres"), "Test Address");
+    await user.type(screen.getByLabelText("Ulica"), "Test Address");
     await user.type(screen.getByLabelText("Miasto"), "Warszawa");
     await user.type(screen.getByLabelText("Kod pocztowy"), "00-001");
     await user.type(screen.getAllByLabelText(/^Imię/)[0], "Jan");

@@ -3,20 +3,27 @@ import { createPrismaClient } from "./prismaClient.mjs";
 const prisma = createPrismaClient();
 
 async function seedDb() {
+  const { default: argon2 } = await import("argon2");
+  const passwordHash = await argon2.hash("demo-password");
+
   const user = await prisma.user.upsert({
-    where: { email: "admin@example.com" },
+    where: { localLogin: "admin" },
     update: {
       name: "Admin",
-      // Demo only. In real auth this should be an Argon2 hash.
-      password: "demo-password",
-      role: "ORGANIZER",
+      email: "admin@example.com",
+      passwordHash,
+      authProvider: "LOCAL",
+      googleSub: null,
+      role: "ADMIN",
     },
     create: {
       name: "Admin",
       email: "admin@example.com",
-      // Demo only. In real auth this should be an Argon2 hash.
-      password: "demo-password",
-      role: "ORGANIZER",
+      passwordHash,
+      authProvider: "LOCAL",
+      localLogin: "admin",
+      googleSub: null,
+      role: "ADMIN",
     },
   });
 
