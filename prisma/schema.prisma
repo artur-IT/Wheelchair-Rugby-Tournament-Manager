@@ -13,6 +13,8 @@ model User {
   name         String
   /// Null allowed for GOOGLE when email scope missing; required for LOCAL (enforced in app).
   email        String?       @unique
+  /// Optional recovery contact used when sending password reset links.
+  passwordResetEmail String?
   passwordHash String?
   /// When true, the user must set a new password before normal app access (middleware + APIs enforce).
   mustResetPassword Boolean @default(false)

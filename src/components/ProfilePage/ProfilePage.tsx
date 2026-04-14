@@ -1,9 +1,10 @@
+import { useEffect, useState, type FormEvent } from "react";
 import { UserCircle } from "lucide-react";
-import { Box, Button, Grid, TextField, Typography, Paper, Avatar, CircularProgress, Alert } from "@mui/material";
+import { Box, Button, TextField, Typography, Paper, Avatar, CircularProgress, Alert } from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
 import { useCurrentUser } from "@/components/AppShell/CurrentUserContext";
-import { splitDisplayName } from "@/lib/auth/splitDisplayName";
+import { updateCurrentUserProfile } from "@/lib/api/me";
 
 export default function ProfilePage() {
   return (
@@ -16,7 +17,25 @@ export default function ProfilePage() {
 }
 
 function ProfileContent() {
-  const { status, user } = useCurrentUser();
+  const { status, user, refresh } = useCurrentUser();
+  const [displayName, setDisplayName] = useState("");
+  const [helperEmail, setHelperEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Keep the inputs aligned with the current profile fetched from context.
+  const helperDefault = user ? user.passwordResetEmail ?? user.email ?? "" : "";
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    setDisplayName(user.name);
+    setHelperEmail(helperDefault);
+    setError(null);
+    setSuccess(null);
+  }, [user?.name, helperDefault]);
 
   if (status === "loading") {
     return (
@@ -34,7 +53,42 @@ function ProfileContent() {
     );
   }
 
-  const { firstName, lastName } = splitDisplayName(user.name);
+  const trimmedHelperInput = helperEmail.trim();
+  const normalizedHelper = trimmedHelperInput === "" ? "" : trimmedHelperInput.toLowerCase();
+  const helperDirty = normalizedHelper !== helperDefault;
+  const displayNameDirty = displayName.trim() !== user.name;
+  const canSave = (helperDirty || displayNameDirty) && !saving;
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (saving) {
+      return;
+    }
+
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+      setError("Wyświetlana nazwa nie może być pusta.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const helperInput = helperEmail.trim();
+      // Send trimmed strings and treat an empty helper email as removal.
+      await updateCurrentUserProfile({
+        name: trimmedName,
+        passwordResetEmail: helperInput === "" ? undefined : helperInput.toLowerCase(),
+      });
+      await refresh();
+      setSuccess("Zapisano dane profilu.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nie udało się zapisać zmian.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Paper sx={{ p: 4, maxWidth: 500, mx: "auto", borderRadius: 3 }}>
@@ -72,20 +126,47 @@ function ProfileContent() {
           </Typography>
         </Box>
       </Box>
-      <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1, mt: 2 }}>
-        Imię i nazwisko (z konta — edycja wkrótce)
-      </Typography>
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth label="Imię" value={firstName} disabled />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <TextField fullWidth label="Nazwisko" value={lastName} disabled />
-        </Grid>
-      </Grid>
-      <Button variant="contained" fullWidth sx={{ mt: 3 }} disabled>
-        Zapisz Zmiany
-      </Button>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ mt: 3, display: "flex", flexDirection: "column", gap: 2 }}
+      >
+        <TextField
+          label="Wyświetlana nazwa"
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          required
+        />
+        <TextField
+          label="Pomocniczy adres e-mail do resetu hasła"
+          value={helperEmail}
+          onChange={(event) => setHelperEmail(event.target.value)}
+          helperText="Adres, którego użyjemy przy resetowaniu hasła. Zostaw puste, żeby go usunąć."
+          type="email"
+        />
+        {error ? <Alert severity="error">{error}</Alert> : null}
+        {success ? <Alert severity="success">{success}</Alert> : null}
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Button
+            aria-label="Anuluj zmiany"
+            variant="outlined"
+            color="secondary"
+            disabled={(!displayNameDirty && !helperDirty) || saving}
+            onClick={() => {
+              setDisplayName(user.name);
+              setHelperEmail(user.passwordResetEmail ?? user.email ?? "");
+              setError(null);
+              setSuccess(null);
+            }}
+            fullWidth
+          >
+            Anuluj
+          </Button>
+          <Button type="submit" variant="contained" fullWidth disabled={!canSave} size="large">
+            {saving ? "Zapisuję..." : "Zapisz zmiany"}
+          </Button>
+        </Box>
+      </Box>
     </Paper>
   );
 }

@@ -4,6 +4,7 @@ export const CurrentUserMeSchema = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string().email().nullable(),
+  passwordResetEmail: z.string().email().nullable(),
   localLogin: z.string().nullable(),
   authProvider: z.enum(["LOCAL", "GOOGLE"]),
 });
