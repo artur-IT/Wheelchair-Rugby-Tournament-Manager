@@ -292,3 +292,17 @@ React 19.2 - najpierw (przed innymi bibl.) stosować jego rozwiązania w projekt
 
 SUMMARY PROMPT for PR#: <span style="color: orange;">PROMPT</span>
 Na podstawie dzisiejszych zmian w zmienionych plikach wygeneruj krótkie podsumowanie zmian dla PR #<numer_PR> pomiń w podsumowaniu nazwy plików, nazwy funkcji, API itp. to podsumowanie ma być czytelne i zrozumiałe dla każdego zwykłego człowieka.
+
+---
+
+### <span style="color: orange;">SuperTokens</span>
+
+### Co musisz ustawić w Google Cloud:
+
+W OAuth 2.0 Client → Authorized redirect URIs dodaj adres callback SuperTokens (ten sam host/port co aplikacja), np.:
+
+http://localhost:3000/api/auth/callback/google
+
+(dla produkcji: https://twoja-domena/api/auth/callback/google).
+
+Ścieżka /auth/callback w aplikacji to tylko strona, która wywołuje signInAndUp() — w konsoli Google musi być callback API, jak wyżej.

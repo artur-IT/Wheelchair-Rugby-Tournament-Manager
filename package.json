@@ -32,7 +32,9 @@
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.5.0",
     "@tanstack/react-query": "^5.91.3",
+    "argon2": "^0.44.0",
     "astro": "^6.0.4",
+    "cookie": "^1.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.481.0",
     "motion": "^11.14.0",
@@ -40,6 +42,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.71.2",
+    "supertokens-node": "^23.1.0",
+    "supertokens-web-js": "^0.16.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
