@@ -29,6 +29,8 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
+  const [signinCredentials, setSigninCredentials] = useState({ email: "", password: "" });
+  const [formValues, setFormValues] = useState({ email: "", password: "" });
   const handleLoginSuccess = onLoginSuccess ?? (() => (window.location.href = "/dashboard"));
 
   useEffect(() => {
@@ -36,6 +38,12 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
       ensureSuperTokensFrontendInitialized();
     }
   }, [open]);
+
+  const handleModeChange = (_: unknown, v: Mode | null) => {
+    if (!v) return;
+    setMode(v);
+    setFormValues(v === "signin" ? signinCredentials : { email: "", password: "" });
+  };
 
   const startGoogle = async () => {
     setError(false);
@@ -63,10 +71,8 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
     e.preventDefault();
     setError(false);
     setLoading(true);
-
-    const form = e.currentTarget;
-    const email = String(new FormData(form).get("email") ?? "").trim();
-    const password = String(new FormData(form).get("password") ?? "");
+    const email = formValues.email.trim();
+    const password = formValues.password;
 
     try {
       ensureSuperTokensFrontendInitialized();
@@ -82,7 +88,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
         return;
       }
     } catch {
-      // Network or unexpected errors
+      /* ignored */
     } finally {
       setLoading(false);
     }
@@ -90,10 +96,19 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
     setError(true);
   };
 
+  const updateField =
+    (field: "email" | "password") => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setFormValues((prev) => ({ ...prev, [field]: value }));
+      if (mode === "signin") setSigninCredentials((prev) => ({ ...prev, [field]: value }));
+    };
+
+  const isSignin = mode === "signin";
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ pr: 6 }}>
-        {mode === "signin" ? "Logowanie" : "Rejestracja"}
+        {isSignin ? "Logowanie" : "Rejestracja"}
         <IconButton aria-label="zamknij" onClick={onClose} sx={{ position: "absolute", right: 8, top: 8 }}>
           <CloseIcon />
         </IconButton>
@@ -102,7 +117,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
       <DialogContent>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {mode === "signin"
+            {isSignin
               ? "Błędny email lub hasło. Spróbuj ponownie."
               : "Nie udało się utworzyć konta (email zajęty lub zbyt słabe hasło)."}
           </Alert>
@@ -114,7 +129,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
             fullWidth
             size="small"
             value={mode}
-            onChange={(_, v: Mode | null) => v && setMode(v)}
+            onChange={handleModeChange}
             aria-label="tryb konta"
           >
             <ToggleButton value="signin">Logowanie</ToggleButton>
@@ -127,18 +142,30 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
         </Button>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField name="email" label="Email" type="email" autoComplete="email" required fullWidth sx={{ mb: 2 }} />
+          <TextField
+            name="email"
+            label="Email"
+            type="email"
+            autoComplete={isSignin ? "email" : "off"}
+            value={formValues.email}
+            onChange={updateField("email")}
+            required
+            fullWidth
+            sx={{ mb: 2 }}
+          />
           <TextField
             name="password"
             label="Hasło"
             type="password"
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            autoComplete={isSignin ? "current-password" : "new-password"}
+            value={formValues.password}
+            onChange={updateField("password")}
             required
             fullWidth
             sx={{ mb: 2 }}
           />
           <Button type="submit" variant="contained" fullWidth disabled={loading}>
-            {loading ? "Przetwarzanie…" : mode === "signin" ? "Zaloguj" : "Utwórz konto"}
+            {loading ? "Przetwarzanie…" : isSignin ? "Zaloguj" : "Utwórz konto"}
           </Button>
         </Box>
       </DialogContent>
