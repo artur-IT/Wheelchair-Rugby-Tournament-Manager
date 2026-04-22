@@ -8,6 +8,8 @@ import type { UserContext } from "supertokens-node/lib/build/types";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, randomUnusedPasswordHash } from "@/lib/supertokens/password";
 import { getGoogleClientId, getGoogleClientSecret, isProductionBuild } from "@/lib/supertokens/env";
+import { validateAuthEmail, validateAuthPassword } from "@/lib/supertokens/authValidation";
+import { computeFailedLoginState, isTemporarilyLocked } from "@/lib/supertokens/loginAttemptPolicy";
 import Dashboard from "supertokens-node/recipe/dashboard";
 import UserRoles from "supertokens-node/recipe/userroles";
 
@@ -29,7 +31,14 @@ function nameFromEmail(email: string): string {
 function findUserByEmailInsensitive(emailLower: string) {
   return prisma.user.findFirst({
     where: { email: { equals: emailLower, mode: "insensitive" } },
-    select: { id: true, email: true, password: true },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      failedLoginAttempts: true,
+      lockUntil: true,
+      manualLock: true,
+    },
   });
 }
 
@@ -72,6 +81,18 @@ export function buildRecipeList() {
     Dashboard.init(),
     UserRoles.init(),
     EmailPassword.init({
+      signUpFeature: {
+        formFields: [
+          {
+            id: "email",
+            validate: async (value) => validateAuthEmail(String(value ?? "")) ?? undefined,
+          },
+          {
+            id: "password",
+            validate: async (value) => validateAuthPassword(String(value ?? "")) ?? undefined,
+          },
+        ],
+      },
       override: {
         functions: (original) => ({
           ...original,
@@ -114,13 +135,43 @@ export function buildRecipeList() {
           signIn: async (input) => {
             const email = input.email.trim().toLowerCase();
             const { tenantId, userContext } = input;
+            const loginStateUser = await findUserByEmailInsensitive(email);
+            const now = new Date();
+
+            if (loginStateUser?.manualLock) {
+              return { status: "WRONG_CREDENTIALS_ERROR" as const };
+            }
+            if (loginStateUser?.lockUntil && isTemporarilyLocked(loginStateUser.lockUntil, now)) {
+              return { status: "WRONG_CREDENTIALS_ERROR" as const };
+            }
 
             const superTokensResult = await original.signIn({
               ...input,
               email,
             });
             if (superTokensResult.status !== "OK") {
+              if (superTokensResult.status === "WRONG_CREDENTIALS_ERROR" && loginStateUser && !loginStateUser.manualLock) {
+                const nextState = computeFailedLoginState(loginStateUser.failedLoginAttempts, now);
+                await prisma.user.update({
+                  where: { id: loginStateUser.id },
+                  data: nextState,
+                });
+              }
               return superTokensResult;
+            }
+
+            if (
+              loginStateUser &&
+              !loginStateUser.manualLock &&
+              (loginStateUser.failedLoginAttempts > 0 || loginStateUser.lockUntil !== null)
+            ) {
+              await prisma.user.update({
+                where: { id: loginStateUser.id },
+                data: {
+                  failedLoginAttempts: 0,
+                  lockUntil: null,
+                },
+              });
             }
 
             // Legacy migration: after successful SuperTokens login, backfill Prisma mapping if needed.

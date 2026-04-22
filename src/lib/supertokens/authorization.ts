@@ -32,12 +32,11 @@ export async function hasRole(identity: SessionIdentity, role: string): Promise<
  * Convenience helper for role unions like ADMIN/OWNER.
  */
 export async function hasAnyRole(identity: SessionIdentity, roles: readonly string[]): Promise<boolean> {
-  for (const role of roles) {
-    if (await hasRole(identity, role)) {
-      return true;
-    }
+  const rolesResult = await UserRoles.getRolesForUser(identity.tenantId, identity.userId);
+  if (rolesResult.status !== "OK") {
+    return false;
   }
-  return false;
+  return roles.some((role) => rolesResult.roles.includes(role));
 }
 
 /**

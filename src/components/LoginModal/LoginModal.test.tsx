@@ -45,11 +45,54 @@ describe("LoginModal", () => {
 
     render(<LoginModal open onClose={vi.fn()} />);
 
-    await user.type(screen.getByLabelText(/Email/i), "admin@example.com");
+    await user.type(screen.getByLabelText(/E-mail/i), "admin@example.com");
     await user.type(screen.getByLabelText(/Hasło/i), "wrong-password");
     await user.click(screen.getByRole("button", { name: "Zaloguj" }));
 
-    expect(await screen.findByText("Błędny email lub hasło. Spróbuj ponownie.")).toBeInTheDocument();
+    expect(await screen.findByText("Błędny adres e-mail lub hasło. Spróbuj ponownie.")).toBeInTheDocument();
+  });
+
+  it("shows warning after repeated failed sign-in attempts", async () => {
+    const user = userEvent.setup();
+    signInMock.mockResolvedValue({ status: "WRONG_CREDENTIALS_ERROR" });
+
+    render(<LoginModal open onClose={vi.fn()} />);
+
+    await user.type(screen.getByLabelText(/E-mail/i), "admin@example.com");
+    await user.type(screen.getByLabelText(/Hasło/i), "wrong-password");
+
+    await user.click(screen.getByRole("button", { name: "Zaloguj" }));
+    await screen.findByText("Błędny adres e-mail lub hasło. Spróbuj ponownie.");
+
+    await user.click(screen.getByRole("button", { name: "Zaloguj" }));
+    await screen.findByText("Błędny adres e-mail lub hasło. Spróbuj ponownie.");
+
+    await user.click(screen.getByRole("button", { name: "Zaloguj" }));
+    expect(
+      await screen.findByText(
+        "Kolejna nieudana próba logowania. Uwaga: po kilku błędnych próbach konto może zostać czasowo zablokowane."
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("shows lock hint after many failed sign-in attempts", async () => {
+    const user = userEvent.setup();
+    signInMock.mockResolvedValue({ status: "WRONG_CREDENTIALS_ERROR" });
+
+    render(<LoginModal open onClose={vi.fn()} />);
+
+    await user.type(screen.getByLabelText(/E-mail/i), "admin@example.com");
+    await user.type(screen.getByLabelText(/Hasło/i), "wrong-password");
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await user.click(screen.getByRole("button", { name: "Zaloguj" }));
+    }
+
+    expect(
+      await screen.findByText(
+        "Zaczekaj lub skontaktuj się z administratorem systemu żeby odblokować konto: test@example.com"
+      )
+    ).toBeInTheDocument();
   });
 
   it("disables submit button while login request is pending", async () => {
@@ -64,7 +107,7 @@ describe("LoginModal", () => {
 
     render(<LoginModal open onClose={vi.fn()} />);
 
-    await user.type(screen.getByLabelText(/Email/i), "admin@example.com");
+    await user.type(screen.getByLabelText(/E-mail/i), "admin@example.com");
     await user.type(screen.getByLabelText(/Hasło/i), "demo-password");
     await user.click(screen.getByRole("button", { name: "Zaloguj" }));
 
@@ -80,12 +123,46 @@ describe("LoginModal", () => {
 
     render(<LoginModal open onClose={vi.fn()} onLoginSuccess={onLoginSuccess} />);
 
-    await user.type(screen.getByLabelText(/Email/i), "admin@example.com");
+    await user.type(screen.getByLabelText(/E-mail/i), "admin@example.com");
     await user.type(screen.getByLabelText(/Hasło/i), "demo-password");
     await user.click(screen.getByRole("button", { name: "Zaloguj" }));
 
     expect(signInMock).toHaveBeenCalled();
     expect(onLoginSuccess).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("Błędny email lub hasło. Spróbuj ponownie.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Błędny adres e-mail lub hasło. Spróbuj ponownie.")).not.toBeInTheDocument();
+  });
+
+  it("shows password-specific message when signup password is invalid", async () => {
+    const user = userEvent.setup();
+    signUpMock.mockResolvedValue({
+      status: "FIELD_ERROR",
+      formFields: [{ id: "password", error: "Hasło musi mieć co najmniej 8 znaków." }],
+    });
+
+    render(<LoginModal open onClose={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Nowe konto" }));
+    await user.type(screen.getByLabelText(/E-mail/i), "player@example.com");
+    await user.type(screen.getByLabelText(/Hasło/i), "short");
+    await user.click(screen.getByRole("button", { name: "Utwórz konto" }));
+
+    expect(await screen.findByText("Błąd hasła: Hasło musi mieć co najmniej 8 znaków.")).toBeInTheDocument();
+  });
+
+  it("shows email-specific message when signup email is invalid", async () => {
+    const user = userEvent.setup();
+    signUpMock.mockResolvedValue({
+      status: "FIELD_ERROR",
+      formFields: [{ id: "email", error: "Podaj poprawny adres e-mail." }],
+    });
+
+    render(<LoginModal open onClose={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Nowe konto" }));
+    await user.type(screen.getByLabelText(/E-mail/i), "player@example.com");
+    await user.type(screen.getByLabelText(/Hasło/i), "good-password");
+    await user.click(screen.getByRole("button", { name: "Utwórz konto" }));
+
+    expect(await screen.findByText("Błąd adresu e-mail: Podaj poprawny adres e-mail.")).toBeInTheDocument();
   });
 });
