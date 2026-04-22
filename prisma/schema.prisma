@@ -20,8 +20,8 @@ model User {
 }
 
 enum UserRole {
-  COACH
-  ORGANIZER
+  USER
+  ADMIN
 }
 
 enum ClubTeamFormula {

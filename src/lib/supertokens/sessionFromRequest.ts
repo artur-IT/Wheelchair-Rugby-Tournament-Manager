@@ -1,11 +1,13 @@
-import type { UserRole } from "@prisma/client";
 import { CollectingResponse } from "supertokens-node/framework/custom";
 import Session from "supertokens-node/recipe/session";
 import { prisma } from "@/lib/prisma";
 import { ensureSuperTokensInitialized } from "@/lib/supertokens/initSuperTokens";
 import { requestToPreParsedRequest } from "@/lib/supertokens/requestAdapter";
 
-export type SessionPrismaUser = { userId: string; role: UserRole };
+export interface SessionPrismaUser {
+  userId: string;
+  tenantId: string;
+}
 
 /**
  * Resolve the logged-in Prisma user from SuperTokens session cookies on the request.
@@ -20,14 +22,15 @@ export async function getSessionPrismaUser(request: Request): Promise<SessionPri
       return null;
     }
     const userId = session.getUserId();
+    const tenantId = session.getTenantId();
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true },
     });
     if (!user) {
       return null;
     }
-    return { userId: user.id, role: user.role };
+    return { userId: user.id, tenantId };
   } catch {
     return null;
   }

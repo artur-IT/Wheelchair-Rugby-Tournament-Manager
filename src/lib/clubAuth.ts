@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { json } from "@/lib/api";
+import { requireRole } from "@/lib/supertokens/authorization";
 import { getSessionPrismaUser } from "@/lib/supertokens/sessionFromRequest";
 
 interface RequesterIdentity {
-  role?: string;
+  tenantId: string;
   userId: string;
 }
 
@@ -28,16 +29,16 @@ async function getRequesterIdentity(request: Request): Promise<AuthResult> {
     return unauthorized();
   }
 
-  const role = sessionUser.role.trim().toUpperCase();
-  return { ok: true, identity: { role, userId: sessionUser.userId } };
+  return { ok: true, identity: { tenantId: sessionUser.tenantId, userId: sessionUser.userId } };
 }
 
 export async function authorizeClubAccess(request: Request, resourceClubId: string): Promise<AuthResult> {
   const auth = await getRequesterIdentity(request);
   if (!auth.ok) return auth;
 
-  const { role, userId } = auth.identity;
-  if (role === "ADMIN") return auth;
+  const { userId } = auth.identity;
+  const adminAuth = await requireRole(auth.identity, "ADMIN");
+  if (adminAuth.ok) return auth;
 
   const club = await prisma.club.findUnique({
     where: { id: resourceClubId },

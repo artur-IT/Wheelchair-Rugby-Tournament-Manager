@@ -34,7 +34,7 @@ describe("club API /api/club", () => {
 
   it("GET returns 200 for logged in user", async () => {
     const { getSessionPrismaUser } = await import("@/lib/supertokens/sessionFromRequest");
-    vi.mocked(getSessionPrismaUser).mockResolvedValueOnce({ userId: "owner-1", role: "COACH" });
+    vi.mocked(getSessionPrismaUser).mockResolvedValueOnce({ userId: "owner-1", tenantId: "public" });
 
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(prisma.club.findMany).mockResolvedValueOnce([]);
@@ -46,7 +46,7 @@ describe("club API /api/club", () => {
 
   it("POST returns 400 for invalid JSON body", async () => {
     const { getSessionPrismaUser } = await import("@/lib/supertokens/sessionFromRequest");
-    vi.mocked(getSessionPrismaUser).mockResolvedValue({ userId: "owner-1", role: "COACH" });
+    vi.mocked(getSessionPrismaUser).mockResolvedValue({ userId: "owner-1", tenantId: "public" });
 
     const request = new Request("http://localhost/api/club", {
       method: "POST",
