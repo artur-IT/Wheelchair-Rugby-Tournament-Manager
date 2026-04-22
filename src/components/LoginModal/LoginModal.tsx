@@ -146,6 +146,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
             name="email"
             label="Email"
             type="email"
+            slotProps={{ htmlInput: { maxLength: 128 } }}
             autoComplete={isSignin ? "email" : "off"}
             value={formValues.email}
             onChange={updateField("email")}
@@ -157,6 +158,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
             name="password"
             label="Hasło"
             type="password"
+            slotProps={{ htmlInput: { minLength: 12, maxLength: 32 } }}
             autoComplete={isSignin ? "current-password" : "new-password"}
             value={formValues.password}
             onChange={updateField("password")}
