@@ -39,7 +39,7 @@ const FEATURES = [
   {
     title: "Personel",
     desc: [
-      "Wpisz dane Sędziów, Klasyfikatorów i Wolontariuszy, aby łatwo się skontaktować",
+      "Wpisz dane Sędziów i Klasyfikatorów, aby łatwo się kontaktować",
       "Przydzielaj zadania personelowi w jasny i uporządkowany sposób",
       "Wprowadzasz dane 1 raz a potem tylko klikasz przydzielając zadania na turnieju",
     ],
@@ -93,9 +93,8 @@ const FEATURE_CARD_SX = {
   borderColor: "divider",
   transition: "transform 0.2s ease, box-shadow 0.2s ease",
   "&:hover": {
-    transform: "translateY(-6px) scale(1.02)",
+    transform: "translateY(-6px) scale(1.03)",
     boxShadow: 4,
-    border: "1px solid",
   },
 } as const;
 

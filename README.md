@@ -1,4 +1,4 @@
-# 🏅 Wheelchair Rugby Tournament Manager
+# 🏅 Wheelchair Rugby Manager
 
 A comprehensive web application for managing wheelchair rugby tournaments and sports club team. Streamline tournament planning, team management, and match scheduling all in one place.
 
@@ -7,20 +7,23 @@ A comprehensive web application for managing wheelchair rugby tournaments and sp
 - 🎯 **Tournament Management** - Create and manage wheelchair rugby tournaments with detailed scheduling and match tracking
 - 👥 **Team & Player Management** - Add players, coaches, and staff to your sports club
 - 🏆 **Match Planning** - Organize matches, assign referees, and manage game schedules
-- 📋 **Reports & Printing** - Generate professional reports and printable documents
-- ⚙️ **Settings** - Customize personnel information and tournament preferences
+- 📋 **Printing** - Print tournament reports and schedules
+- ⚙️ **Settings** - Create Seasons, customize personnel information and tournament preferences
 
 ## 🚀 Project Versions
 
-- **v.1** - Core tournament manager for planning wheelchair rugby competitions
 - **v.2** - Extended with simple team and player management system for sports clubs
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: React, TypeScript, Astro
-- **Styling**: Modern CSS and component-based design
-- **Testing**: Unit tests for key components
+- **Styling**: Material UI + global.css
+- **Forms**: React Hook Form + Tanstack Query + Zod (on the backend to validate requests)
+- **Database**: PostgreSQL + Prisma (ORM)
+- **Testing**: Vitest - Unit tests for key components, React Testing Library - UI tests for components
 - **State Management**: React hooks and context
+- **Authentication**: SuperTokens
+- **Hosting**: 1Free.eu
 
 ## 📁 Project Structure
 
