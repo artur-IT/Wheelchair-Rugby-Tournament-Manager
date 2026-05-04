@@ -32,7 +32,18 @@ export default function TournamentHeader({ id, tournament }: TournamentHeaderPro
         >
           &larr; Powrót do listy
         </MuiLink>
-        <Typography variant="h3" sx={{ fontWeight: 900 }}>
+        <Typography
+          variant="h3"
+          sx={{
+            fontWeight: 900,
+            // Smaller title on narrow portrait so long names fit without dominating the screen.
+            "@media (max-width: 599.95px) and (orientation: portrait)": {
+              fontSize: "1.375rem",
+              lineHeight: 1.25,
+              wordBreak: "break-word",
+            },
+          }}
+        >
           {tournament.name}
         </Typography>
         <Typography color="textSecondary">{formatDateRangePl(tournament.startDate, tournament.endDate)}</Typography>

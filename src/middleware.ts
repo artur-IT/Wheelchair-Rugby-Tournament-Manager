@@ -5,7 +5,7 @@ import { mergeCollectingResponseCookies } from "@/lib/supertokens/collectingResp
 import { ensureSuperTokensInitialized } from "@/lib/supertokens/initSuperTokens";
 import { requestToPreParsedRequest } from "@/lib/supertokens/requestAdapter";
 
-const PUBLIC_PATHS = new Set(["/", "/auth/callback", "/auth/reset-password"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/auth/callback", "/auth/reset-password"]);
 
 function isPublicAuthPage(pathname: string) {
   // Reset password can include query params like ?token=...
@@ -64,7 +64,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-    return redirect("/?login=1");
+    return redirect("/login");
   }
 
   const response = await next();
