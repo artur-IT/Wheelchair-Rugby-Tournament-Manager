@@ -123,8 +123,13 @@ const FEATURE_ICONS: Record<string, LucideIcon> = {
   "Klub Sportowy": Building2,
 };
 
-export default function LandingPage() {
-  const [loginOpen, setLoginOpen] = useState(false);
+interface LandingPageProps {
+  /** Used by /login so the address bar stays clean (no ?login=1). */
+  initialLoginOpen?: boolean;
+}
+
+export default function LandingPage({ initialLoginOpen = false }: LandingPageProps) {
+  const [loginOpen, setLoginOpen] = useState(initialLoginOpen);
   const openLogin = () => setLoginOpen(true);
   const closeLogin = () => setLoginOpen(false);
 
@@ -150,7 +155,14 @@ export default function LandingPage() {
               Wheelchair Rugby Manager
             </Typography>
           </Box>
-          <Button variant="contained" onClick={openLogin}>
+          <Button
+            variant="contained"
+            onClick={openLogin}
+            sx={{
+              // Nav login hidden on small portrait; hero CTA still opens the modal.
+              "@media (max-width: 599.95px) and (orientation: portrait)": { display: "none" },
+            }}
+          >
             Zaloguj się
           </Button>
         </Box>
@@ -190,12 +202,6 @@ export default function LandingPage() {
                   dla Organizatorów Turniejów i Trenerów
                 </Box>
                 .
-              </Typography>
-              <Typography component="p">
-                <Box component="span" sx={{ fontWeight: 700 }}>
-                  Planuj i organizuj turnieje
-                </Box>{" "}
-                rugby na wózkach.
               </Typography>
               <Typography component="p">
                 <Box component="span" sx={{ fontWeight: 700 }}>
