@@ -54,3 +54,16 @@ export async function updateCurrentUserProfile(body: UpdateCurrentUserProfileBod
 
   return { firstName, lastName, email };
 }
+
+/** POST /api/users/me/delete — permanently deletes the account and related app data after login e-mail confirmation. */
+export async function deleteCurrentUserAccount(confirmation: string): Promise<void> {
+  const res = await fetch("/api/users/me/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirmation }),
+  });
+  if (!res.ok) {
+    const msg = await getErrorMessageFromResponse(res, "Nie udało się usunąć konta");
+    throw new Error(msg);
+  }
+}

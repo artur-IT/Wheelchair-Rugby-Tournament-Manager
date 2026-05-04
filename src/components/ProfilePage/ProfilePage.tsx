@@ -2,15 +2,36 @@ import { UserCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Alert, Box, Button, CircularProgress, Grid, TextField, Typography, Paper, Avatar } from "@mui/material";
+import { signOut } from "supertokens-web-js/recipe/session";
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  Paper,
+  TextField,
+  Typography,
+} from "@mui/material";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import AppShell from "@/components/AppShell/AppShell";
 import { z } from "@/lib/zodPl";
-import { fetchCurrentUserProfile, updateCurrentUserProfile } from "@/lib/api/users";
+import { deleteCurrentUserAccount, fetchCurrentUserProfile, updateCurrentUserProfile } from "@/lib/api/users";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import MutationErrorAlert from "@/components/ui/MutationErrorAlert";
 import { focusFirstFieldError } from "@/lib/forms/focusFirstFieldError";
 import { requiredFirstNameSchema, requiredLastNameSchema } from "@/lib/validateInputs";
+import { ensureSuperTokensFrontendInitialized } from "@/lib/supertokens/initFrontend";
+
+function emailsMatchForDeletion(typed: string, accountEmail: string): boolean {
+  return typed.trim().toLowerCase() === accountEmail.trim().toLowerCase();
+}
 
 const profileSchema = z.object({
   firstName: requiredFirstNameSchema,
@@ -25,6 +46,11 @@ function ProfileContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [warnDeleteOpen, setWarnDeleteOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deletePhrase, setDeletePhrase] = useState("");
+  const [deleteError, setDeleteError] = useState<unknown>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const {
     register,
     handleSubmit,
@@ -155,6 +181,131 @@ function ProfileContent() {
           {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "Zapisz Zmiany"}
         </Button>
       </form>
+
+      <Divider sx={{ my: 4 }} />
+      <Typography variant="subtitle2" color="error" sx={{ fontWeight: "bold" }}>
+        Strefa niebezpieczna
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        Usunięcie konta jest na stałe. Znikną wszystkie powiązane dane: sezony, turnieje, drużyny oraz Mój Klub
+        Sportowy.
+      </Typography>
+      <Button
+        variant="outlined"
+        color="error"
+        sx={{ mt: 2 }}
+        onClick={() => {
+          setDeleteError(null);
+          setWarnDeleteOpen(true);
+        }}
+      >
+        Usuń konto
+      </Button>
+
+      <Dialog
+        open={warnDeleteOpen}
+        onClose={() => !deleteBusy && setWarnDeleteOpen(false)}
+        aria-labelledby="delete-account-warn-title"
+      >
+        <DialogTitle id="delete-account-warn-title">Na pewno usunąć konto?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Tej operacji nie da się cofnąć. Stracisz dostęp do aplikacji, a wszystkie Twoje dane w systemie zostaną
+            skasowane.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWarnDeleteOpen(false)} disabled={deleteBusy}>
+            Anuluj
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setWarnDeleteOpen(false);
+              setDeletePhrase("");
+              setDeleteError(null);
+              setConfirmDeleteOpen(true);
+            }}
+            disabled={deleteBusy}
+          >
+            Tak, chcę kontynuować
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={confirmDeleteOpen}
+        onClose={() => !deleteBusy && setConfirmDeleteOpen(false)}
+        aria-labelledby="delete-account-confirm-title"
+      >
+        <DialogTitle id="delete-account-confirm-title">Ostatnie potwierdzenie</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Wpisz swój adres e-mail używany do logowania (ten sam co w profilu). Możesz go skopiować z ramki poniżej.
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              mb: 1,
+              fontFamily: "monospace",
+              bgcolor: "action.hover",
+              p: 1,
+              borderRadius: 1,
+              wordBreak: "break-all",
+            }}
+          >
+            {email}
+          </Typography>
+          <TextField
+            fullWidth
+            label="Adres e-mail (login)"
+            value={deletePhrase}
+            onChange={(e) => setDeletePhrase(e.target.value)}
+            disabled={deleteBusy}
+            autoComplete="off"
+          />
+          {deleteError ? (
+            <Box sx={{ mt: 2 }}>
+              <MutationErrorAlert error={deleteError} fallbackMessage="Nie udało się usunąć konta." />
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setConfirmDeleteOpen(false);
+              setDeletePhrase("");
+            }}
+            disabled={deleteBusy}
+          >
+            Anuluj
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteBusy || !emailsMatchForDeletion(deletePhrase, email)}
+            onClick={() => {
+              void (async () => {
+                setDeleteBusy(true);
+                setDeleteError(null);
+                try {
+                  await deleteCurrentUserAccount(deletePhrase.trim());
+                  ensureSuperTokensFrontendInitialized();
+                  await signOut();
+                  window.location.href = "/";
+                } catch (error) {
+                  setDeleteError(error);
+                } finally {
+                  setDeleteBusy(false);
+                }
+              })();
+            }}
+          >
+            {deleteBusy ? <CircularProgress size={22} color="inherit" /> : "Usuń konto na zawsze"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }
