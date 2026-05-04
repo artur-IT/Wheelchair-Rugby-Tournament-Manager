@@ -5,6 +5,7 @@ import { createCoach } from "@/lib/coaches";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "generated/prisma/client";
 import { requiredPhoneSchema, sanitizePhone, toTitleCase } from "@/lib/validateInputs";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const CreateCoachSchema = z
   .object({
@@ -25,12 +26,18 @@ const CreateCoachSchema = z
     seasonId: o.seasonId,
   }));
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const seasonId = url.searchParams.get("seasonId");
 
   try {
     const coaches = await prisma.coach.findMany({
-      where: seasonId ? { seasonId } : undefined,
+      where: {
+        season: { ownerUserId: auth.user.userId },
+        ...(seasonId ? { seasonId } : {}),
+      },
       orderBy: { createdAt: "desc" },
     });
     return json(coaches);
@@ -40,9 +47,18 @@ export const GET: APIRoute = async ({ url }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const body = await request.json().catch(() => null);
   const parsed = CreateCoachSchema.safeParse(body);
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
+
+  const season = await prisma.season.findFirst({
+    where: { id: parsed.data.seasonId, ownerUserId: auth.user.userId },
+    select: { id: true },
+  });
+  if (!season) return json({ error: "Nie znaleziono sezonu" }, 404);
 
   try {
     const coach = await createCoach(parsed.data);

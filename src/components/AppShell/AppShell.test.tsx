@@ -47,7 +47,7 @@ describe("AppShell", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ name: "Jan Kowalski" }),
+        json: async () => ({ firstName: "Jan", lastName: "Kowalski", email: "jan@example.com" }),
       })
     );
 

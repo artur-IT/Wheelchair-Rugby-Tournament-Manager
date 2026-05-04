@@ -18,11 +18,11 @@ function pickRefereeIdForRole(input: UpsertRefereePlanMatchDto, role: RefereeRol
   return trimmed && trimmed.length > 0 ? trimmed : undefined;
 }
 
-async function validateTournamentAndRoles(tournamentId: string, refereeIds: string[]) {
+async function validateTournamentAndRoles(tournamentId: string, refereeIds: string[], ownerUserId: string) {
   if (refereeIds.length === 0) return;
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
+  const tournament = await prisma.tournament.findFirst({
+    where: { id: tournamentId, season: { ownerUserId } },
     select: { id: true },
   });
   if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
@@ -66,9 +66,12 @@ function refereeAssignmentsMatchInput(
   return true;
 }
 
-export async function listRefereePlanForTournament(tournamentId: string): Promise<RefereePlanMatch[]> {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
+export async function listRefereePlanForTournament(
+  tournamentId: string,
+  ownerUserId: string
+): Promise<RefereePlanMatch[]> {
+  const tournament = await prisma.tournament.findFirst({
+    where: { id: tournamentId, season: { ownerUserId } },
     select: { id: true },
   });
   if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
@@ -110,14 +113,15 @@ export async function listRefereePlanForTournament(tournamentId: string): Promis
 
 export async function createRefereePlanMatchForTournament(
   tournamentId: string,
-  input: UpsertRefereePlanMatchDto
+  input: UpsertRefereePlanMatchDto,
+  ownerUserId: string
 ): Promise<string> {
   const [teamAId, teamBId] = [input.teamAId, input.teamBId];
   if (!teamAId || !teamBId) throw new Error("TEAM_NOT_IN_TOURNAMENT");
   if (teamAId === teamBId) throw new Error("TEAMS_MUST_BE_DIFFERENT");
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
+  const tournament = await prisma.tournament.findFirst({
+    where: { id: tournamentId, season: { ownerUserId } },
     select: { id: true },
   });
   if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
@@ -129,7 +133,7 @@ export async function createRefereePlanMatchForTournament(
   if (teams.length !== 2) throw new Error("TEAM_NOT_IN_TOURNAMENT");
 
   const refereeIds = dedupeAndValidateRefereesPerMatch(input);
-  await validateTournamentAndRoles(tournamentId, refereeIds);
+  await validateTournamentAndRoles(tournamentId, refereeIds, ownerUserId);
 
   const matchId = await prisma.$transaction(async (tx) => {
     const match = await tx.match.create({
@@ -154,7 +158,6 @@ export async function createRefereePlanMatchForTournament(
     });
 
     if (assignments.length > 0) {
-      // @@unique([matchId, role]) + @@unique([matchId, refereeId]) are enforced by Prisma/DB.
       await tx.refereeAssignment.createMany({ data: assignments });
     }
 
@@ -167,8 +170,15 @@ export async function createRefereePlanMatchForTournament(
 export async function updateRefereePlanMatchForTournament(
   tournamentId: string,
   matchId: string,
-  input: UpsertRefereePlanMatchDto
+  input: UpsertRefereePlanMatchDto,
+  ownerUserId: string
 ): Promise<string> {
+  const owned = await prisma.tournament.findFirst({
+    where: { id: tournamentId, season: { ownerUserId } },
+    select: { id: true },
+  });
+  if (!owned) throw new Error("TOURNAMENT_NOT_FOUND");
+
   const match = await prisma.match.findUnique({
     where: { id: matchId },
     select: {
@@ -202,7 +212,7 @@ export async function updateRefereePlanMatchForTournament(
   }
 
   const refereeIds = dedupeAndValidateRefereesPerMatch(input);
-  await validateTournamentAndRoles(tournamentId, refereeIds);
+  await validateTournamentAndRoles(tournamentId, refereeIds, ownerUserId);
 
   await prisma.$transaction(async (tx) => {
     await tx.match.update({

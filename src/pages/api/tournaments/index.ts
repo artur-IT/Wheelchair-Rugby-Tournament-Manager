@@ -14,6 +14,7 @@ import {
   toTitleCase,
 } from "@/lib/validateInputs";
 import { createTournamentWithDetails, listTournamentsWithDetails } from "@/lib/tournaments";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const TournamentPayloadSchema = z
   .object({
@@ -51,9 +52,12 @@ const TournamentPayloadSchema = z
     }
   );
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   try {
-    const tournaments = await listTournamentsWithDetails();
+    const tournaments = await listTournamentsWithDetails(auth.user.userId);
     return json(tournaments);
   } catch {
     return json({ error: "Nie udało się pobrać turniejów." }, 500);
@@ -61,6 +65,9 @@ export const GET: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const body = await request.json().catch(() => null);
   const parsed = TournamentPayloadSchema.safeParse(body);
 
@@ -71,30 +78,33 @@ export const POST: APIRoute = async ({ request }) => {
   const payload = parsed.data;
 
   try {
-    const tournament = await createTournamentWithDetails({
-      name: payload.name,
-      startDate: new Date(payload.startDate),
-      endDate: payload.endDate ? new Date(payload.endDate) : undefined,
-      hotel: toTitleCase(payload.hotel),
-      hotelCity: toTitleCase(payload.hotelCity),
-      hotelZipCode: payload.hotelZipCode,
-      hotelStreet: toTitleCase(payload.hotelStreet),
-      mapLink: payload.mapLink ?? "",
-      catering: payload.catering,
-      breakfastServingTime: payload.breakfastServingTime,
-      breakfastLocation: payload.breakfastLocation,
-      lunchServingTime: payload.lunchServingTime,
-      lunchLocation: payload.lunchLocation,
-      dinnerServingTime: payload.dinnerServingTime,
-      dinnerLocation: payload.dinnerLocation,
-      cateringNotes: payload.cateringNotes,
-      parking: payload.parking ?? "",
-      hallName: payload.hallName,
-      city: payload.city,
-      zipCode: payload.zipCode,
-      street: payload.street,
-      hallMapLink: payload.hallMapLink ?? "",
-    });
+    const tournament = await createTournamentWithDetails(
+      {
+        name: payload.name,
+        startDate: new Date(payload.startDate),
+        endDate: payload.endDate ? new Date(payload.endDate) : undefined,
+        hotel: toTitleCase(payload.hotel),
+        hotelCity: toTitleCase(payload.hotelCity),
+        hotelZipCode: payload.hotelZipCode,
+        hotelStreet: toTitleCase(payload.hotelStreet),
+        mapLink: payload.mapLink ?? "",
+        catering: payload.catering,
+        breakfastServingTime: payload.breakfastServingTime,
+        breakfastLocation: payload.breakfastLocation,
+        lunchServingTime: payload.lunchServingTime,
+        lunchLocation: payload.lunchLocation,
+        dinnerServingTime: payload.dinnerServingTime,
+        dinnerLocation: payload.dinnerLocation,
+        cateringNotes: payload.cateringNotes,
+        parking: payload.parking ?? "",
+        hallName: payload.hallName,
+        city: payload.city,
+        zipCode: payload.zipCode,
+        street: payload.street,
+        hallMapLink: payload.hallMapLink ?? "",
+      },
+      auth.user.userId
+    );
 
     return json(tournament, 201);
   } catch (error) {

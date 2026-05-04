@@ -9,14 +9,14 @@ async function seedDb() {
       name: "Admin",
       // Demo only. In real auth this should be an Argon2 hash.
       password: "demo-password",
-      role: "ORGANIZER",
+      role: "USER",
     },
     create: {
       name: "Admin",
       email: "admin@example.com",
       // Demo only. In real auth this should be an Argon2 hash.
       password: "demo-password",
-      role: "ORGANIZER",
+      role: "USER",
     },
   });
 
@@ -25,6 +25,7 @@ async function seedDb() {
       name: "Sezon demo",
       year: new Date().getFullYear(),
       description: "Przykładowe dane do klikania w aplikacji.",
+      ownerUserId: user.id,
     },
   });
 

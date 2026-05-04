@@ -4,6 +4,7 @@ import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "generated/prisma/client";
 import { requiredPhoneSchema, sanitizePhone, toTitleCase } from "@/lib/validateInputs";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 function isNotFound(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "P2025";
@@ -22,16 +23,24 @@ const UpdatePersonSchema = z
   .transform((payload) => ({
     firstName: toTitleCase(payload.firstName),
     lastName: toTitleCase(payload.lastName),
-    // undefined = field absent → Prisma skips; null/"" = explicit clear → Prisma sets NULL
     email: payload.email === undefined ? undefined : payload.email?.trim() || null,
     phone: payload.phone,
   }));
 
 export const PATCH: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const id = params?.id;
   if (!id) {
     return json({ error: "Nieprawidłowe ID" }, 400);
   }
+
+  const owned = await prisma.referee.findFirst({
+    where: { id, season: { ownerUserId: auth.user.userId } },
+    select: { id: true },
+  });
+  if (!owned) return json({ error: "Nie znaleziono sędziego" }, 404);
 
   const body = await request.json().catch(() => null);
   const parsed = UpdatePersonSchema.safeParse(body);
@@ -54,15 +63,23 @@ export const PATCH: APIRoute = async ({ params, request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const id = params?.id;
   if (!id) {
     return json({ error: "Nieprawidłowe ID" }, 400);
   }
 
+  const owned = await prisma.referee.findFirst({
+    where: { id, season: { ownerUserId: auth.user.userId } },
+    select: { id: true },
+  });
+  if (!owned) return json({ error: "Nie znaleziono sędziego" }, 404);
+
   try {
     await prisma.$transaction([
-      // Referee assignments use ON DELETE RESTRICT, so we must clear them first.
       prisma.refereeAssignment.deleteMany({ where: { refereeId: id } }),
       prisma.referee.delete({ where: { id } }),
     ]);

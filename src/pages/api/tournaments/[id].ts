@@ -14,7 +14,8 @@ import {
   optionalParkingSchema,
   toTitleCase,
 } from "@/lib/validateInputs";
-import { deleteTournament, listTournamentsWithDetails, updateTournamentWithDetails } from "@/lib/tournaments";
+import { deleteTournament, getTournamentWithDetailsForOwner, updateTournamentWithDetails } from "@/lib/tournaments";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const TournamentPayloadSchema = z
   .object({
@@ -52,12 +53,14 @@ const TournamentPayloadSchema = z
     }
   );
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
-  const tournaments = await listTournamentsWithDetails();
-  const tournament = tournaments.find((t) => t.id === id) ?? null;
+  const tournament = await getTournamentWithDetailsForOwner(id, auth.user.userId);
 
   if (!tournament) {
     return json({ error: "Nie znaleziono turnieju" }, 404);
@@ -67,6 +70,9 @@ export const GET: APIRoute = async ({ params }) => {
 };
 
 export const PUT: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
@@ -85,30 +91,34 @@ export const PUT: APIRoute = async ({ params, request }) => {
   const payload = parsed.data;
 
   try {
-    await updateTournamentWithDetails(id, {
-      name: payload.name,
-      startDate: new Date(payload.startDate),
-      endDate: payload.endDate ? new Date(payload.endDate) : undefined,
-      hotel: toTitleCase(payload.hotel),
-      hotelCity: toTitleCase(payload.hotelCity),
-      hotelZipCode: payload.hotelZipCode,
-      hotelStreet: toTitleCase(payload.hotelStreet),
-      mapLink: payload.mapLink ?? "",
-      catering: payload.catering,
-      breakfastServingTime: payload.breakfastServingTime,
-      breakfastLocation: payload.breakfastLocation,
-      lunchServingTime: payload.lunchServingTime,
-      lunchLocation: payload.lunchLocation,
-      dinnerServingTime: payload.dinnerServingTime,
-      dinnerLocation: payload.dinnerLocation,
-      cateringNotes: payload.cateringNotes,
-      parking: payload.parking ?? "",
-      hallName: payload.hallName,
-      city: payload.city,
-      zipCode: payload.zipCode,
-      street: payload.street,
-      hallMapLink: payload.hallMapLink ?? "",
-    });
+    await updateTournamentWithDetails(
+      id,
+      {
+        name: payload.name,
+        startDate: new Date(payload.startDate),
+        endDate: payload.endDate ? new Date(payload.endDate) : undefined,
+        hotel: toTitleCase(payload.hotel),
+        hotelCity: toTitleCase(payload.hotelCity),
+        hotelZipCode: payload.hotelZipCode,
+        hotelStreet: toTitleCase(payload.hotelStreet),
+        mapLink: payload.mapLink ?? "",
+        catering: payload.catering,
+        breakfastServingTime: payload.breakfastServingTime,
+        breakfastLocation: payload.breakfastLocation,
+        lunchServingTime: payload.lunchServingTime,
+        lunchLocation: payload.lunchLocation,
+        dinnerServingTime: payload.dinnerServingTime,
+        dinnerLocation: payload.dinnerLocation,
+        cateringNotes: payload.cateringNotes,
+        parking: payload.parking ?? "",
+        hallName: payload.hallName,
+        city: payload.city,
+        zipCode: payload.zipCode,
+        street: payload.street,
+        hallMapLink: payload.hallMapLink ?? "",
+      },
+      auth.user.userId
+    );
 
     return json({ ok: true }, 200);
   } catch (error) {
@@ -125,12 +135,15 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
   try {
-    await deleteTournament(id);
+    await deleteTournament(id, auth.user.userId);
     return json({ ok: true }, 200);
   } catch (error) {
     if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {

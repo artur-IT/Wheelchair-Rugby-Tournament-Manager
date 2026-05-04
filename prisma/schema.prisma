@@ -20,6 +20,7 @@ model User {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   clubs       Club[]
+  seasons     Season[]
 }
 
 enum UserRole {
@@ -52,16 +53,20 @@ enum ClubPlayerFunction {
 model Season {
   id          String       @id @default(cuid())
   name        String
-  year        Int          @unique
+  year        Int
   description String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  ownerUserId String
+  ownerUser   User         @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   teams       Team[]
   coaches     Coach[]
   referees    Referee[]
   classifiers Classifier[]
   staff       Staff[]
   tournaments Tournament[]
+
+  @@unique([ownerUserId, year])
 }
 
 model Team {

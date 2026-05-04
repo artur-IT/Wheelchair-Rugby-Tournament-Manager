@@ -4,6 +4,7 @@ import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "generated/prisma/client";
 import { requiredPhoneSchema, sanitizePhone, toTitleCase } from "@/lib/validateInputs";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 function isNotFound(error: unknown) {
   return typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "P2025";
@@ -27,10 +28,19 @@ const UpdateCoachSchema = z
   }));
 
 export const PATCH: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const id = params?.id;
   if (!id) {
     return json({ error: "Nieprawidłowe ID" }, 400);
   }
+
+  const owned = await prisma.coach.findFirst({
+    where: { id, season: { ownerUserId: auth.user.userId } },
+    select: { id: true },
+  });
+  if (!owned) return json({ error: "Nie znaleziono trenera" }, 404);
 
   const body = await request.json().catch(() => null);
   const parsed = UpdateCoachSchema.safeParse(body);

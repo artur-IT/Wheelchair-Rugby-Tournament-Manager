@@ -4,6 +4,7 @@ import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "generated/prisma/client";
 import { requiredPhoneSchema, sanitizePhone, toTitleCase } from "@/lib/validateInputs";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const CreateClassifierSchema = z
   .object({
@@ -24,11 +25,17 @@ const CreateClassifierSchema = z
     seasonId: o.seasonId,
   }));
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const seasonId = url.searchParams.get("seasonId");
 
   const classifiers = await prisma.classifier.findMany({
-    where: seasonId ? { seasonId } : undefined,
+    where: {
+      season: { ownerUserId: auth.user.userId },
+      ...(seasonId ? { seasonId } : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -36,9 +43,18 @@ export const GET: APIRoute = async ({ url }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const body = await request.json().catch(() => null);
   const parsed = CreateClassifierSchema.safeParse(body);
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
+
+  const season = await prisma.season.findFirst({
+    where: { id: parsed.data.seasonId, ownerUserId: auth.user.userId },
+    select: { id: true },
+  });
+  if (!season) return json({ error: "Nie znaleziono sezonu" }, 404);
 
   try {
     const classifier = await prisma.classifier.create({ data: parsed.data });

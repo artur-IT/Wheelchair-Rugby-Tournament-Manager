@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchCurrentUserProfile, updateCurrentUserProfile } from "@/lib/api/users";
+import { deleteCurrentUserAccount, fetchCurrentUserProfile, updateCurrentUserProfile } from "@/lib/api/users";
 
 describe("users api", () => {
   afterEach(() => {
@@ -67,6 +67,18 @@ describe("users api", () => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ firstName: "Anna", lastName: "Nowak" }),
+    });
+  });
+
+  it("deletes account via api with confirmation email", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(deleteCurrentUserAccount("jan@example.com")).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith("/api/users/me/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmation: "jan@example.com" }),
     });
   });
 });

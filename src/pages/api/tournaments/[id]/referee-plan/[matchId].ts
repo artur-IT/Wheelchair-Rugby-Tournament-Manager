@@ -3,6 +3,7 @@ import { z } from "@/lib/zodPl";
 
 import { json } from "@/lib/api";
 import { updateRefereePlanMatchForTournament } from "@/lib/refereePlan";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const UpsertRefereePlanMatchSchema = z
   .object({
@@ -21,6 +22,9 @@ const UpsertRefereePlanMatchSchema = z
   });
 
 export const PUT: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id, matchId } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
   if (!matchId) return json({ error: "Brak id meczu" }, 400);
@@ -36,7 +40,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
 
   try {
-    await updateRefereePlanMatchForTournament(id, matchId, parsed.data);
+    await updateRefereePlanMatchForTournament(id, matchId, parsed.data, auth.user.userId);
     return json({ ok: true }, 200);
   } catch (error) {
     if (error instanceof Error) {

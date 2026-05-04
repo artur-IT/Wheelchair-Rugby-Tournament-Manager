@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
 import { createMatchForTournament, listMatchesForTournament } from "@/lib/tournaments";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const CreateMatchSchema = z
   .object({
@@ -18,12 +19,15 @@ const CreateMatchSchema = z
     path: ["teamBId"],
   });
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
   try {
-    const matches = await listMatchesForTournament(id);
+    const matches = await listMatchesForTournament(id, auth.user.userId);
     return json(matches, 200);
   } catch (error) {
     if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {
@@ -34,6 +38,9 @@ export const GET: APIRoute = async ({ params }) => {
 };
 
 export const POST: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
@@ -48,7 +55,7 @@ export const POST: APIRoute = async ({ params, request }) => {
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
 
   try {
-    await createMatchForTournament(id, parsed.data);
+    await createMatchForTournament(id, parsed.data, auth.user.userId);
     return json({ ok: true }, 200);
   } catch (error) {
     if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {

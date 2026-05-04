@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
 import { deleteClassifierPlanEntryForTournament, updateClassifierPlanEntryForTournament } from "@/lib/classifierPlan";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const UpsertClassifierPlanSchema = z.object({
   playerId: z.string().min(1, "Wybierz zawodnika"),
@@ -17,6 +18,9 @@ const UpsertClassifierPlanSchema = z.object({
 });
 
 export const PUT: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id, examId } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
   if (!examId) return json({ error: "Brak id badania" }, 400);
@@ -32,7 +36,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
 
   try {
-    await updateClassifierPlanEntryForTournament(id, examId, parsed.data);
+    await updateClassifierPlanEntryForTournament(id, examId, parsed.data, auth.user.userId);
     return json({ ok: true }, 200);
   } catch (error) {
     if (error instanceof Error) {
@@ -50,13 +54,16 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id, examId } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
   if (!examId) return json({ error: "Brak id badania" }, 400);
 
   try {
-    await deleteClassifierPlanEntryForTournament(id, examId);
+    await deleteClassifierPlanEntryForTournament(id, examId, auth.user.userId);
     return json({ ok: true }, 200);
   } catch (error) {
     if (error instanceof Error) {

@@ -5,6 +5,7 @@ import { json } from "@/lib/api";
 import { createTeam } from "@/lib/teams";
 import { Prisma } from "generated/prisma/client";
 import { LOOSE_URL_REGEX, POSTAL_CODE_REGEX, toTitleCase } from "@/lib/validateInputs";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const CreateTeamSchema = z
   .object({
@@ -63,11 +64,17 @@ const CreateTeamSchema = z
     })),
   }));
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const seasonId = url.searchParams.get("seasonId");
 
   const teams = await prisma.team.findMany({
-    where: seasonId ? { seasonId } : undefined,
+    where: {
+      season: { ownerUserId: auth.user.userId },
+      ...(seasonId ? { seasonId } : {}),
+    },
     orderBy: { createdAt: "desc" },
     include: { players: true, staff: true, coach: true },
   });
@@ -76,9 +83,18 @@ export const GET: APIRoute = async ({ url }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const body = await request.json().catch(() => null);
   const parsed = CreateTeamSchema.safeParse(body);
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
+
+  const season = await prisma.season.findFirst({
+    where: { id: parsed.data.seasonId, ownerUserId: auth.user.userId },
+    select: { id: true },
+  });
+  if (!season) return json({ error: "Nie znaleziono sezonu" }, 404);
 
   try {
     const team = await createTeam(parsed.data);
