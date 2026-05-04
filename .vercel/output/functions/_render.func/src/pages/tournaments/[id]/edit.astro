@@ -1,0 +1,11 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import TournamentForm from "@/features/tournaments/components/TournamentForm/TournamentForm";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/tournaments");
+---
+
+<Layout title="Edytuj turniej">
+  <TournamentForm client:only="react" tournamentId={id} />
+</Layout>

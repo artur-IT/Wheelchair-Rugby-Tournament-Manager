@@ -21,8 +21,8 @@
     "sync:st-prisma": "tsx scripts/sync_supertokens-prisma.ts"
   },
   "dependencies": {
-    "@astrojs/node": "^10.0.1",
     "@astrojs/react": "^5.0.0",
+    "@astrojs/vercel": "^10.0.6",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@fontsource/inter": "^5.2.8",
