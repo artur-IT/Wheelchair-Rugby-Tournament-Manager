@@ -3,7 +3,7 @@ import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { createReferee } from "@/lib/referees";
-import { Prisma } from "generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { requiredPhoneSchema, sanitizePhone, toTitleCase } from "@/lib/validateInputs";
 import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 

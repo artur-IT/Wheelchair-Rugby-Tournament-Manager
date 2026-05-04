@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { Prisma } from "generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
 import { createClassifierPlanEntryForTournament, listClassifierPlanForTournament } from "@/lib/classifierPlan";

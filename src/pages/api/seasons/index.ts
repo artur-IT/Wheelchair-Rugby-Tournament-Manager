@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { z } from "@/lib/zodPl";
 import { prisma } from "@/lib/prisma";
 import { json } from "@/lib/api";
-import { Prisma } from "generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const CreateSeasonSchema = z.object({

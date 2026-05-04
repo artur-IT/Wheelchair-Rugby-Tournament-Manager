@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
-import { Prisma } from "generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import {
   requiredCateringSchema,
   requiredCitySchema,
