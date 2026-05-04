@@ -2,25 +2,35 @@ import type { APIRoute } from "astro";
 import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
 import { removeTeamFromTournament, setTournamentTeamPlayers } from "@/lib/tournaments";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const SetTournamentTeamPlayersSchema = z.object({
   playerIds: z.array(z.string().min(1)),
 });
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id, teamId } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
   if (!teamId) return json({ error: "Brak id drużyny" }, 400);
 
   try {
-    await removeTeamFromTournament(id, teamId);
+    await removeTeamFromTournament(id, teamId, auth.user.userId);
     return json({ ok: true }, 200);
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {
+      return json({ error: "Nie znaleziono turnieju" }, 404);
+    }
     return json({ error: "Nie udało się usunąć drużyny z turnieju" }, 500);
   }
 };
 
 export const PUT: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id, teamId } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
   if (!teamId) return json({ error: "Brak id drużyny" }, 400);
@@ -30,7 +40,7 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
 
   try {
-    await setTournamentTeamPlayers(id, teamId, parsed.data.playerIds);
+    await setTournamentTeamPlayers(id, teamId, parsed.data.playerIds, auth.user.userId);
     return json({ ok: true }, 200);
   } catch (error) {
     if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {

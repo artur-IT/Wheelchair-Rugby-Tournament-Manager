@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "generated/prisma/client";
 import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
 import { createClassifierPlanEntryForTournament, listClassifierPlanForTournament } from "@/lib/classifierPlan";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const UpsertClassifierPlanSchema = z.object({
   playerId: z.string().min(1, "Wybierz zawodnika"),
@@ -17,12 +18,15 @@ const UpsertClassifierPlanSchema = z.object({
   observation: z.boolean().optional(),
 });
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
   try {
-    const plan = await listClassifierPlanForTournament(id);
+    const plan = await listClassifierPlanForTournament(id, auth.user.userId);
     return json(plan, 200);
   } catch (error) {
     if (error instanceof Error && error.message === "TOURNAMENT_NOT_FOUND") {
@@ -33,6 +37,9 @@ export const GET: APIRoute = async ({ params }) => {
 };
 
 export const POST: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const { id } = params;
   if (!id) return json({ error: "Brak id turnieju" }, 400);
 
@@ -47,7 +54,7 @@ export const POST: APIRoute = async ({ params, request }) => {
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
 
   try {
-    await createClassifierPlanEntryForTournament(id, parsed.data);
+    await createClassifierPlanEntryForTournament(id, parsed.data, auth.user.userId);
     return json({ ok: true }, 200);
   } catch (error) {
     if (error instanceof Error) {

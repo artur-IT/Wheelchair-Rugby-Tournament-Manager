@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { Match, Tournament } from "@/types";
 import type { TournamentFormData } from "@/lib/validateInputs";
@@ -6,9 +7,149 @@ function mapMealLocationFromForm(location: TournamentFormData["breakfastLocation
   return location === "hala" ? "HALL" : "HOTEL";
 }
 
+const tournamentListInclude = {
+  venues: { orderBy: { id: "asc" as const } },
+  accommodations: { orderBy: { id: "asc" as const } },
+  volunteers: true,
+  teams: {
+    include: {
+      team: {
+        include: {
+          players: {
+            orderBy: [{ lastName: "asc" as const }, { firstName: "asc" as const }],
+          },
+        },
+      },
+    },
+  },
+  players: {
+    include: { player: true },
+  },
+  referees: { include: { referee: true } },
+  classifiers: { include: { classifier: true } },
+} satisfies Prisma.TournamentInclude;
+
+type TournamentListRow = Prisma.TournamentGetPayload<{ include: typeof tournamentListInclude }>;
+
+function mapTournamentListRow(t: TournamentListRow): Tournament {
+  const primaryVenue = t.venues[0] ?? null;
+  const primaryAccommodation = t.accommodations[0] ?? null;
+  const hasTournamentPlayerRoster = t.players.length > 0;
+  return {
+    id: t.id,
+    name: t.name,
+    startDate: t.startDate.toISOString(),
+    endDate: t.endDate ? t.endDate.toISOString() : undefined,
+    seasonId: t.seasonId,
+    venue: primaryVenue
+      ? {
+          id: primaryVenue.id,
+          name: primaryVenue.name,
+          address:
+            [primaryVenue.street, `${primaryVenue.postalCode ?? ""} ${primaryVenue.city ?? ""}`.trim()]
+              .map((v) => (v ?? "").trim())
+              .filter(Boolean)
+              .join(", ") || undefined,
+          city: primaryVenue.city ?? undefined,
+          street: primaryVenue.street ?? undefined,
+          postalCode: primaryVenue.postalCode ?? undefined,
+          notes: primaryVenue.notes ?? undefined,
+          mapUrl: primaryVenue.mapUrl ?? undefined,
+          tournamentId: primaryVenue.tournamentId,
+        }
+      : undefined,
+    accommodation: primaryAccommodation
+      ? {
+          id: primaryAccommodation.id,
+          name: primaryAccommodation.name,
+          address: primaryAccommodation.address ?? undefined,
+          notes: primaryAccommodation.notes ?? undefined,
+          mapUrl: primaryAccommodation.mapUrl ?? undefined,
+          tournamentId: primaryAccommodation.tournamentId,
+        }
+      : undefined,
+    catering: t.catering ?? undefined,
+    breakfastServingTime: t.breakfastServingTime ?? undefined,
+    breakfastLocation: t.breakfastLocation ?? undefined,
+    lunchServingTime: t.lunchServingTime ?? undefined,
+    lunchLocation: t.lunchLocation ?? undefined,
+    dinnerServingTime: t.dinnerServingTime ?? undefined,
+    dinnerLocation: t.dinnerLocation ?? undefined,
+    cateringNotes: t.cateringNotes ?? undefined,
+    parking: primaryAccommodation?.notes ?? undefined,
+    teams: t.teams.map((tt) => {
+      const teamPlayers = hasTournamentPlayerRoster
+        ? t.players
+            .filter((tp) => tp.player.teamId === tt.team.id)
+            .map((tp) => tp.player)
+            .sort((a, b) => {
+              const byLastName = a.lastName.localeCompare(b.lastName, "pl");
+              if (byLastName !== 0) return byLastName;
+              return a.firstName.localeCompare(b.firstName, "pl");
+            })
+        : tt.team.players;
+
+      return {
+        id: tt.team.id,
+        name: tt.team.name,
+        websiteUrl: tt.team.websiteUrl ?? undefined,
+        address: tt.team.address ?? undefined,
+        city: tt.team.city ?? undefined,
+        postalCode: tt.team.postalCode ?? undefined,
+        contactFirstName: tt.team.contactFirstName ?? undefined,
+        contactLastName: tt.team.contactLastName ?? undefined,
+        contactEmail: tt.team.contactEmail ?? undefined,
+        contactPhone: tt.team.contactPhone ?? undefined,
+        seasonId: tt.team.seasonId,
+        coachId: tt.team.coachId ?? undefined,
+        refereeId: tt.team.refereeId ?? undefined,
+        players: teamPlayers.map((player) => ({
+          id: player.id,
+          firstName: player.firstName,
+          lastName: player.lastName,
+          number: player.number ?? undefined,
+          classification: player.classification ?? undefined,
+          teamId: player.teamId,
+        })),
+      };
+    }),
+    referees: t.referees.map((tr) => ({
+      id: tr.referee.id,
+      firstName: tr.referee.firstName,
+      lastName: tr.referee.lastName,
+      email: tr.referee.email ?? undefined,
+      phone: tr.referee.phone,
+    })),
+    classifiers: t.classifiers.map((tc) => ({
+      id: tc.classifier.id,
+      firstName: tc.classifier.firstName,
+      lastName: tc.classifier.lastName,
+      email: tc.classifier.email ?? undefined,
+      phone: tc.classifier.phone,
+    })),
+    volunteers: t.volunteers.map((v) => ({
+      id: v.id,
+      firstName: v.firstName,
+      lastName: v.lastName,
+      phone: v.phone ?? undefined,
+      tournamentId: v.tournamentId,
+    })),
+  };
+}
+
+async function getOwnedTournamentMeta(tournamentId: string, ownerUserId: string) {
+  const row = await prisma.tournament.findFirst({
+    where: { id: tournamentId, season: { ownerUserId } },
+    select: { id: true, seasonId: true },
+  });
+  if (!row) throw new Error("TOURNAMENT_NOT_FOUND");
+  return row;
+}
+
 /** Creates a tournament with basic details plus accommodation, hall and meal plan. */
-export async function createTournamentWithDetails(form: TournamentFormData) {
+export async function createTournamentWithDetails(form: TournamentFormData, ownerUserId: string) {
   const latestSeason = await prisma.season.findFirst({
+    where: { ownerUserId },
     orderBy: { createdAt: "desc" },
   });
 
@@ -63,146 +204,36 @@ export async function createTournamentWithDetails(form: TournamentFormData) {
 }
 
 /** Returns tournaments with basic venue/accommodation info mapped to shared `Tournament` type. */
-export async function listTournamentsWithDetails(): Promise<Tournament[]> {
+export async function listTournamentsWithDetails(ownerUserId: string): Promise<Tournament[]> {
   const tournaments = await prisma.tournament.findMany({
+    where: { season: { ownerUserId } },
     orderBy: { startDate: "asc" },
-    include: {
-      venues: { orderBy: { id: "asc" } },
-      accommodations: { orderBy: { id: "asc" } },
-      volunteers: true,
-      teams: {
-        include: {
-          team: {
-            include: {
-              players: {
-                orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-              },
-            },
-          },
-        },
-      },
-      players: {
-        include: { player: true },
-      },
-      referees: { include: { referee: true } },
-      classifiers: { include: { classifier: true } },
-    },
+    include: tournamentListInclude,
   });
 
-  return tournaments.map((t) => {
-    const primaryVenue = t.venues[0] ?? null;
-    const primaryAccommodation = t.accommodations[0] ?? null;
-    const hasTournamentPlayerRoster = t.players.length > 0;
-    return {
-      id: t.id,
-      name: t.name,
-      startDate: t.startDate.toISOString(),
-      endDate: t.endDate ? t.endDate.toISOString() : undefined,
-      seasonId: t.seasonId,
-      venue: primaryVenue
-        ? {
-            id: primaryVenue.id,
-            name: primaryVenue.name,
-            address:
-              [primaryVenue.street, `${primaryVenue.postalCode ?? ""} ${primaryVenue.city ?? ""}`.trim()]
-                .map((v) => (v ?? "").trim())
-                .filter(Boolean)
-                .join(", ") || undefined,
-            city: primaryVenue.city ?? undefined,
-            street: primaryVenue.street ?? undefined,
-            postalCode: primaryVenue.postalCode ?? undefined,
-            notes: primaryVenue.notes ?? undefined,
-            mapUrl: primaryVenue.mapUrl ?? undefined,
-            tournamentId: primaryVenue.tournamentId,
-          }
-        : undefined,
-      accommodation: primaryAccommodation
-        ? {
-            id: primaryAccommodation.id,
-            name: primaryAccommodation.name,
-            address: primaryAccommodation.address ?? undefined,
-            notes: primaryAccommodation.notes ?? undefined,
-            mapUrl: primaryAccommodation.mapUrl ?? undefined,
-            tournamentId: primaryAccommodation.tournamentId,
-          }
-        : undefined,
-      catering: t.catering ?? undefined,
-      breakfastServingTime: t.breakfastServingTime ?? undefined,
-      breakfastLocation: t.breakfastLocation ?? undefined,
-      lunchServingTime: t.lunchServingTime ?? undefined,
-      lunchLocation: t.lunchLocation ?? undefined,
-      dinnerServingTime: t.dinnerServingTime ?? undefined,
-      dinnerLocation: t.dinnerLocation ?? undefined,
-      cateringNotes: t.cateringNotes ?? undefined,
-      parking: primaryAccommodation?.notes ?? undefined,
-      teams: t.teams.map((tt) => {
-        const teamPlayers = hasTournamentPlayerRoster
-          ? t.players
-              .filter((tp) => tp.player.teamId === tt.team.id)
-              .map((tp) => tp.player)
-              .sort((a, b) => {
-                const byLastName = a.lastName.localeCompare(b.lastName, "pl");
-                if (byLastName !== 0) return byLastName;
-                return a.firstName.localeCompare(b.firstName, "pl");
-              })
-          : tt.team.players;
+  return tournaments.map(mapTournamentListRow);
+}
 
-        return {
-          id: tt.team.id,
-          name: tt.team.name,
-          websiteUrl: tt.team.websiteUrl ?? undefined,
-          address: tt.team.address ?? undefined,
-          city: tt.team.city ?? undefined,
-          postalCode: tt.team.postalCode ?? undefined,
-          contactFirstName: tt.team.contactFirstName ?? undefined,
-          contactLastName: tt.team.contactLastName ?? undefined,
-          contactEmail: tt.team.contactEmail ?? undefined,
-          contactPhone: tt.team.contactPhone ?? undefined,
-          seasonId: tt.team.seasonId,
-          coachId: tt.team.coachId ?? undefined,
-          refereeId: tt.team.refereeId ?? undefined,
-          players: teamPlayers.map((player) => ({
-            id: player.id,
-            firstName: player.firstName,
-            lastName: player.lastName,
-            number: player.number ?? undefined,
-            classification: player.classification ?? undefined,
-            teamId: player.teamId,
-          })),
-        };
-      }),
-      referees: t.referees.map((tr) => ({
-        id: tr.referee.id,
-        firstName: tr.referee.firstName,
-        lastName: tr.referee.lastName,
-        email: tr.referee.email ?? undefined,
-        phone: tr.referee.phone,
-      })),
-      classifiers: t.classifiers.map((tc) => ({
-        id: tc.classifier.id,
-        firstName: tc.classifier.firstName,
-        lastName: tc.classifier.lastName,
-        email: tc.classifier.email ?? undefined,
-        phone: tc.classifier.phone,
-      })),
-      volunteers: t.volunteers.map((v) => ({
-        id: v.id,
-        firstName: v.firstName,
-        lastName: v.lastName,
-        phone: v.phone ?? undefined,
-        tournamentId: v.tournamentId,
-      })),
-    };
+/** Single tournament for the owning user, or null if missing / not owned. */
+export async function getTournamentWithDetailsForOwner(
+  tournamentId: string,
+  ownerUserId: string
+): Promise<Tournament | null> {
+  const row = await prisma.tournament.findFirst({
+    where: { id: tournamentId, season: { ownerUserId } },
+    include: tournamentListInclude,
   });
+  if (!row) return null;
+  return mapTournamentListRow(row);
 }
 
 /** Updates tournament basic details plus accommodation, hall and meal plan. */
-export async function updateTournamentWithDetails(tournamentId: string, form: TournamentFormData) {
+export async function updateTournamentWithDetails(tournamentId: string, form: TournamentFormData, ownerUserId: string) {
   const hotelAddress = `${form.hotelStreet}, ${form.hotelZipCode} ${form.hotelCity}`;
 
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.tournament.findUnique({
-      where: { id: tournamentId },
+    const existing = await tx.tournament.findFirst({
+      where: { id: tournamentId, season: { ownerUserId } },
       select: { id: true },
     });
 
@@ -227,7 +258,6 @@ export async function updateTournamentWithDetails(tournamentId: string, form: To
       },
     });
 
-    // Replace tournament-specific details.
     await tx.sportsHall.deleteMany({ where: { tournamentId } });
     await tx.accommodation.deleteMany({ where: { tournamentId } });
 
@@ -257,29 +287,20 @@ export async function updateTournamentWithDetails(tournamentId: string, form: To
   });
 }
 
-export async function deleteTournament(tournamentId: string) {
-  const existing = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true },
+export async function deleteTournament(tournamentId: string, ownerUserId: string) {
+  const result = await prisma.tournament.deleteMany({
+    where: { id: tournamentId, season: { ownerUserId } },
   });
 
-  if (!existing) {
+  if (result.count === 0) {
     throw new Error("TOURNAMENT_NOT_FOUND");
   }
 
-  await prisma.tournament.delete({ where: { id: tournamentId } });
   return tournamentId;
 }
 
-export async function addTeamsToTournament(tournamentId: string, teamIds: string[]) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true, seasonId: true },
-  });
-
-  if (!tournament) {
-    throw new Error("TOURNAMENT_NOT_FOUND");
-  }
+export async function addTeamsToTournament(tournamentId: string, teamIds: string[], ownerUserId: string) {
+  const tournament = await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const teams = await prisma.team.findMany({
     where: { id: { in: teamIds } },
@@ -290,7 +311,7 @@ export async function addTeamsToTournament(tournamentId: string, teamIds: string
     throw new Error("TEAM_NOT_FOUND");
   }
 
-  const wrongSeason = teams.find((t) => t.seasonId !== tournament.seasonId);
+  const wrongSeason = teams.find((tm) => tm.seasonId !== tournament.seasonId);
   if (wrongSeason) {
     throw new Error("TEAM_WRONG_SEASON");
   }
@@ -317,7 +338,8 @@ export async function addTeamsToTournament(tournamentId: string, teamIds: string
   return tournamentId;
 }
 
-export async function removeTeamFromTournament(tournamentId: string, teamId: string) {
+export async function removeTeamFromTournament(tournamentId: string, teamId: string, ownerUserId: string) {
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
   await prisma.$transaction(async (tx) => {
     await tx.tournamentTeam.deleteMany({
       where: { tournamentId, teamId },
@@ -334,15 +356,13 @@ export async function removeTeamFromTournament(tournamentId: string, teamId: str
   return tournamentId;
 }
 
-export async function setTournamentTeamPlayers(tournamentId: string, teamId: string, playerIds: string[]) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true },
-  });
-
-  if (!tournament) {
-    throw new Error("TOURNAMENT_NOT_FOUND");
-  }
+export async function setTournamentTeamPlayers(
+  tournamentId: string,
+  teamId: string,
+  playerIds: string[],
+  ownerUserId: string
+) {
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const tournamentTeam = await prisma.tournamentTeam.findUnique({
     where: { tournamentId_teamId: { tournamentId, teamId } },
@@ -381,12 +401,8 @@ export async function setTournamentTeamPlayers(tournamentId: string, teamId: str
   });
 }
 
-export async function addRefereesToTournament(tournamentId: string, refereeIds: string[]) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true, seasonId: true },
-  });
-  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+export async function addRefereesToTournament(tournamentId: string, refereeIds: string[], ownerUserId: string) {
+  const tournament = await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const referees = await prisma.referee.findMany({
     where: { id: { in: refereeIds } },
@@ -403,19 +419,16 @@ export async function addRefereesToTournament(tournamentId: string, refereeIds: 
   return tournamentId;
 }
 
-export async function removeRefereeFromTournament(tournamentId: string, refereeId: string) {
+export async function removeRefereeFromTournament(tournamentId: string, refereeId: string, ownerUserId: string) {
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
   await prisma.tournamentReferee.deleteMany({
     where: { tournamentId, refereeId },
   });
   return tournamentId;
 }
 
-export async function addClassifiersToTournament(tournamentId: string, classifierIds: string[]) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true, seasonId: true },
-  });
-  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+export async function addClassifiersToTournament(tournamentId: string, classifierIds: string[], ownerUserId: string) {
+  const tournament = await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const classifiers = await prisma.classifier.findMany({
     where: { id: { in: classifierIds } },
@@ -432,7 +445,8 @@ export async function addClassifiersToTournament(tournamentId: string, classifie
   return tournamentId;
 }
 
-export async function removeClassifierFromTournament(tournamentId: string, classifierId: string) {
+export async function removeClassifierFromTournament(tournamentId: string, classifierId: string, ownerUserId: string) {
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
   await prisma.tournamentClassifier.deleteMany({
     where: { tournamentId, classifierId },
   });
@@ -481,20 +495,14 @@ async function ensureNoCourtTimeConflict(args: {
     if (Number.isNaN(startMs)) continue;
     const endMs = startMs + MATCH_DURATION_MS;
 
-    // overlap if: start < otherEnd && otherStart < end
     if (scheduledAtMs < endMs && startMs < endsAtMs) {
       throw new Error("COURT_TIME_CONFLICT");
     }
   }
 }
 
-export async function listMatchesForTournament(tournamentId: string): Promise<Match[]> {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true },
-  });
-
-  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+export async function listMatchesForTournament(tournamentId: string, ownerUserId: string): Promise<Match[]> {
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const matches = await prisma.match.findMany({
     where: { tournamentId },
@@ -527,18 +535,16 @@ export async function listMatchesForTournament(tournamentId: string): Promise<Ma
   }));
 }
 
-export async function createMatchForTournament(tournamentId: string, input: CreateMatchInput): Promise<string> {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true },
-  });
-
-  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+export async function createMatchForTournament(
+  tournamentId: string,
+  input: CreateMatchInput,
+  ownerUserId: string
+): Promise<string> {
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const scheduledAt = new Date(input.scheduledAt);
   if (Number.isNaN(scheduledAt.getTime())) throw new Error("INVALID_SCHEDULED_AT");
 
-  // Ensure both teams are assigned to this tournament.
   const teams = await prisma.tournamentTeam.findMany({
     where: { tournamentId, teamId: { in: [input.teamAId, input.teamBId] } },
     select: { teamId: true },
@@ -572,14 +578,10 @@ export async function createMatchForTournament(tournamentId: string, input: Crea
 export async function updateMatchForTournament(
   tournamentId: string,
   matchId: string,
-  input: CreateMatchInput
+  input: CreateMatchInput,
+  ownerUserId: string
 ): Promise<string> {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true },
-  });
-
-  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const existingMatch = await prisma.match.findUnique({
     where: { id: matchId },
@@ -591,7 +593,6 @@ export async function updateMatchForTournament(
   const scheduledAt = new Date(input.scheduledAt);
   if (Number.isNaN(scheduledAt.getTime())) throw new Error("INVALID_SCHEDULED_AT");
 
-  // Ensure both teams are assigned to this tournament.
   const teams = await prisma.tournamentTeam.findMany({
     where: { tournamentId, teamId: { in: [input.teamAId, input.teamBId] } },
     select: { teamId: true },
@@ -627,13 +628,12 @@ export async function updateMatchForTournament(
   return tournamentId;
 }
 
-export async function deleteMatchForTournament(tournamentId: string, matchId: string): Promise<string> {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    select: { id: true },
-  });
-
-  if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
+export async function deleteMatchForTournament(
+  tournamentId: string,
+  matchId: string,
+  ownerUserId: string
+): Promise<string> {
+  await getOwnedTournamentMeta(tournamentId, ownerUserId);
 
   const existingMatch = await prisma.match.findUnique({
     where: { id: matchId },

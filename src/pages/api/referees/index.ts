@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createReferee } from "@/lib/referees";
 import { Prisma } from "generated/prisma/client";
 import { requiredPhoneSchema, sanitizePhone, toTitleCase } from "@/lib/validateInputs";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const CreateRefereeSchema = z
   .object({
@@ -25,11 +26,17 @@ const CreateRefereeSchema = z
     seasonId: o.seasonId,
   }));
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const seasonId = url.searchParams.get("seasonId");
 
   const referees = await prisma.referee.findMany({
-    where: seasonId ? { seasonId } : undefined,
+    where: {
+      season: { ownerUserId: auth.user.userId },
+      ...(seasonId ? { seasonId } : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -37,9 +44,18 @@ export const GET: APIRoute = async ({ url }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const body = await request.json().catch(() => null);
   const parsed = CreateRefereeSchema.safeParse(body);
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
+
+  const season = await prisma.season.findFirst({
+    where: { id: parsed.data.seasonId, ownerUserId: auth.user.userId },
+    select: { id: true },
+  });
+  if (!season) return json({ error: "Nie znaleziono sezonu" }, 404);
 
   try {
     const referee = await createReferee(parsed.data);

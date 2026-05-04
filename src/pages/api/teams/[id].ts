@@ -1,10 +1,11 @@
 import type { APIRoute } from "astro";
 import { z } from "@/lib/zodPl";
 import { json } from "@/lib/api";
-import { getTeamById, updateTeam } from "@/lib/teams";
+import { getTeamByIdForOwner, updateTeam } from "@/lib/teams";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "generated/prisma/client";
 import { LOOSE_URL_REGEX, POSTAL_CODE_REGEX, toTitleCase } from "@/lib/validateInputs";
+import { getSessionUserOr401 } from "@/lib/requireSessionUser";
 
 const UpdateTeamSchema = z
   .object({
@@ -23,7 +24,6 @@ const UpdateTeamSchema = z
     coachId: z.string().optional(),
     refereeId: z.string().optional(),
     staff: z.array(z.object({ firstName: z.string().min(1), lastName: z.string().min(1) })).optional(),
-    // Required on update so we never accidentally wipe players when key is missing
     players: z.array(
       z.object({
         id: z.string().optional(),
@@ -55,7 +55,6 @@ const UpdateTeamSchema = z
       firstName: toTitleCase(s.firstName),
       lastName: toTitleCase(s.lastName),
     })),
-    // Normalise players so updateTeam always receives a defined array
     players: o.players.map((p) => ({
       id: p.id?.trim() || undefined,
       firstName: toTitleCase(p.firstName),
@@ -66,21 +65,27 @@ const UpdateTeamSchema = z
     })),
   }));
 
-export const GET: APIRoute = async ({ params }) => {
+export const GET: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const id = params?.id;
   if (!id) return json({ error: "Brak id drużyny" }, 400);
 
-  const team = await getTeamById(id);
+  const team = await getTeamByIdForOwner(id, auth.user.userId);
   if (!team) return json({ error: "Nie znaleziono drużyny" }, 404);
 
   return json(team);
 };
 
 export const PUT: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const id = params?.id;
   if (!id) return json({ error: "Brak id drużyny" }, 400);
 
-  const existingTeam = await getTeamById(id);
+  const existingTeam = await getTeamByIdForOwner(id, auth.user.userId);
   if (!existingTeam) return json({ error: "Nie znaleziono drużyny" }, 404);
 
   const body = await request.json().catch(() => null);
@@ -88,12 +93,17 @@ export const PUT: APIRoute = async ({ params, request }) => {
   if (!parsed.success) return json({ error: parsed.error.flatten() }, 400);
 
   try {
-    const team = await updateTeam(id, parsed.data);
+    const team = await updateTeam(id, auth.user.userId, parsed.data);
     return json(team);
   } catch (error) {
+    if (error instanceof Error && error.message === "SEASON_NOT_ACCESSIBLE") {
+      return json({ error: "Nie znaleziono sezonu" }, 404);
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2002") {
-        const target = Array.isArray(error.meta?.target) ? error.meta.target.join(",") : String(error.meta?.target ?? "");
+        const target = Array.isArray(error.meta?.target)
+          ? error.meta.target.join(",")
+          : String(error.meta?.target ?? "");
         if (target.includes("teamId") && target.includes("number")) {
           return json({ error: "Numer zawodnika musi być unikalny w drużynie" }, 409);
         }
@@ -104,11 +114,14 @@ export const PUT: APIRoute = async ({ params, request }) => {
   }
 };
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
+  const auth = await getSessionUserOr401(request);
+  if (!auth.ok) return auth.response;
+
   const id = params?.id;
   if (!id) return json({ error: "Brak id drużyny" }, 400);
 
-  const existingTeam = await getTeamById(id);
+  const existingTeam = await getTeamByIdForOwner(id, auth.user.userId);
   if (!existingTeam) return json({ error: "Nie znaleziono drużyny" }, 404);
 
   try {

@@ -1,6 +1,6 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { ClassifierPlanEntry, UpsertClassifierPlanEntryDto } from "@/types";
-import type { Prisma } from "@prisma/client";
 
 function normalizeClassification(value: number | undefined) {
   if (value == null) return null;
@@ -18,9 +18,9 @@ function ensureStartBeforeEnd(start: Date, end: Date) {
   if (end.getTime() <= start.getTime()) throw new Error("INVALID_ENDS_AT");
 }
 
-async function ensureTournamentExists(tournamentId: string) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
+async function ensureTournamentOwned(tournamentId: string, ownerUserId: string) {
+  const tournament = await prisma.tournament.findFirst({
+    where: { id: tournamentId, season: { ownerUserId } },
     select: { id: true },
   });
   if (!tournament) throw new Error("TOURNAMENT_NOT_FOUND");
@@ -76,15 +76,17 @@ async function ensureNoTimeConflict(
     const start = e.scheduledAt;
     const end = e.endsAt ?? new Date(start.getTime() + 30 * 60 * 1000);
 
-    // overlap if: start < otherEnd && otherStart < end
     if (args.scheduledAt.getTime() < end.getTime() && start.getTime() < args.endsAt.getTime()) {
       throw new Error("TIME_CONFLICT");
     }
   }
 }
 
-export async function listClassifierPlanForTournament(tournamentId: string): Promise<ClassifierPlanEntry[]> {
-  await ensureTournamentExists(tournamentId);
+export async function listClassifierPlanForTournament(
+  tournamentId: string,
+  ownerUserId: string
+): Promise<ClassifierPlanEntry[]> {
+  await ensureTournamentOwned(tournamentId, ownerUserId);
 
   const exams = await prisma.classificationExam.findMany({
     where: {
@@ -120,9 +122,10 @@ export async function listClassifierPlanForTournament(tournamentId: string): Pro
 
 export async function createClassifierPlanEntryForTournament(
   tournamentId: string,
-  input: UpsertClassifierPlanEntryDto
+  input: UpsertClassifierPlanEntryDto,
+  ownerUserId: string
 ): Promise<string> {
-  await ensureTournamentExists(tournamentId);
+  await ensureTournamentOwned(tournamentId, ownerUserId);
   await ensurePlayerInTournament(tournamentId, input.playerId);
 
   const scheduledAt = new Date(input.scheduledAt);
@@ -158,9 +161,10 @@ export async function createClassifierPlanEntryForTournament(
 export async function updateClassifierPlanEntryForTournament(
   tournamentId: string,
   examId: string,
-  input: UpsertClassifierPlanEntryDto
+  input: UpsertClassifierPlanEntryDto,
+  ownerUserId: string
 ): Promise<string> {
-  await ensureTournamentExists(tournamentId);
+  await ensureTournamentOwned(tournamentId, ownerUserId);
   await ensurePlayerInTournament(tournamentId, input.playerId);
 
   const existing = await prisma.classificationExam.findUnique({
@@ -194,8 +198,12 @@ export async function updateClassifierPlanEntryForTournament(
   return examId;
 }
 
-export async function deleteClassifierPlanEntryForTournament(tournamentId: string, examId: string): Promise<string> {
-  await ensureTournamentExists(tournamentId);
+export async function deleteClassifierPlanEntryForTournament(
+  tournamentId: string,
+  examId: string,
+  ownerUserId: string
+): Promise<string> {
+  await ensureTournamentOwned(tournamentId, ownerUserId);
 
   const existing = await prisma.classificationExam.findUnique({
     where: { id: examId },

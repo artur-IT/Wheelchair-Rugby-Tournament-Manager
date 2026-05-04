@@ -41,18 +41,35 @@ export async function createTeam(data: CreateTeamDto) {
   });
 }
 
-export async function getTeamById(id: string) {
-  return prisma.team.findUnique({
-    where: { id },
+/** Team row only if it belongs to a season owned by this user. */
+export async function getTeamByIdForOwner(id: string, ownerUserId: string) {
+  return prisma.team.findFirst({
+    where: { id, season: { ownerUserId } },
     include: { players: true, staff: true, coach: true, referee: true },
   });
 }
 
 /** Update team and replace staff/players with payload. */
-export async function updateTeam(id: string, data: UpdateTeamDto) {
+export async function updateTeam(id: string, ownerUserId: string, data: UpdateTeamDto) {
   const { staff, players, ...teamData } = data;
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.team.findUniqueOrThrow({ where: { id } });
+    const existing = await tx.team.findFirst({
+      where: { id, season: { ownerUserId } },
+    });
+    if (!existing) {
+      throw new Error("TEAM_NOT_FOUND");
+    }
+
+    if (teamData.seasonId && teamData.seasonId !== existing.seasonId) {
+      const nextSeason = await tx.season.findFirst({
+        where: { id: teamData.seasonId, ownerUserId },
+        select: { id: true },
+      });
+      if (!nextSeason) {
+        throw new Error("SEASON_NOT_ACCESSIBLE");
+      }
+    }
+
     const payload = {
       ...teamData,
       seasonId: teamData.seasonId ?? existing.seasonId,

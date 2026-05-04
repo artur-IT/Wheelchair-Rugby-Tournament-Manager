@@ -14,7 +14,7 @@ const { mocks } = vi.hoisted(() => {
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     tournament: {
-      findUnique: vi.fn().mockResolvedValue({ id: "t1" }),
+      findFirst: vi.fn().mockResolvedValue({ id: "t1" }),
     },
     player: {
       findFirst: vi.fn().mockResolvedValue({ id: "p1" }),
@@ -45,16 +45,24 @@ describe("createClassifierPlanEntryForTournament", () => {
   });
 
   it("always creates a new exam row (multiple slots per player/classifier are allowed)", async () => {
-    await createClassifierPlanEntryForTournament("t1", {
-      playerId: "p1",
-      scheduledAt: "2026-05-10T10:00:00.000Z",
-      endsAt: "2026-05-10T10:30:00.000Z",
-    });
-    await createClassifierPlanEntryForTournament("t1", {
-      playerId: "p1",
-      scheduledAt: "2026-05-11T10:00:00.000Z",
-      endsAt: "2026-05-11T10:30:00.000Z",
-    });
+    await createClassifierPlanEntryForTournament(
+      "t1",
+      {
+        playerId: "p1",
+        scheduledAt: "2026-05-10T10:00:00.000Z",
+        endsAt: "2026-05-10T10:30:00.000Z",
+      },
+      "user-1"
+    );
+    await createClassifierPlanEntryForTournament(
+      "t1",
+      {
+        playerId: "p1",
+        scheduledAt: "2026-05-11T10:00:00.000Z",
+        endsAt: "2026-05-11T10:30:00.000Z",
+      },
+      "user-1"
+    );
     expect(mocks.createExam).toHaveBeenCalledTimes(2);
   });
 });
