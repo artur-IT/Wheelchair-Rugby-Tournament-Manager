@@ -10,17 +10,37 @@ export interface SessionPrismaUser {
   tenantId: string;
 }
 
-async function resolvePrismaUserId(sessionUserId: string): Promise<string> {
-  // Session user ID can be a SuperTokens ID. Prefer mapped external Prisma ID when available.
+/** Map SuperTokens session user id to our Prisma `User.id` (mapping, same id, or email fallback). */
+async function resolvePrismaUserId(sessionUserId: string): Promise<string | null> {
   const mapping = await SuperTokens.getUserIdMapping({
     userId: sessionUserId,
+    userIdType: "SUPERTOKENS",
     userContext: {},
   }).catch(() => null);
 
   if (mapping?.status === "OK" && mapping.externalUserId) {
-    return mapping.externalUserId;
+    const byMapping = await prisma.user.findUnique({
+      where: { id: mapping.externalUserId },
+      select: { id: true },
+    });
+    if (byMapping) return byMapping.id;
   }
-  return sessionUserId;
+
+  const bySameId = await prisma.user.findUnique({
+    where: { id: sessionUserId },
+    select: { id: true },
+  });
+  if (bySameId) return bySameId.id;
+
+  const stUser = await SuperTokens.getUser(sessionUserId, {}).catch(() => undefined);
+  const email = stUser?.emails?.[0]?.trim().toLowerCase();
+  if (!email) return null;
+
+  const byEmail = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  return byEmail?.id ?? null;
 }
 
 /**
@@ -36,15 +56,11 @@ export async function getSessionPrismaUser(request: Request): Promise<SessionPri
       return null;
     }
     const userId = await resolvePrismaUserId(session.getUserId());
-    const tenantId = session.getTenantId();
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
-    if (!user) {
+    if (!userId) {
       return null;
     }
-    return { userId: user.id, tenantId };
+    const tenantId = session.getTenantId();
+    return { userId, tenantId };
   } catch {
     return null;
   }

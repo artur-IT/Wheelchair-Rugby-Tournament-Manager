@@ -20,8 +20,25 @@ export function getSuperTokensApiKey(): string | undefined {
   return readEnv("SUPERTOKENS_API_KEY");
 }
 
+/**
+ * Public site origin used by SuperTokens `appInfo` on the server. Must match the URL users open
+ * (scheme + host). On Vercel, set `PUBLIC_SITE_URL` explicitly, or rely on `VERCEL_URL` fallback.
+ */
 export function getPublicSiteUrl(): string {
-  return readEnv("PUBLIC_SITE_URL") ?? "http://localhost:3000";
+  const explicit = readEnv("PUBLIC_SITE_URL");
+  if (explicit) return explicit;
+
+  // Vercel provides host without scheme (e.g. `my-app.vercel.app`).
+  const vercelUrl = readEnv("VERCEL_URL");
+  if (vercelUrl) {
+    const host = vercelUrl.replace(/^https?:\/\//i, "").split("/")[0]?.trim();
+    if (host) {
+      const scheme = host.split(":")[0] === "localhost" ? "http" : "https";
+      return `${scheme}://${host}`;
+    }
+  }
+
+  return "http://localhost:3000";
 }
 
 export function getGoogleClientId(): string {
