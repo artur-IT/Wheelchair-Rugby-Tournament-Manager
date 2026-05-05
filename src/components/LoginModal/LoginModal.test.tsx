@@ -26,7 +26,16 @@ describe("LoginModal", () => {
     signInMock.mockReset();
     signUpMock.mockReset();
     getAuthUrlMock.mockReset();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ conflict: false }) }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation((input: string | URL) => {
+        const url = String(input);
+        if (url.includes("/api/auth/google-enabled")) {
+          return Promise.resolve({ ok: true, json: async () => ({ enabled: true }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ conflict: false }) });
+      })
+    );
   });
 
   afterEach(() => {
@@ -60,22 +69,45 @@ describe("LoginModal", () => {
 
   it("blocks google redirect when typed email is already used", async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        conflict: true,
-        message: "Konto z tym adresem e-mail już istnieje.",
-      }),
+    const fetchMock = vi.fn().mockImplementation((input: string | URL) => {
+      const url = String(input);
+      if (url.includes("/api/auth/google-enabled")) {
+        return Promise.resolve({ ok: true, json: async () => ({ enabled: true }) });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          conflict: true,
+          message: "Konto z tym adresem e-mail już istnieje.",
+        }),
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
 
     render(<LoginModal open onClose={vi.fn()} />);
 
     await user.type(screen.getByLabelText(/E-mail/i), "admin@example.com");
-    await user.click(screen.getByRole("button", { name: "Kontynuuj z Google" }));
+    await user.click(await screen.findByRole("button", { name: "Kontynuuj z Google" }));
 
     expect(await screen.findByText("Konto z tym adresem e-mail już istnieje.")).toBeInTheDocument();
     expect(getAuthUrlMock).not.toHaveBeenCalled();
+  });
+
+  it("shows disabled Google button and info when backend reports OAuth disabled", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: string | URL) => {
+      const url = String(input);
+      if (url.includes("/api/auth/google-enabled")) {
+        return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ conflict: false }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<LoginModal open onClose={vi.fn()} />);
+
+    expect(await screen.findByRole("button", { name: "Zaloguj" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Kontynuuj z Google" })).toBeDisabled();
+    expect(screen.getByText("Logowanie przez Google jest chwilowo niedostępne.")).toBeInTheDocument();
   });
 
   it("shows remaining attempts from backend metadata", async () => {
