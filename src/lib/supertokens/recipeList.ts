@@ -7,7 +7,7 @@ import SuperTokens from "supertokens-node";
 import type { UserContext } from "supertokens-node/lib/build/types";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, randomUnusedPasswordHash } from "@/lib/supertokens/password";
-import { getGoogleClientId, getGoogleClientSecret, isProductionBuild } from "@/lib/supertokens/env";
+import { getOptionalGoogleOAuthConfig, isProductionBuild } from "@/lib/supertokens/env";
 import { validateAuthEmail, validateAuthPassword } from "@/lib/supertokens/authValidation";
 import {
   computeFailedLoginState,
@@ -26,6 +26,11 @@ const require = createRequire(import.meta.url);
 const Google = require("supertokens-node/lib/build/recipe/thirdparty/providers/google.js").default as GoogleFactory;
 const DEFAULT_APP_ROLE = "USER";
 const ADMIN_APP_ROLE = "ADMIN";
+const googleOAuthConfig = getOptionalGoogleOAuthConfig();
+
+if (!googleOAuthConfig) {
+  console.warn("[Auth] Google OAuth disabled: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET is missing.");
+}
 
 function nameFromEmail(email: string): string {
   const local = email.split("@")[0]?.trim();
@@ -348,21 +353,24 @@ export function buildRecipeList() {
     }),
     ThirdParty.init({
       signInAndUpFeature: {
-        providers: [
-          Google({
-            config: {
-              thirdPartyId: "google",
-              clients: [
-                {
-                  clientType: "web",
-                  clientId: getGoogleClientId(),
-                  clientSecret: getGoogleClientSecret(),
-                  scope: ["openid", "email", "profile"],
+        // Keep email/password auth available even when Google OAuth env vars are missing.
+        providers: googleOAuthConfig
+          ? [
+              Google({
+                config: {
+                  thirdPartyId: "google",
+                  clients: [
+                    {
+                      clientType: "web",
+                      clientId: googleOAuthConfig.clientId,
+                      clientSecret: googleOAuthConfig.clientSecret,
+                      scope: ["openid", "email", "profile"],
+                    },
+                  ],
                 },
-              ],
-            },
-          }),
-        ],
+              }),
+            ]
+          : [],
       },
       override: {
         functions: (original) => ({

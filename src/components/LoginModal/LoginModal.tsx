@@ -6,6 +6,7 @@ import {
   TextField,
   Button,
   Alert,
+  Typography,
   Box,
   IconButton,
   ToggleButtonGroup,
@@ -43,6 +44,10 @@ interface SignInErrorResultWithAttemptMeta {
 interface GoogleEmailConflictResponse {
   conflict?: boolean;
   message?: string;
+}
+
+interface GoogleOAuthAvailabilityResponse {
+  enabled?: boolean;
 }
 
 function parseLockUntil(result: unknown): Date | null {
@@ -133,6 +138,7 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [failedSigninAttemptsInSession, setFailedSigninAttemptsInSession] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [googleOAuthEnabled, setGoogleOAuthEnabled] = useState(false);
   const [mode, setMode] = useState<Mode>("signin");
   const [signinCredentials, setSigninCredentials] = useState({ email: "", password: "" });
   const [formValues, setFormValues] = useState({ email: "", password: "" });
@@ -142,6 +148,19 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
   useEffect(() => {
     if (open) {
       ensureSuperTokensFrontendInitialized();
+      void (async () => {
+        try {
+          const response = await fetch("/api/auth/google-enabled");
+          if (!response.ok) {
+            setGoogleOAuthEnabled(false);
+            return;
+          }
+          const payload = (await response.json()) as GoogleOAuthAvailabilityResponse;
+          setGoogleOAuthEnabled(Boolean(payload.enabled));
+        } catch {
+          setGoogleOAuthEnabled(false);
+        }
+      })();
     }
   }, [open]);
 
@@ -292,9 +311,20 @@ export default function LoginModal({ open, onClose, onLoginSuccess }: Props) {
           </ToggleButtonGroup>
         </Box>
 
-        <Button variant="outlined" fullWidth sx={{ mb: 2 }} onClick={() => void startGoogle()} disabled={loading}>
+        <Button
+          variant="outlined"
+          fullWidth
+          sx={{ mb: googleOAuthEnabled ? 2 : 0.75 }}
+          onClick={() => void startGoogle()}
+          disabled={loading || !googleOAuthEnabled}
+        >
           Kontynuuj z Google
         </Button>
+        {!googleOAuthEnabled && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+            Logowanie przez Google jest chwilowo niedostępne.
+          </Typography>
+        )}
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
           <TextField

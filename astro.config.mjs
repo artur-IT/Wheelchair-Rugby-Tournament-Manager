@@ -2,16 +2,14 @@
 import { defineConfig } from "astro/config";
 
 import react from "@astrojs/react";
-import node from "@astrojs/node";
+import vercel from "@astrojs/vercel";
 
 // https://astro.build/config
 export default defineConfig({
   output: "server",
   integrations: [react()],
   server: { port: 3000 },
-  adapter: node({
-    mode: "standalone",
-  }),
+  adapter: vercel(),
   vite: {
     ssr: {
       // Keep supertokens-node as a real Node dependency (CJS). Do NOT use ssr.noExternal here —

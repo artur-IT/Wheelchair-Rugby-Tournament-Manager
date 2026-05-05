@@ -36,6 +36,15 @@ export function getGoogleClientSecret(): string {
   return v;
 }
 
+export function getOptionalGoogleOAuthConfig(): { clientId: string; clientSecret: string } | null {
+  const clientId = readEnv("GOOGLE_CLIENT_ID");
+  const clientSecret = readEnv("GOOGLE_CLIENT_SECRET");
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+  return { clientId, clientSecret };
+}
+
 export function isProductionBuild(): boolean {
   if (typeof import.meta !== "undefined" && import.meta.env) {
     return Boolean((import.meta.env as { PROD?: boolean }).PROD);
