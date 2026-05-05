@@ -4,8 +4,6 @@ import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 import vercel from "@astrojs/vercel";
 
-const isVercelBuild = process.env.VERCEL === "1";
-
 // https://astro.build/config
 export default defineConfig({
   output: "server",
@@ -14,11 +12,10 @@ export default defineConfig({
   adapter: vercel(),
   vite: {
     ssr: {
-      // Vercel adapter can fail when it needs to symlink externalized CJS packages.
-      // On Vercel we bundle supertokens-node to avoid symlink step; locally we keep it external.
-      ...(isVercelBuild
-        ? { noExternal: ["supertokens-node"] }
-        : { external: ["supertokens-node"] }),
+      // Keep supertokens-node as a real Node dependency (CJS). Do NOT use ssr.noExternal here —
+      // bundling it breaks with "exports is not defined". Externalising avoids duplicate copies
+      // in Vite's SSR module runner and fixes "Initialisation not done" / wrong singleton.
+      external: ["supertokens-node"],
     },
   },
 });
