@@ -1,4 +1,5 @@
 import { CollectingResponse } from "supertokens-node/framework/custom";
+import SuperTokens from "supertokens-node";
 import Session from "supertokens-node/recipe/session";
 import { prisma } from "@/lib/prisma";
 import { ensureSuperTokensInitialized } from "@/lib/supertokens/initSuperTokens";
@@ -7,6 +8,19 @@ import { requestToPreParsedRequest } from "@/lib/supertokens/requestAdapter";
 export interface SessionPrismaUser {
   userId: string;
   tenantId: string;
+}
+
+async function resolvePrismaUserId(sessionUserId: string): Promise<string> {
+  // Session user ID can be a SuperTokens ID. Prefer mapped external Prisma ID when available.
+  const mapping = await SuperTokens.getUserIdMapping({
+    userId: sessionUserId,
+    userContext: {},
+  }).catch(() => null);
+
+  if (mapping?.status === "OK" && mapping.externalUserId) {
+    return mapping.externalUserId;
+  }
+  return sessionUserId;
 }
 
 /**
@@ -21,7 +35,7 @@ export async function getSessionPrismaUser(request: Request): Promise<SessionPri
     if (!session) {
       return null;
     }
-    const userId = session.getUserId();
+    const userId = await resolvePrismaUserId(session.getUserId());
     const tenantId = session.getTenantId();
     const user = await prisma.user.findUnique({
       where: { id: userId },
