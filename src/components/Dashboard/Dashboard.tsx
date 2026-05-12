@@ -7,6 +7,7 @@ import QueryProvider from "@/components/QueryProvider/QueryProvider";
 import ThemeRegistry from "@/components/ThemeRegistry/ThemeRegistry";
 import DataLoadAlert from "@/components/ui/DataLoadAlert";
 import { useDefaultSeason } from "@/components/hooks/useDefaultSeason";
+import { fetchCurrentUserProfile } from "@/lib/api/users";
 import { fetchDashboardSeasonData } from "@/lib/api/dashboard";
 import { fetchSeasonById } from "@/lib/api/seasons";
 import { queryKeys } from "@/lib/queryKeys";
@@ -26,6 +27,11 @@ const getErrorMessage = (isError: boolean, error: unknown) =>
   isError && error instanceof Error ? error.message : null;
 
 const getSeasonChipLabel = (name: string, year?: number | null) => `${name}${year ? ` (${year})` : ""}`;
+
+const getDashboardGreetingName = (firstName?: string) => {
+  const trimmedFirstName = firstName?.trim();
+  return trimmedFirstName;
+};
 
 function useDashboardSeasonData(seasonId?: string) {
   const dashboardQuery = useQuery({
@@ -58,6 +64,10 @@ function useDashboardSeasonData(seasonId?: string) {
 function DashboardContent() {
   const { defaultSeasonId } = useDefaultSeason();
   const { dashboardQuery, seasonMetaQuery } = useDashboardSeasonData(defaultSeasonId);
+  const currentUserQuery = useQuery({
+    queryKey: queryKeys.users.me(),
+    queryFn: ({ signal }) => fetchCurrentUserProfile(signal),
+  });
 
   const {
     data: seasonData,
@@ -89,11 +99,13 @@ function DashboardContent() {
     }));
   }, [seasonData]);
 
+  const greetingName = getDashboardGreetingName(currentUserQuery.data?.firstName);
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <Box>
         <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-          Witaj, Organizatorze!
+          Witaj, {greetingName}!
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
           <Typography color="textSecondary">Oto podsumowanie sezonu:</Typography>

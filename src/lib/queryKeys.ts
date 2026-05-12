@@ -34,4 +34,8 @@ export const queryKeys = {
     /** Season-scoped dashboard bundle (tournaments + teams + referees for one season). */
     season: (seasonId: string) => [...queryKeys.dashboard.all, "season", seasonId] as const,
   },
+  users: {
+    all: ["users"] as const,
+    me: () => [...queryKeys.users.all, "me"] as const,
+  },
 } as const;

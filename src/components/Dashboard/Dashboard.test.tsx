@@ -22,6 +22,12 @@ describe("Dashboard", () => {
   it("loads and displays default season chip from API", async () => {
     localStorage.setItem("defaultSeasonId", "s1");
     const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/users/me") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ firstName: "Artur", lastName: "Kowalski", email: "artur@example.com" }),
+        });
+      }
       if (url === "/api/seasons") {
         return Promise.resolve({
           ok: true,
@@ -50,6 +56,24 @@ describe("Dashboard", () => {
       },
       { timeout: 10000 }
     );
-    expect(fetchMock).toHaveBeenCalledWith("/api/seasons", expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(screen.getByRole("heading", { name: "Witaj, Artur!" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/seasons",
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
+  });
+
+  it("shows logged-in user first name in welcome heading", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ firstName: "Artur", lastName: "Kowalski", email: "artur@example.com" }),
+      })
+    );
+
+    render(<Dashboard />);
+
+    expect(await screen.findByRole("heading", { name: "Witaj, Artur!" })).toBeInTheDocument();
   });
 });

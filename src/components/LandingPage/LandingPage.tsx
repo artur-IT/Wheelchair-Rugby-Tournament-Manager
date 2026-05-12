@@ -101,14 +101,13 @@ const FEATURE_CARD_SX = {
 const CTA_BUTTON_SX = {
   backgroundColor: "primary.main",
   color: "primary.contrastText",
-  fontWeight: 700,
+  // fontWeight: 700,
   px: 4,
   py: 2,
   "&:hover": { backgroundColor: "warning.main", color: "white" },
 } as const;
 
 const FOOTER_SX = {
-  mt: 6,
   p: 4,
   textAlign: "center",
   color: "text.secondary",
@@ -161,9 +160,10 @@ export default function LandingPage({ initialLoginOpen = false }: LandingPagePro
             sx={{
               // Nav login hidden on small portrait; hero CTA still opens the modal.
               "@media (max-width: 599.95px) and (orientation: portrait)": { display: "none" },
+              "&:hover": { backgroundColor: "warning.main", color: "white" },
             }}
           >
-            Zaloguj się
+            Zaloguj
           </Button>
         </Box>
 
