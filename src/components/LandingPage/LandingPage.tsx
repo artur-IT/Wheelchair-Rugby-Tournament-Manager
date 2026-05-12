@@ -28,6 +28,16 @@ const FEATURES = [
     ],
   },
   {
+    title: "Klub Sportowy",
+    desc: [
+      "Zarządzaj własnym Klubem",
+      "Klub ma kilka drużyń? Stwórz je",
+      "Sprawnie aktualizuj składy swoich drużyn",
+      "Każdy zawodnik ma profil z danymi kontaktowymi i umiejętnościami!",
+      "Zarządzaj personelem klubu - Zawodnicy, Trenerzy, Staff, Wolontariusze",
+    ],
+  },
+  {
     title: "Drużyny",
     desc: [
       "Twórz przejrzyste składy zespołów",
@@ -41,18 +51,6 @@ const FEATURES = [
     desc: [
       "Wpisz dane Sędziów i Klasyfikatorów, aby łatwo się kontaktować",
       "Przydzielaj zadania personelowi w jasny i uporządkowany sposób",
-      "Wprowadzasz dane 1 raz a potem tylko klikasz przydzielając zadania na turnieju",
-    ],
-  },
-  {
-    title: "Klub Sportowy",
-    desc: [
-      "Zarządzaj własnym Klubem",
-      "Klub ma kilka drużyń? Stwórz je",
-      "Sprawnie aktualizuj składy swoich drużyn",
-      "Każdy zawodnik ma profil z danymi kontaktowymi i umiejętnościami!",
-      "Zarządzaj personelem klubu - Zawodnicy, Trenerzy, Staff, Wolontariusze",
-      "Miej komplet informacji gotowy zawsze, gdy go potrzebujesz",
     ],
   },
 ];

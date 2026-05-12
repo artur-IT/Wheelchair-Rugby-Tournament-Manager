@@ -31,7 +31,7 @@ interface AppShellProps {
 }
 
 const MENU_ITEMS = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Pulpit" },
   { href: "/tournaments", icon: Trophy, label: "Turnieje" },
   { href: "/club", icon: Building2, label: "Mój Klub Sportowy" },
   { href: "/settings", icon: Settings, label: "Ustawienia Sezonu" },
