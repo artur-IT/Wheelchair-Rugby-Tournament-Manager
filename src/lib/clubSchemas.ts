@@ -66,7 +66,8 @@ export const ClubUpsertSchema = z
   })
   .transform((o) => ({
     ownerUserId: o.ownerUserId,
-    name: toTitleCase(o.name),
+    // Keep user-provided name casing as-is; only trim whitespace at the edges.
+    name: o.name.trim(),
     contactAddress: optionalTitleCaseOrNull(o.contactAddress),
     contactCity: optionalTitleCaseOrNull(o.contactCity),
     contactPostalCode: optionalTrimmedOrNull(o.contactPostalCode),
@@ -93,7 +94,8 @@ export const ClubTeamSchema = z
   })
   .transform((o) => ({
     clubId: o.clubId,
-    name: toTitleCase(o.name),
+    // Keep user-provided team name casing as-is; only trim whitespace at the edges.
+    name: o.name.trim(),
     formula: o.formula,
     coachId: o.coachId?.trim() || null,
     playerIds: o.playerIds ?? [],
@@ -237,7 +239,6 @@ export const ClubStaffFieldsSchema = z.object({
   email: optionalClubEmailNullable,
   phone: optionalClubNineDigitPhone,
 });
-
 
 export const ClubStaffPersonSchema = ClubStaffFieldsSchema.transform((o) => ({
   clubId: o.clubId,
