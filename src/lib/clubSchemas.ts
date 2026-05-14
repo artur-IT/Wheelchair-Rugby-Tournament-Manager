@@ -236,7 +236,6 @@ export const ClubStaffFieldsSchema = z.object({
   lastName: z.preprocess((v) => (v === null || v === undefined ? "" : String(v)), z.string().max(MAX_SHORT_TEXT)),
   email: optionalClubEmailNullable,
   phone: optionalClubNineDigitPhone,
-  notes: z.preprocess((v) => (v === null || v === undefined ? "" : String(v)), z.string().max(500)).optional(),
 });
 
 
@@ -246,7 +245,6 @@ export const ClubStaffPersonSchema = ClubStaffFieldsSchema.transform((o) => ({
   lastName: o.lastName.trim() ? toTitleCase(o.lastName.trim()) : "",
   email: o.email,
   phone: o.phone,
-  notes: o.notes || null,
 }));
 
 /** @deprecated Używaj ClubCoachRefereePersonSchema — alias dla tras trener/sędzia. */

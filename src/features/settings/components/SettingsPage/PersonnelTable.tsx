@@ -31,7 +31,6 @@ export default function PersonnelTable({ title, data, onAddClick, onEdit, onDele
               <TableCell sx={{ fontWeight: "bold" }}>Imię i Nazwisko</TableCell>
               <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>E-mail</TableCell>
               <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Telefon</TableCell>
-              <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Uwagi</TableCell>
               <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Operacje</TableCell>
             </TableRow>
           </TableHead>
@@ -43,9 +42,6 @@ export default function PersonnelTable({ title, data, onAddClick, onEdit, onDele
                 </TableCell>
                 <TableCell align="center">{person.email ?? "-"}</TableCell>
                 <TableCell align="center">{person.phone ?? "-"}</TableCell>
-                <TableCell sx={{ maxWidth: 200, wordBreak: "break-word" }}>
-                  {person.notes ? person.notes : "-"}
-                </TableCell>
                 <TableCell align="center">
                   <Button size="small" color="primary" onClick={() => onEdit?.(person)} disabled={!onEdit}>
                     Edytuj
