@@ -14,7 +14,6 @@ export interface Person {
   lastName: string;
   email?: string;
   phone: string;
-  notes?: string;
 }
 
 export interface Season {

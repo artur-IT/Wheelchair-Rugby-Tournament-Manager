@@ -77,7 +77,6 @@ export interface ClubStaffDto {
   role: "VOLUNTEER" | "REFEREE" | "OTHER";
   email?: string | null;
   phone?: string | null;
-  notes?: string | null;
 }
 
 export interface ClubTeamDto {

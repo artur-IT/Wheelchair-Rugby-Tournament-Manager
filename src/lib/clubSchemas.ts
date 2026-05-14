@@ -66,7 +66,8 @@ export const ClubUpsertSchema = z
   })
   .transform((o) => ({
     ownerUserId: o.ownerUserId,
-    name: toTitleCase(o.name),
+    // Keep user-provided name casing as-is; only trim whitespace at the edges.
+    name: o.name.trim(),
     contactAddress: optionalTitleCaseOrNull(o.contactAddress),
     contactCity: optionalTitleCaseOrNull(o.contactCity),
     contactPostalCode: optionalTrimmedOrNull(o.contactPostalCode),
@@ -93,7 +94,8 @@ export const ClubTeamSchema = z
   })
   .transform((o) => ({
     clubId: o.clubId,
-    name: toTitleCase(o.name),
+    // Keep user-provided team name casing as-is; only trim whitespace at the edges.
+    name: o.name.trim(),
     formula: o.formula,
     coachId: o.coachId?.trim() || null,
     playerIds: o.playerIds ?? [],
@@ -236,9 +238,7 @@ export const ClubStaffFieldsSchema = z.object({
   lastName: z.preprocess((v) => (v === null || v === undefined ? "" : String(v)), z.string().max(MAX_SHORT_TEXT)),
   email: optionalClubEmailNullable,
   phone: optionalClubNineDigitPhone,
-  notes: z.preprocess((v) => (v === null || v === undefined ? "" : String(v)), z.string().max(500)).optional(),
 });
-
 
 export const ClubStaffPersonSchema = ClubStaffFieldsSchema.transform((o) => ({
   clubId: o.clubId,
@@ -246,7 +246,6 @@ export const ClubStaffPersonSchema = ClubStaffFieldsSchema.transform((o) => ({
   lastName: o.lastName.trim() ? toTitleCase(o.lastName.trim()) : "",
   email: o.email,
   phone: o.phone,
-  notes: o.notes || null,
 }));
 
 /** @deprecated Używaj ClubCoachRefereePersonSchema — alias dla tras trener/sędzia. */

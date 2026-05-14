@@ -34,7 +34,6 @@ export interface ClubSimpleMemberRow {
   lastName: string;
   email?: string | null;
   phone?: string | null;
-  notes?: string | null;
 }
 
 export interface ClubSimpleMemberSectionConfig {
@@ -68,7 +67,6 @@ const emptyForm: ClubSimplePersonFormValues = {
   lastName: "",
   email: "",
   phone: "",
-  notes: "",
 };
 
 export default function ClubSimpleMemberPersonnelSection({
@@ -97,7 +95,6 @@ export default function ClubSimpleMemberPersonnelSection({
         lastName: editing.lastName ?? "",
         email: editing.email ?? "",
         phone: editing.phone ?? "",
-        notes: editing.notes ?? "",
       });
       return;
     }
@@ -129,7 +126,6 @@ export default function ClubSimpleMemberPersonnelSection({
         lastName: values.lastName,
         email: values.email || null,
         phone: values.phone || null,
-        notes: values.notes || null,
       };
       if (editing) {
         const res = await fetch(config.putUrl(editing.id), {
@@ -182,7 +178,6 @@ export default function ClubSimpleMemberPersonnelSection({
         lastName: displayOptionalLastName(m.lastName),
         email: m.email ?? undefined,
         phone: m.phone ?? "",
-        notes: m.notes ?? undefined,
       })),
     [members]
   );
@@ -334,23 +329,6 @@ export default function ClubSimpleMemberPersonnelSection({
                   error={Boolean(fieldState.error)}
                   helperText={fieldState.error?.message ?? "Opcjonalnie — wpisz 9 cyfr (bez przedrostka kraju)."}
                   onChange={(e) => field.onChange(sanitizePhone(e.target.value))}
-                />
-              )}
-            />
-            <Controller
-              name="notes"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <TextField
-                  {...field}
-                  value={field.value ?? ""}
-                  label="Uwagi"
-                  placeholder="Dodatkowe informacje o osobie"
-                  multiline
-                  rows={3}
-                  error={Boolean(fieldState.error)}
-                  helperText={fieldState.error?.message}
-                  inputProps={{ maxLength: 500 }}
                 />
               )}
             />

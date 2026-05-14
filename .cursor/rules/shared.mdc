@@ -7,7 +7,7 @@ alwaysApply: true
 ## Tech stack
 
 - **Frontend**: HTML5, CSS3, JavaScript, TypeScript 5, React 19.2, Astro 5
-- **Backend**: Node.js, Express, TypeScript
+- **Backend**: Node.js, pnpm, TypeScript
 - **Routing**: Astro
 - **Fetching API**: Tanstack Query
 - **Forms**: React Hook Form + Zod (on the backend to validate requests)
@@ -17,7 +17,7 @@ alwaysApply: true
 - **Builder**: Vite
 - **Database**: PostgreSQL + Prisma (ORM)
 - **Test**: Vitest, React Testing Library (Playwright mentioned in rules but not primary)
-- **Hosting**: 1Free.eu
+- **Hosting**: Vercel
 
 ## Project structure
 
