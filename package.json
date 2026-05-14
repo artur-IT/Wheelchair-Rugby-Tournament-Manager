@@ -6,6 +6,7 @@
     "postinstall": "prisma generate",
     "dev": "astro dev",
     "build": "astro build",
+    "prebuild": "node scripts/migrateOnBuild.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "lint": "eslint .",
